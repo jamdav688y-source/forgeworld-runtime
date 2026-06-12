@@ -1,0 +1,8 @@
+{
+  "world": "FORGEWORLD",
+  "version": "2.0",
+  "state_model": "event_driven",
+  "continents": ["Phone", "Laptop", "GitHub", "LinkedIn", "AI"],
+  "active_phase": "Phone Node Threading",
+  "primary_goal": "Connect phone, computer, AI, and network signals into one governed creation loop"
+}

@@ -1,0 +1,26 @@
+{
+  "world_name": "FORGEWORLD",
+  "world_level": 1,
+  "phase": "Convergence",
+  "active_campaign": "Phone-Laptop-AI Integration",
+
+  "resources": {
+    "knowledge": 0,
+    "evidence": 0,
+    "relationships": 0,
+    "architecture": 0,
+    "opportunities": 0
+  },
+
+  "reputation": {
+    "governance": 0,
+    "systems": 0,
+    "ai": 0
+  },
+
+  "active_npcs": [],
+
+  "active_quests": [],
+
+  "recent_events": []
+}

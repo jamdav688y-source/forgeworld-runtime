@@ -1,0 +1,18 @@
+FACTION MEMORY
+
+Purpose:
+Let groups remember differently than individuals.
+
+Each faction stores:
+- collective history
+- allies
+- enemies
+- territorial claims
+- moral code
+- institutional trauma
+- economic pressure
+- political goals
+- remembered betrayals
+- remembered victories
+
+Faction memory converts individual action into institutional consequence.

@@ -1,0 +1,21 @@
+FORGEWORLD_PHASE_4
+
+1. NPC memories influence reputation.
+
+2. Reputation influences faction behavior.
+
+3. Faction behavior influences consequences.
+
+4. Consequences alter world-state.
+
+5. World-state creates future opportunities.
+
+6. Future opportunities generate new events.
+
+7. Every transition must remain explainable.
+
+8. Every artifact must justify its existence.
+
+9. Resource usage must remain bounded.
+
+10. Dormant systems consume no resources.

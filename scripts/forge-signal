@@ -1,0 +1,20 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+echo "Source:"
+read SOURCE
+
+echo "Type:"
+read TYPE
+
+echo "Signal:"
+read SIGNAL
+
+echo
+echo "$(date)"
+echo "SOURCE: $SOURCE"
+echo "TYPE: $TYPE"
+echo "SIGNAL: $SIGNAL"
+echo "------------------------------------"
+
+>> ~/forgeworld/events/signals.log
+

@@ -1,0 +1,73 @@
+FORGEWORLD PERSISTENCE ENGINE — MASTER INSTALLATION DIRECTIVE
+
+Install this doctrine into the RPG system, simulation engine, diagnostic engine, and world-building substrate:
+
+The core engine is no longer quest-first, combat-first, or content-first. It is persistence-first.
+
+Every action must be evaluated by what it changes, what it preserves, what it propagates, and what it allows to become future state.
+
+SYSTEM LAW:
+Actions create consequences.
+Consequences create memory.
+Memory creates continuity.
+Continuity creates accountable history.
+Accountable history creates future reality.
+
+PRIMARY MODULES:
+
+1. MEANING ENGINE
+Convert social posts, comments, messages, jokes, conflicts, theories, and images into lore, factions, belief systems, quests, rituals, and world myths.
+
+2. GOVERNANCE ENGINE
+Every event must answer:
+Who initiated it?
+What evidence exists?
+Can it be replayed?
+Can it be audited?
+Can it be reversed?
+What is allowed to persist?
+
+3. SOCIAL ECOLOGY ENGINE
+Every character, NPC, faction, and player must carry:
+memory, motive, trust, reputation, pressure, alignment, contradiction, and evolving consequence.
+
+4. HUMOR DIAGNOSTIC ENGINE
+Treat humor as compressed intelligence.
+A joke reveals expectation versus reality, tension versus release, and hidden system failure.
+
+5. COUNCIL OF MINDS
+Convert real intellectual interactions into archetypal advisors:
+Verifier, Historian, Governor, Architect, Explorer, Optimizer, Humanist, Trickster, Strategist, and Witness.
+
+6. DIAGNOSTIC ENGINE
+Every state change must ask:
+What happened?
+Why?
+Who remembers?
+Who benefits?
+What changed?
+What persisted?
+What propagated?
+What became future reality?
+
+RPG TRANSFORMATION:
+Old model:
+Player → Quest → Monster → Reward
+
+New model:
+Player → Action → Evidence → Memory → Governance → Continuity → Consequence → Future State
+
+FORBIDDEN:
+Ungoverned persistence.
+Unreviewed deletion.
+Untraceable authority.
+Unreplayable state transitions.
+Narrative without consequence.
+Power without evidence.
+
+OBJECTIVE:
+Transform the system into a living world where every joke, post, message, image, theory, battle, faction, and decision becomes usable training material for a governed simulation civilization.
+
+FINAL OPERATING PRINCIPLE:
+The system does not merely generate content.
+The system determines what survives.

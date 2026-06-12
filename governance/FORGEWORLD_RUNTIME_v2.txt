@@ -1,0 +1,11 @@
+FORGEWORLD_RUNTIME_v2
+
+CORE FLOW:
+EVENT -> EVIDENCE -> MEMORY -> GOVERNANCE -> CONTINUITY -> CONSEQUENCE -> FUTURE_STATE
+
+SUCCESS METRIC:
+Can the present state explain how it became itself?
+
+FINAL PRINCIPLE:
+The system does not remember everything.
+The system remembers enough to reconstruct reality.

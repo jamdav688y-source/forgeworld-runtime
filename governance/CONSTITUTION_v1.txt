@@ -1,0 +1,67 @@
+FORGEWORLD CONSTITUTION v1
+
+PURPOSE:
+Transform events into traceable future states.
+
+CAUSAL CHAIN:
+EVENT -> EVIDENCE -> MEMORY -> REPUTATION -> RELATIONSHIP -> FACTION -> GOVERNANCE -> CONSEQUENCE -> WORLD_STATE -> FUTURE_STATE
+
+CORE LAW 1:
+Every event must generate evidence.
+
+CORE LAW 2:
+Every memory must reference evidence.
+
+CORE LAW 3:
+Every consequence must reference memory.
+
+CORE LAW 4:
+Every world-state change must reference consequences.
+
+CORE LAW 5:
+Every future state must be explainable through continuity.
+
+IDENTITY MODEL:
+Players carry memory.
+NPCs carry memory.
+Factions carry memory.
+Institutions carry memory.
+Worlds carry memory.
+
+REPUTATION MODEL:
+Trust emerges from remembered behavior.
+Authority emerges from traceable behavior.
+Alignment emerges from repeated decisions.
+
+DIAGNOSTIC QUESTIONS:
+What happened?
+Why?
+Who remembers?
+Who benefits?
+Who loses?
+What changed?
+What persisted?
+What propagated?
+What became future reality?
+
+GOVERNANCE:
+Persistence requires review.
+Deletion requires review.
+Authority requires evidence.
+Memory requires evidence.
+Power requires accountability.
+
+FORBIDDEN:
+Untraceable authority.
+Memory without evidence.
+Persistence without governance.
+Deletion without review.
+Narrative without consequence.
+Simulation without continuity.
+
+SUCCESS METRIC:
+Can the present state explain how it became itself?
+
+FINAL PRINCIPLE:
+The system does not remember everything.
+The system remembers enough to reconstruct reality.

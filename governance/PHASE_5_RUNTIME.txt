@@ -1,0 +1,28 @@
+FORGEWORLD_PHASE_5_RUNTIME
+
+PURPOSE:
+Convert passive storage into active meaning.
+
+PRIMARY FLOW:
+EVENT -> MEMORY -> REPUTATION -> RELATIONSHIP -> FACTION -> COUNCIL -> CONSEQUENCE -> WORLD -> FUTURE -> EVENT
+
+RESOURCE LAW:
+Do not run loops.
+Do not poll continuously.
+Do not execute background processes.
+Act only when manually invoked.
+Remain dormant when no meaningful event exists.
+
+MODULE QUESTIONS:
+EVENT asks: What happened?
+MEMORY asks: Who remembers?
+REPUTATION asks: Who is affected?
+RELATIONSHIP asks: Who trusts whom?
+FACTION asks: Who benefits or loses?
+COUNCIL asks: What do the nine perspectives conclude?
+CONSEQUENCE asks: What changes?
+WORLD asks: What became true?
+FUTURE asks: What is now possible?
+
+SUCCESS:
+A single event propagates through every layer and produces a traceable world-state update.

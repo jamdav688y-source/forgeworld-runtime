@@ -1,0 +1,24 @@
+REPUTATION SYSTEM
+
+Purpose:
+Translate behavior into social consequence.
+
+Reputation is not popularity.
+Reputation is remembered behavioral evidence.
+
+Track:
+- trust
+- fear
+- honor
+- suspicion
+- usefulness
+- danger
+- reliability
+- betrayal risk
+- faction alignment
+- public legend
+
+Reputation changes how NPCs respond.
+NPC responses create new events.
+New events reshape memory.
+Memory reshapes the world.

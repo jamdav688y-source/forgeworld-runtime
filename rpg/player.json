@@ -1,0 +1,23 @@
+{
+  "class": "Civilization Architect",
+  "level": 1,
+  "attributes": {
+    "perception": 1,
+    "reasoning": 1,
+    "architecture": 1,
+    "governance": 1,
+    "execution": 1,
+    "influence": 1,
+    "memory": 1
+  },
+  "resources": {
+    "knowledge": 0,
+    "evidence": 0,
+    "trust": 0,
+    "influence": 0,
+    "opportunity": 0,
+    "reputation": 0,
+    "continuity": 0,
+    "meaning": 0
+  }
+}

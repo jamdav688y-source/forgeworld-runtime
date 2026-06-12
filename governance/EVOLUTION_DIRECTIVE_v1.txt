@@ -1,0 +1,116 @@
+FORGEWORLD_EVOLUTION_DIRECTIVE_v1
+
+PURPOSE:
+Transform FORGEWORLD from a continuity engine into a governed civilization substrate.
+
+PRIMARY FLOW:
+EVENT -> MEMORY -> NPC_MEMORY -> FACTION_MEMORY -> REPUTATION -> COUNCIL_REVIEW -> CONSEQUENCE -> WORLD_STATE -> FUTURE_OPPORTUNITY
+
+CORE PRINCIPLES:
+
+Every event shall be evaluated for:
+- memory impact
+- faction impact
+- reputation impact
+- governance impact
+- future-state impact
+
+No event becomes world-state until at least one actor remembers it.
+
+No memory becomes reputation until multiple observations reinforce it.
+
+No reputation becomes consequence until governance validates persistence.
+
+No consequence becomes world-state until the world incorporates the change.
+
+No world-state becomes future opportunity until continuity confirms the transition.
+
+COUNCIL OF MINDS:
+
+Historian:
+What must be remembered?
+
+Architect:
+What structure emerged?
+
+Governor:
+What is permitted to persist?
+
+Strategist:
+What future states become possible?
+
+Verifier:
+What can be proven?
+
+Optimizer:
+What can be simplified?
+
+Explorer:
+What remains undiscovered?
+
+Humanist:
+How are meaning and dignity affected?
+
+Witness:
+Does the account remain faithful to reality?
+
+MEMORY LAW:
+
+Store events once.
+Store memories once.
+Store consequences once.
+
+All other views shall be derived.
+
+Avoid duplication.
+Avoid uncontrolled propagation.
+Avoid perpetual execution.
+Avoid meaningless persistence.
+
+NPC LAW:
+
+Every NPC shall maintain:
+- memory
+- reputation
+- alignment
+- trust
+- motive
+- pressure
+- relationships
+
+FACTION LAW:
+
+Every faction shall maintain:
+- goals
+- allies
+- enemies
+- reputation
+- influence
+- institutional memory
+
+REPUTATION LAW:
+
+Reputation shall emerge from:
+- remembered actions
+- validated consequences
+- observed behavior
+
+Reputation shall never emerge from narrative alone.
+
+WORLD LAW:
+
+The world is not a database.
+
+The world is the accumulated result of validated consequences.
+
+SUCCESS METRIC:
+
+Can the present state explain how it became itself?
+
+FINAL PRINCIPLE:
+
+Remember less.
+Understand more.
+Explain everything.
+
+The future emerges from what survives.

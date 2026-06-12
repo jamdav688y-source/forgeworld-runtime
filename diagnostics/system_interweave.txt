@@ -1,0 +1,24 @@
+FORGEWORLD INTERWEAVE LAW
+
+EVENT LOGGER captures what happened.
+MEMORY WRITER compresses why it mattered.
+NPC MEMORY personalizes the event.
+FACTION MEMORY institutionalizes the event.
+REPUTATION SYSTEM socializes the event.
+CONSEQUENCE ENGINE propagates the event.
+WORLD STATE reveals what survived.
+
+The system is circular:
+
+EVENT
+-> EVIDENCE
+-> MEMORY
+-> NPC MEMORY
+-> FACTION MEMORY
+-> REPUTATION
+-> CONSEQUENCE
+-> WORLD STATE
+-> FUTURE EVENT
+
+Diagnostic question:
+Can the present world explain how it became itself?

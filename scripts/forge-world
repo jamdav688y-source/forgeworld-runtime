@@ -1,0 +1,31 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+WORLD=~/forgeworld/world_state.json
+
+echo
+echo "========== FORGEWORLD =========="
+echo
+
+python "$WORLD" <<'PY'
+import json,sys
+
+with open(sys.argv[1]) as f:
+    d=json.load(f)
+
+print("World:",d["world_name"])
+print("Level:",d["world_level"])
+print("Phase:",d["phase"])
+print("Campaign:",d["active_campaign"])
+print()
+
+print("Resources")
+for k,v in d["resources"].items():
+    print(f"  {k}: {v}")
+
+print()
+
+print("Reputation")
+for k,v in d["reputation"].items():
+    print(f"  {k}: {v}")
+PY
+

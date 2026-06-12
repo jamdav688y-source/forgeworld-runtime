@@ -1,0 +1,18 @@
+CONSEQUENCE ENGINE
+
+Purpose:
+Convert actions into delayed world effects.
+
+Each consequence must define:
+- immediate effect
+- delayed effect
+- hidden effect
+- affected NPCs
+- affected factions
+- affected locations
+- reputation impact
+- future-state mutation
+- rollback possibility
+
+Rule:
+A consequence that does not change future state is not a consequence.

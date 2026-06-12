@@ -1,0 +1,21 @@
+NPC MEMORY
+
+Purpose:
+Give every character personal continuity.
+
+Each NPC stores:
+- personal events witnessed
+- trust toward player
+- fear
+- loyalty
+- grudges
+- debts
+- rumors heard
+- faction pressure
+- contradiction points
+- future behavioral bias
+
+NPC memory feeds reputation.
+Reputation feeds faction judgment.
+Faction judgment feeds world state.
+World state reshapes NPC behavior.

@@ -1,0 +1,24 @@
+WORLD STATE
+
+Purpose:
+Represent the current reality of the simulation.
+
+World state tracks:
+- active regions
+- open conflicts
+- closed conflicts
+- faction power
+- economic conditions
+- discovered locations
+- destroyed locations
+- unlocked routes
+- forbidden zones
+- historical turning points
+
+World state is the visible result of:
+events
+memory
+governance
+reputation
+consequences
+continuity

@@ -1,0 +1,21 @@
+EVENT LOGGER
+
+Purpose:
+Capture every meaningful action before it becomes memory.
+
+Every event must record:
+- timestamp
+- actor
+- action
+- target
+- location
+- evidence
+- affected NPCs
+- affected factions
+- reputation change
+- consequence seed
+- world-state change
+
+Rule:
+No event becomes history until it has evidence.
+No evidence becomes memory until governance accepts it.

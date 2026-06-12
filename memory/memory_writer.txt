@@ -1,0 +1,21 @@
+MEMORY WRITER
+
+Purpose:
+Convert events into usable memory.
+
+Memory is not raw storage.
+Memory is compressed causal meaning.
+
+Every memory must answer:
+- what happened
+- why it mattered
+- who remembers it
+- what changed after it
+- what future behavior it may influence
+
+Memory talks to:
+- NPC memory
+- faction memory
+- reputation system
+- consequence engine
+- world state

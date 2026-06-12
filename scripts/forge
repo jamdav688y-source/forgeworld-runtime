@@ -1,0 +1,145 @@
+#!/data/data/com.termux/files/usr/bin/bash
+
+ROOT="$HOME/forgeworld"
+
+case "$1" in
+
+status)
+echo "========== FORGEWORLD STATUS =========="
+date
+echo
+echo "ROOT: $ROOT"
+echo
+echo "FILES:"
+find "$ROOT" -type f | wc -l
+echo
+echo "QUESTS:"
+cat "$ROOT/quests/active_quests.md" 2>/dev/null || echo "No quests yet."
+echo "======================================="
+;;
+
+capture)
+mkdir -p "$ROOT/inbox"
+echo "TYPE: idea / bug / task / linkedin / observation / opportunity"
+read -r TYPE
+echo "DETAIL:"
+read -r DETAIL
+{
+echo
+echo "EVENT: CapturedSignal"
+echo "DATE: $(date)"
+echo "TYPE: $TYPE"
+echo "DETAIL: $DETAIL"
+echo "STATUS: queued"
+echo "---"
+} >> "$ROOT/inbox/capture.md"
+echo "Captured."
+;;
+
+event)
+mkdir -p "$ROOT/events"
+echo "EVENT NAME:"
+read -r EVENT
+echo "DETAIL:"
+read -r DETAIL
+{
+echo
+echo "EVENT: $EVENT"
+echo "DATE: $(date)"
+echo "DETAIL: $DETAIL"
+echo "---"
+} >> "$ROOT/events/events.log"
+echo "Event recorded."
+;;
+
+npc)
+mkdir -p "$ROOT/npcs"
+echo "NPC NAME:"
+read -r NAME
+echo "TYPE:"
+read -r TYPE
+echo "SIGNAL:"
+read -r SIGNAL
+{
+echo
+echo "$NAME"
+echo "Type: $TYPE"
+echo "Signal: $SIGNAL"
+echo "---"
+} >> "$ROOT/npcs/network.md"
+echo "NPC recorded."
+;;
+
+quest)
+mkdir -p "$ROOT/quests"
+echo "QUEST:"
+read -r QUEST
+echo "[ ] $QUEST" >> "$ROOT/quests/active_quests.md"
+echo "Quest added."
+;;
+
+review)
+echo "========== FORGEWORLD REVIEW =========="
+echo
+echo "CAPTURES:"
+tail -40 "$ROOT/inbox/capture.md" 2>/dev/null || echo "No captures yet."
+echo
+echo "EVENTS:"
+tail -40 "$ROOT/events/events.log" 2>/dev/null || echo "No events yet."
+echo
+echo "NPCS:"
+cat "$ROOT/npcs/network.md" 2>/dev/null || echo "No NPCs yet."
+echo "======================================="
+;;
+
+sync)
+cd "$ROOT"
+git init >/dev/null 2>&1 || true
+git add .
+git commit -m "FORGEWORLD phone sync $(date +%Y-%m-%d_%H-%M-%S)" || echo "Nothing new to commit."
+echo "Local sync complete."
+;;
+
+archive)
+STAMP=$(date +%Y%m%d-%H%M%S)
+mkdir -p "$ROOT/archive/$STAMP"
+cp -r "$ROOT/inbox" "$ROOT/archive/$STAMP/" 2>/dev/null || true
+cp -r "$ROOT/events" "$ROOT/archive/$STAMP/" 2>/dev/null || true
+cp -r "$ROOT/npcs" "$ROOT/archive/$STAMP/" 2>/dev/null || true
+cp -r "$ROOT/quests" "$ROOT/archive/$STAMP/" 2>/dev/null || true
+echo "Archive created: $ROOT/archive/$STAMP"
+;;
+
+map)
+echo "========== FORGEWORLD MAP =========="
+find "$ROOT" -maxdepth 2 | sort
+echo "===================================="
+;;
+
+doctrine)
+cat "$ROOT/doctrine/FORGEWORLD_RUNTIME.md" 2>/dev/null || echo "No doctrine file found."
+;;
+
+clean)
+pkg clean
+rm -rf "$ROOT/logs"/*.tmp 2>/dev/null || true
+echo "Safe clean complete."
+;;
+
+*)
+echo "FORGEWORLD COMMANDS"
+echo
+echo "forge status"
+echo "forge capture"
+echo "forge event"
+echo "forge npc"
+echo "forge quest"
+echo "forge review"
+echo "forge sync"
+echo "forge archive"
+echo "forge map"
+echo "forge doctrine"
+echo "forge clean"
+;;
+
+esac
