@@ -1,0 +1,16 @@
+{
+  "registry": "commercial",
+  "updated_at": "2026-07-03T21:44:17Z",
+  "entries": [
+    {
+      "commercial_id": "COM-20260703T214417Z-8494",
+      "mission_id": "MSN-20260703T214356Z-0253",
+      "who_benefits": "Solo founders and small teams with scattered notes/ideas across phone and laptop",
+      "problem_solved": "No structured way to turn a captured idea into reusable organizational capability; ideas get lost between phone and laptop",
+      "sellable": true,
+      "packaging_form": "diagnostic",
+      "notes": "Free 12-question diagnostic as lead magnet; paid tier turns diagnostic output into a configured ForgeWorld mission package for their own stack",
+      "created_at": "2026-07-03T21:44:17Z"
+    }
+  ]
+}

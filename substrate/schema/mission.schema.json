@@ -1,0 +1,144 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ForgeWorld Mission Package",
+  "description": "The one portable mission format shared by phone and laptop. A mission is the atomic unit of the continuity substrate: it must be legible on its own, reproducible, and capable of teaching the next mission.",
+  "type": "object",
+  "required": [
+    "mission_id",
+    "title",
+    "objective",
+    "source_context",
+    "evidence",
+    "constraints",
+    "acceptance_criteria",
+    "current_state",
+    "artifacts_created",
+    "decisions_made",
+    "validation_results",
+    "commercial_opportunities",
+    "lessons_learned",
+    "next_recommended_action",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "mission_id": { "type": "string", "pattern": "^MSN-[0-9TZ]+-[0-9]{4}$" },
+    "title": { "type": "string" },
+    "objective": { "type": "string" },
+    "origin": {
+      "type": "string",
+      "enum": ["phone", "laptop"],
+      "description": "Which forge originated this mission."
+    },
+    "source_context": {
+      "type": "object",
+      "description": "Where this mission came from: a capture, a prior mission, a direct laptop task, etc.",
+      "properties": {
+        "channel": { "type": "string" },
+        "capture_id": { "type": "string" },
+        "raw_text": { "type": "string" },
+        "captured_at": { "type": "string" }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["evidence_id", "description"],
+        "properties": {
+          "evidence_id": { "type": "string" },
+          "description": { "type": "string" },
+          "ref": { "type": "string" },
+          "captured_at": { "type": "string" }
+        }
+      }
+    },
+    "constraints": { "type": "array", "items": { "type": "string" } },
+    "acceptance_criteria": { "type": "array", "items": { "type": "string" } },
+    "current_state": {
+      "type": "string",
+      "enum": [
+        "captured", "understood", "researched", "reasoned", "building",
+        "validated", "governed", "packaged", "commercialized", "taught",
+        "stored", "complete"
+      ],
+      "description": "Position in the Observe->Understand->Research->Reason->Build->Validate->Govern->Package->Commercialize->Teach->Store->Improve loop."
+    },
+    "artifacts_created": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["asset_id", "type", "description"],
+        "properties": {
+          "asset_id": { "type": "string" },
+          "type": {
+            "type": "string",
+            "enum": ["knowledge", "code", "workflow", "evidence", "prompt", "template", "design_pattern", "commercial_insight", "governance_record", "next_action"]
+          },
+          "path": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "decisions_made": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["decision_id", "intent", "evidence", "reasoning", "outcome"],
+        "properties": {
+          "decision_id": { "type": "string" },
+          "intent": { "type": "string" },
+          "evidence": { "type": "string" },
+          "reasoning": { "type": "string" },
+          "constraints": { "type": "string" },
+          "alternatives_considered": { "type": "string" },
+          "validation": { "type": "string" },
+          "outcome": { "type": "string" },
+          "lesson_learned": { "type": "string" }
+        }
+      }
+    },
+    "validation_results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["validation_id", "method", "result"],
+        "properties": {
+          "validation_id": { "type": "string" },
+          "method": { "type": "string" },
+          "result": { "type": "string" },
+          "validated_at": { "type": "string" }
+        }
+      }
+    },
+    "commercial_opportunities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["commercial_id", "who_benefits", "problem_solved", "sellable", "packaging_form"],
+        "properties": {
+          "commercial_id": { "type": "string" },
+          "who_benefits": { "type": "string" },
+          "problem_solved": { "type": "string" },
+          "sellable": { "type": "boolean" },
+          "packaging_form": {
+            "type": "string",
+            "enum": ["framework", "template", "diagnostic", "service", "product", "article", "consulting_offer", "training_asset", "subscription", "software_feature", "intellectual_property"]
+          },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "lessons_learned": { "type": "array", "items": { "type": "string" } },
+    "next_recommended_action": { "type": "string" },
+    "links": {
+      "type": "object",
+      "properties": {
+        "predecessor_missions": { "type": "array", "items": { "type": "string" } },
+        "successor_missions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": "string" }
+  }
+}

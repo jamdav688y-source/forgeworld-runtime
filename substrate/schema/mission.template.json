@@ -1,0 +1,28 @@
+{
+  "mission_id": "",
+  "title": "",
+  "objective": "",
+  "origin": "laptop",
+  "source_context": {
+    "channel": "",
+    "capture_id": "",
+    "raw_text": "",
+    "captured_at": ""
+  },
+  "evidence": [],
+  "constraints": [],
+  "acceptance_criteria": [],
+  "current_state": "captured",
+  "artifacts_created": [],
+  "decisions_made": [],
+  "validation_results": [],
+  "commercial_opportunities": [],
+  "lessons_learned": [],
+  "next_recommended_action": "",
+  "links": {
+    "predecessor_missions": [],
+    "successor_missions": []
+  },
+  "created_at": "",
+  "updated_at": ""
+}

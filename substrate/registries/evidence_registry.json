@@ -1,0 +1,14 @@
+{
+  "registry": "evidence",
+  "updated_at": "2026-07-03T21:44:41Z",
+  "entries": [
+    {
+      "evidence_id": "EVD-20260703T214356Z-0769",
+      "mission_id": "MSN-20260703T214356Z-0253",
+      "type": "social",
+      "description": "LinkedIn comment: 3 people asked if the FORGE lifecycle (Observe->...->Improve) could be sold as a consulting diagnostic for solo founders drowning in scattered notes.",
+      "captured_by": "phone",
+      "captured_at": "2026-07-03T21:43:56Z"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "registry": "asset",
+  "updated_at": "2026-07-03T21:44:16Z",
+  "entries": [
+    {
+      "asset_id": "AST-20260703T214416Z-9288",
+      "mission_id": "MSN-20260703T214356Z-0253",
+      "type": "template",
+      "description": "Lifecycle Continuity Diagnostic: 12-question self-score template mapping a founder's current habits to the Observe->Improve loop, with a weak-link recommendation",
+      "path": "substrate/registries/../missions/MSN-20260703T214356Z-0253/artifacts/lifecycle-diagnostic-template.md",
+      "created_at": "2026-07-03T21:44:16Z"
+    },
+    {
+      "asset_id": "AST-20260703T214416Z-4232",
+      "mission_id": "MSN-20260703T214356Z-0253",
+      "type": "workflow",
+      "description": "Diagnostic delivery workflow: capture -> score -> weak-link report -> optional consulting upsell",
+      "path": "",
+      "created_at": "2026-07-03T21:44:16Z"
+    }
+  ]
+}
