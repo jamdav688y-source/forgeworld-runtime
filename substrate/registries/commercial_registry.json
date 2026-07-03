@@ -1,6 +1,6 @@
 {
   "registry": "commercial",
-  "updated_at": "2026-07-03T21:44:17Z",
+  "updated_at": "2026-07-03T22:02:27Z",
   "entries": [
     {
       "commercial_id": "COM-20260703T214417Z-8494",
@@ -11,6 +11,16 @@
       "packaging_form": "diagnostic",
       "notes": "Free 12-question diagnostic as lead magnet; paid tier turns diagnostic output into a configured ForgeWorld mission package for their own stack",
       "created_at": "2026-07-03T21:44:17Z"
+    },
+    {
+      "commercial_id": "COM-20260703T220227Z-3256",
+      "mission_id": "MSN-20260703T215701Z-3014",
+      "who_benefits": "ForgeWorld operators running phone+laptop together",
+      "problem_solved": "Phone captures were previously ad hoc text; there was no schema-validated, governed, offline-first sensor object feeding the same continuity substrate as the laptop",
+      "sellable": true,
+      "packaging_form": "software_feature",
+      "notes": "This ascension layer is itself the productized capability: phone-native mission capture with governance, evidence packaging, and deterministic sync, sellable as a feature of the ForgeWorld substrate product",
+      "created_at": "2026-07-03T22:02:27Z"
     }
   ]
 }

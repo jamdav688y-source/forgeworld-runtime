@@ -1,6 +1,6 @@
 {
   "registry": "evidence",
-  "updated_at": "2026-07-03T21:44:41Z",
+  "updated_at": "2026-07-03T21:57:34Z",
   "entries": [
     {
       "evidence_id": "EVD-20260703T214356Z-0769",
@@ -9,6 +9,23 @@
       "description": "LinkedIn comment: 3 people asked if the FORGE lifecycle (Observe->...->Improve) could be sold as a consulting diagnostic for solo founders drowning in scattered notes.",
       "captured_by": "phone",
       "captured_at": "2026-07-03T21:43:56Z"
+    },
+    {
+      "evidence_id": "EVD-20260703T215701Z-3388",
+      "mission_id": "MSN-20260703T215701Z-3014",
+      "type": "manual_note",
+      "description": "This directive text + prior substrate/README.md",
+      "captured_by": "phone",
+      "captured_at": "2026-07-03T21:56:40Z"
+    },
+    {
+      "evidence_id": "EVP-20260703T215734Z-2149",
+      "mission_id": "MSN-20260703T215701Z-3014",
+      "type": "evidence_package",
+      "description": "Assembled evidence package EVP-20260703T215734Z-2149",
+      "captured_by": "laptop",
+      "captured_at": "2026-07-03T21:57:34Z",
+      "integrity_hash": "e9c97c126f57bc16ae84da4f50056c1e496c2635369d52e9d798101066cadfd3"
     }
   ]
 }

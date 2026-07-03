@@ -1,0 +1,105 @@
+{
+  "packet_version": "1.0.0",
+  "generated_at": "2026-07-03T22:04:34Z",
+  "origin": "laptop",
+  "counts": {
+    "missions": 2,
+    "phone_sensor_missions": 1,
+    "evidence_packages": 1
+  },
+  "files": [
+    {
+      "path": "substrate/capability_genome.json",
+      "category": "capability_genome",
+      "sha256": "26e0a63e87b9120895fe3c44581dae6c582aac7ae3634ceb878645109ca1ad8a",
+      "bytes": 880
+    },
+    {
+      "path": "substrate/event_journal.jsonl",
+      "category": "event_journal",
+      "sha256": "cbf64e2fe68e8495d11a6fc3a3fef9b074c62cbed4a0891f827d305aa85a024e",
+      "bytes": 4261
+    },
+    {
+      "path": "substrate/evidence_packages/EVP-20260703T215734Z-2149.json",
+      "category": "evidence_package",
+      "sha256": "ed84a89bc5033a4540e808ef2d8ba85db244affc376f6ed9da7fca5959a2fb26",
+      "bytes": 1374
+    },
+    {
+      "path": "substrate/missions/MSN-20260703T214356Z-0253/mission.json",
+      "category": "mission",
+      "sha256": "8f160795c038ede4382e6809e10ac5850f64491ffbf5585ae4e495f4cd0793c4",
+      "bytes": 4534
+    },
+    {
+      "path": "substrate/missions/MSN-20260703T215701Z-3014/mission.json",
+      "category": "mission",
+      "sha256": "100e4afd6f90c52bf55ebb6d8e3b22d5b2ff03785f801a50e46968eff8d6033b",
+      "bytes": 3468
+    },
+    {
+      "path": "substrate/missions_phone/PSM-20260703T215640Z-1840.json",
+      "category": "phone_sensor_mission",
+      "sha256": "191a31967bc74f58722fd0f09ff5ddacc1f305127b8fd4f2b209e7fc343965f1",
+      "bytes": 1190
+    },
+    {
+      "path": "substrate/registries/asset_registry.json",
+      "category": "registry",
+      "sha256": "49f737d27cc1915f7be2a0971d5e8535cfca56f7016c1a2b9cd635044afef6d7",
+      "bytes": 1372
+    },
+    {
+      "path": "substrate/registries/commercial_registry.json",
+      "category": "registry",
+      "sha256": "4cf12a55f4975fd5fc485dbd2e541f7b4693261848e8110785bc3ee29bed1c6d",
+      "bytes": 1444
+    },
+    {
+      "path": "substrate/registries/decision_registry.json",
+      "category": "registry",
+      "sha256": "40ad5566c7bedb0ed731d3a44a087bf65c172781db26a94d80d74653ddbd729a",
+      "bytes": 861
+    },
+    {
+      "path": "substrate/registries/evidence_registry.json",
+      "category": "registry",
+      "sha256": "ef79e50376375153816cc730cafdee1572b85664f3101da160a8637e5de754e5",
+      "bytes": 1167
+    },
+    {
+      "path": "substrate/registries/knowledge_registry.json",
+      "category": "registry",
+      "sha256": "a0da2e5f3cb25748627dc52e29173eef4856d2af08f4d0f48af029a3c39584a7",
+      "bytes": 457
+    },
+    {
+      "path": "substrate/registries/mission_registry.json",
+      "category": "registry",
+      "sha256": "63fd9669be41cdfaf0a158c311b7eb87ee69d509dae5213eeea228f30f72764b",
+      "bytes": 686
+    },
+    {
+      "path": "substrate/registries/prompt_registry.json",
+      "category": "registry",
+      "sha256": "93ebe05d2f39696b43a321dcaa3a603ed95acc3eb715cdb83d9b6ea629fdccdb",
+      "bytes": 66
+    },
+    {
+      "path": "substrate/registries/workflow_registry.json",
+      "category": "registry",
+      "sha256": "73405eba189528bc3b94cc8e2c6e5f02ef748a698c8f12d6585713c1842a9bc7",
+      "bytes": 382
+    },
+    {
+      "path": "substrate/relationship_graph.json",
+      "category": "relationship_graph",
+      "sha256": "36a38de659554ce4f95715921141839c25c12fc328ed9ca7c1917580fcb9a219",
+      "bytes": 5021
+    }
+  ],
+  "operator_notes": "",
+  "validation_state": "unvalidated",
+  "packet_integrity_hash": "4d689fee0e646cf1200cc012084c94cd737da4a9443afb9c637e24d16b999283"
+}

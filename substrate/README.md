@@ -48,7 +48,31 @@ substrate/
   docs/
     ARCHITECTURE.md            knowledge graph model, lifecycle, provider neutrality
     ROLES.md                   phone vs laptop division of labor
+    CONTINUITY_ASCENSION.md    Ascension V1 module map + design decisions
+    VALIDATION_REPORT.md       Ascension V1 validation results
+  mission_schema.json          Phone sensor mission schema (Ascension Module 01)
+  event_journal.jsonl          Immutable, hash-deduped event log (Module 02)
+  evidence_package_schema.json Evidence package schema (Module 03)
+  capability_genome.json       Reusable capability registry (Module 04)
+  relationship_graph.json      Rebuildable continuity + knowledge graph (Modules 06/07)
+  instrumentation_history.jsonl  Metric snapshots over time (Module 09)
+  missions_phone/<PSM_id>.json  Phone sensor missions (Module 01 storage)
+  evidence_packages/<EVP_id>.json  Assembled evidence packages (Module 03 storage)
+  scripts/
+    sensor-capture.sh          PHONE: schema-validated offline sensor mission capture
+    promote-sensor-mission.sh  LAPTOP: fold a PSM into the desktop mission pipeline
+    build-evidence-package.sh  LAPTOP: assemble an evidence package for a mission
+    update-capability-genome.sh  LAPTOP: upsert a capability after a mission
+    update-relationship-graph.sh  LAPTOP: rebuild the graph, or add manual nodes/edges
+    export-desktop-packet.sh  LAPTOP: deterministic, read-only sync manifest
+    governance-check.sh       Read-only governance/confidence/approval report
+    instrumentation.sh        Real-metric snapshot (used by substrate-status.sh)
+    validate-schema.sh        Dependency-free required-field schema check
 ```
+
+See `docs/CONTINUITY_ASCENSION.md` for how the Ascension V1 modules above
+relate to the rest of this layout, and `docs/VALIDATION_REPORT.md` for what
+was actually tested.
 
 ## Quick start
 

@@ -1,0 +1,27 @@
+{
+  "mission_id": "PSM-20260703T215640Z-1840",
+  "timestamp": "2026-07-03T21:56:40Z",
+  "objective": "Assess whether ForgeWorld's own repo can demonstrate offline phone->laptop continuity",
+  "observation": "Repo has substrate/ built last session but no phone-native sensor mission object yet",
+  "context": "Continuity Substrate Ascension V1 directive, module 01",
+  "evidence": "This directive text + prior substrate/README.md",
+  "evidence_type": "manual_note",
+  "location": null,
+  "confidence": 0.9,
+  "priority": "high",
+  "governance_class": "informational",
+  "commercial_potential": "unknown",
+  "related_missions": [
+    "MSN-20260703T215701Z-3014"
+  ],
+  "related_knowledge_nodes": [],
+  "supporting_assets": [],
+  "required_specialists": [],
+  "validation_status": "unvalidated",
+  "suggested_next_action": "Reviewed on laptop; promoted to MSN-20260703T215701Z-3014.",
+  "synchronization_state": "promoted",
+  "operator_notes": "first ascension-era test capture",
+  "capability_contribution": "phone-native structured capture capability",
+  "content_hash": "0124fd2d90b09cddf318b30696931c776de188cee17e3c95befad01aef14795b",
+  "journal_event_id": "EVT-20260703T215641Z-3933"
+}

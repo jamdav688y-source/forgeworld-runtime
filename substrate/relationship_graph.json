@@ -1,0 +1,162 @@
+{
+  "registry": "relationship_graph",
+  "version": "1.0.0",
+  "generated_at": "2026-07-03T22:04:34Z",
+  "generation": "derived",
+  "nodes": [
+    {
+      "id": "AST-20260703T214416Z-4232",
+      "type": "workflow",
+      "label": "Diagnostic delivery workflow: capture -> score -> weak-link report -> optional consulting upsell"
+    },
+    {
+      "id": "AST-20260703T214416Z-9288",
+      "type": "knowledge",
+      "label": "Lifecycle Continuity Diagnostic: 12-question self-score template mapping a founder's current habits to the Observe->Improve loop, with a weak-link recommendation"
+    },
+    {
+      "id": "AST-20260703T220227Z-2824",
+      "type": "asset",
+      "label": "Ascension modules 01-10: sensor-capture.sh, promote-sensor-mission.sh, build-evidence-package.sh, update-capability-genome.sh, update-relationship-graph.sh, export-desktop-packet.sh, governance-check.sh, instrumentation.sh, extended substrate-status.sh"
+    },
+    {
+      "id": "COM-20260703T214417Z-8494",
+      "type": "commercial",
+      "label": ""
+    },
+    {
+      "id": "COM-20260703T220227Z-3256",
+      "type": "commercial",
+      "label": ""
+    },
+    {
+      "id": "DEC-20260703T214416Z-8750",
+      "type": "decision",
+      "label": "Package the Observe->Improve loop as a standalone scored diagnostic instead of a bespoke consulting engagement"
+    },
+    {
+      "id": "EVD-20260703T214356Z-0769",
+      "type": "evidence",
+      "label": "LinkedIn comment: 3 people asked if the FORGE lifecycle (Observe->...->Improve) could be sold as a consulting diagnostic for solo founders drowning in scattered notes."
+    },
+    {
+      "id": "EVD-20260703T215701Z-3388",
+      "type": "evidence",
+      "label": "This directive text + prior substrate/README.md"
+    },
+    {
+      "id": "EVP-20260703T215734Z-2149",
+      "type": "evidence",
+      "label": "Assembled evidence package EVP-20260703T215734Z-2149"
+    },
+    {
+      "id": "MSN-20260703T214356Z-0253",
+      "type": "mission",
+      "label": "[social] LinkedIn comment: 3 people asked if the FORGE lifecycle (Obs"
+    },
+    {
+      "id": "MSN-20260703T215701Z-3014",
+      "type": "mission",
+      "label": "[manual_note] Repo has substrate/ built last session but no phone-native s"
+    },
+    {
+      "id": "PSM-20260703T215640Z-1840",
+      "type": "phone_sensor_mission",
+      "label": "Assess whether ForgeWorld's own repo can demonstrate offline phone->laptop continuity"
+    },
+    {
+      "id": "phone-native-structured-capture",
+      "type": "capability",
+      "label": "Phone can record a schema-validated sensor mission offline and promote it into the desktop pipeline"
+    }
+  ],
+  "edges": [
+    {
+      "from": "AST-20260703T214416Z-4232",
+      "to": "MSN-20260703T214356Z-0253",
+      "relation": "asset_of_mission"
+    },
+    {
+      "from": "AST-20260703T214416Z-4232",
+      "to": "MSN-20260703T214356Z-0253",
+      "relation": "workflow_of_mission"
+    },
+    {
+      "from": "AST-20260703T214416Z-9288",
+      "to": "MSN-20260703T214356Z-0253",
+      "relation": "asset_of_mission"
+    },
+    {
+      "from": "AST-20260703T214416Z-9288",
+      "to": "MSN-20260703T214356Z-0253",
+      "relation": "knowledge_of_mission"
+    },
+    {
+      "from": "AST-20260703T220227Z-2824",
+      "to": "MSN-20260703T215701Z-3014",
+      "relation": "asset_of_mission"
+    },
+    {
+      "from": "COM-20260703T214417Z-8494",
+      "to": "MSN-20260703T214356Z-0253",
+      "relation": "commercial_of_mission"
+    },
+    {
+      "from": "COM-20260703T220227Z-3256",
+      "to": "MSN-20260703T215701Z-3014",
+      "relation": "commercial_of_mission"
+    },
+    {
+      "from": "DEC-20260703T214416Z-8750",
+      "to": "MSN-20260703T214356Z-0253",
+      "relation": "decision_of_mission"
+    },
+    {
+      "from": "EVD-20260703T214356Z-0769",
+      "to": "MSN-20260703T214356Z-0253",
+      "relation": "evidence_of_mission"
+    },
+    {
+      "from": "EVD-20260703T215701Z-3388",
+      "to": "MSN-20260703T215701Z-3014",
+      "relation": "evidence_of_mission"
+    },
+    {
+      "from": "EVP-20260703T215734Z-2149",
+      "to": "MSN-20260703T215701Z-3014",
+      "relation": "evidence_of_mission"
+    },
+    {
+      "from": "EVP-20260703T215734Z-2149",
+      "to": "MSN-20260703T215701Z-3014",
+      "relation": "evidence_package_of_mission"
+    },
+    {
+      "from": "PSM-20260703T215640Z-1840",
+      "to": "MSN-20260703T215701Z-3014",
+      "relation": "promoted_to"
+    },
+    {
+      "from": "phone-native-structured-capture",
+      "to": "capability_genome_entry",
+      "relation": "produces"
+    },
+    {
+      "from": "phone-native-structured-capture",
+      "to": "evidence_package",
+      "relation": "produces"
+    },
+    {
+      "from": "phone-native-structured-capture",
+      "to": "MSN-20260703T215701Z-3014",
+      "relation": "strengthened_by_mission"
+    },
+    {
+      "from": "phone-native-structured-capture",
+      "to": "continuity-substrate",
+      "relation": "strengthens"
+    }
+  ],
+  "manual_nodes": [],
+  "manual_edges": []
+}

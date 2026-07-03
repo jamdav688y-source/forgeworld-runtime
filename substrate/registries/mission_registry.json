@@ -1,6 +1,6 @@
 {
   "registry": "mission",
-  "updated_at": "2026-07-03T21:44:41Z",
+  "updated_at": "2026-07-03T22:02:28Z",
   "entries": [
     {
       "mission_id": "MSN-20260703T214356Z-0253",
@@ -9,6 +9,14 @@
       "current_state": "complete",
       "created_at": "2026-07-03T21:43:56Z",
       "updated_at": "2026-07-03T21:44:17Z"
+    },
+    {
+      "mission_id": "MSN-20260703T215701Z-3014",
+      "title": "[manual_note] Repo has substrate/ built last session but no phone-native s",
+      "origin": "phone",
+      "current_state": "complete",
+      "created_at": "2026-07-03T21:57:01Z",
+      "updated_at": "2026-07-03T22:02:28Z"
     }
   ]
 }

@@ -1,0 +1,32 @@
+{
+  "registry": "capability_genome",
+  "version": "1.0.0",
+  "updated_at": "2026-07-03T21:58:20Z",
+  "capabilities": [
+    {
+      "capability_id": "phone-native-structured-capture",
+      "description": "Phone can record a schema-validated sensor mission offline and promote it into the desktop pipeline",
+      "dependencies": [],
+      "strengthens": [
+        "continuity-substrate"
+      ],
+      "consumes": [],
+      "produces": [
+        "capability_genome_entry",
+        "evidence_package"
+      ],
+      "commercial_value": "medium",
+      "reuse_frequency": 2,
+      "knowledge_domains": [
+        "mobile-capture"
+      ],
+      "automation_potential": 0.6,
+      "learning_value": "high",
+      "contributing_missions": [
+        "MSN-20260703T215701Z-3014"
+      ],
+      "created_at": "2026-07-03T21:58:20Z",
+      "updated_at": "2026-07-03T21:58:20Z"
+    }
+  ]
+}

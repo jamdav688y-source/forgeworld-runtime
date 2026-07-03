@@ -1,6 +1,6 @@
 {
   "registry": "asset",
-  "updated_at": "2026-07-03T21:44:16Z",
+  "updated_at": "2026-07-03T22:02:27Z",
   "entries": [
     {
       "asset_id": "AST-20260703T214416Z-9288",
@@ -17,6 +17,14 @@
       "description": "Diagnostic delivery workflow: capture -> score -> weak-link report -> optional consulting upsell",
       "path": "",
       "created_at": "2026-07-03T21:44:16Z"
+    },
+    {
+      "asset_id": "AST-20260703T220227Z-2824",
+      "mission_id": "MSN-20260703T215701Z-3014",
+      "type": "code",
+      "description": "Ascension modules 01-10: sensor-capture.sh, promote-sensor-mission.sh, build-evidence-package.sh, update-capability-genome.sh, update-relationship-graph.sh, export-desktop-packet.sh, governance-check.sh, instrumentation.sh, extended substrate-status.sh",
+      "path": "substrate/scripts/",
+      "created_at": "2026-07-03T22:02:27Z"
     }
   ]
 }

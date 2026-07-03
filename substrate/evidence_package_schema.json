@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "forgeworld/substrate/evidence_package_schema.json",
+  "title": "ForgeWorld Evidence Package (Ascension v1)",
+  "description": "A portable, self-contained bundle of evidence assembled around one mission (PSM or MSN). Registered into registries/evidence_registry.json so it stays visible from the pre-existing registry pipeline as well.",
+  "version": "1.0.0",
+  "type": "object",
+  "required": [
+    "package_id", "mission_id", "objective", "observations", "supporting_evidence",
+    "confidence_score", "related_knowledge", "required_validation",
+    "commercial_relevance", "traceability", "source_history", "integrity_hash",
+    "synchronization_metadata", "created_at"
+  ],
+  "properties": {
+    "package_id": { "type": "string", "pattern": "^EVP-[0-9TZ]+-[0-9]{4}$" },
+    "mission_id": { "type": "string" },
+    "objective": { "type": "string" },
+    "observations": { "type": "array", "items": { "type": "string" } },
+    "supporting_evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "evidence_id": { "type": "string" },
+          "description": { "type": "string" },
+          "ref": { "type": "string" }
+        }
+      }
+    },
+    "confidence_score": {
+      "oneOf": [
+        { "type": "number", "minimum": 0, "maximum": 1 },
+        { "type": "string", "const": "unknown" }
+      ]
+    },
+    "related_knowledge": { "type": "array", "items": { "type": "string" } },
+    "required_validation": { "type": "string" },
+    "commercial_relevance": { "type": "string" },
+    "traceability": {
+      "type": "object",
+      "properties": {
+        "mission_id": { "type": "string" },
+        "event_ids": { "type": "array", "items": { "type": "string" } },
+        "evidence_ids": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "source_history": { "type": "array", "items": { "type": "string" } },
+    "integrity_hash": { "type": "string", "description": "sha256 of the package content (excluding this field and synchronization_metadata)." },
+    "synchronization_metadata": {
+      "type": "object",
+      "properties": {
+        "state": { "type": "string", "enum": ["local_only", "queued_for_sync", "synced"] },
+        "generated_by": { "type": "string", "enum": ["phone", "laptop"] }
+      }
+    },
+    "created_at": { "type": "string" }
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "forgeworld/substrate/mission_schema.json",
+  "title": "ForgeWorld Phone Sensor Mission (Ascension v1)",
+  "description": "Lightweight mission object captured on the phone-side sensory cortex. Distinct from, and lower-weight than, schema/mission.schema.json (the full desktop mission format produced later in the lifecycle). A sensor mission is promoted into a desktop mission via scripts/promote-sensor-mission.sh, which carries these fields into the richer format without losing them. This schema may evolve additively over time; unknown future fields must not break existing readers.",
+  "version": "1.0.0",
+  "type": "object",
+  "required": [
+    "mission_id", "timestamp", "objective", "observation", "context",
+    "evidence", "evidence_type", "confidence", "priority",
+    "governance_class", "commercial_potential", "related_missions",
+    "related_knowledge_nodes", "supporting_assets", "required_specialists",
+    "validation_status", "suggested_next_action", "synchronization_state",
+    "operator_notes", "capability_contribution"
+  ],
+  "properties": {
+    "mission_id": { "type": "string", "pattern": "^PSM-[0-9TZ]+-[0-9]{4}$", "description": "Phone Sensor Mission ID. Namespaced PSM- so it can never collide with desktop MSN- ids." },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "objective": { "type": "string" },
+    "observation": { "type": "string", "description": "What was actually observed, in the operator's words." },
+    "context": { "type": "string" },
+    "evidence": { "type": "string", "description": "Description of, or reference to, the supporting evidence." },
+    "evidence_type": {
+      "type": "string",
+      "enum": ["photo", "screenshot", "voice_note", "clipboard", "document", "browser_capture", "sensor_reading", "manual_note", "task", "idea", "opportunity", "problem", "conversation", "mission_update", "evidence_package", "knowledge_discovery", "commercial_signal"]
+    },
+    "location": { "type": ["string", "null"], "description": "Optional. Free-text place/context, not raw GPS - keeps this offline and privacy-light by default." },
+    "confidence": {
+      "oneOf": [
+        { "type": "number", "minimum": 0, "maximum": 1 },
+        { "type": "string", "const": "unknown" }
+      ]
+    },
+    "priority": { "type": "string", "enum": ["low", "normal", "high", "critical"] },
+    "governance_class": {
+      "type": "string",
+      "enum": ["unclassified", "informational", "operational", "sensitive", "unknown"]
+    },
+    "commercial_potential": {
+      "type": "string",
+      "enum": ["none", "low", "medium", "high", "unknown"]
+    },
+    "related_missions": { "type": "array", "items": { "type": "string" } },
+    "related_knowledge_nodes": { "type": "array", "items": { "type": "string" } },
+    "supporting_assets": { "type": "array", "items": { "type": "string" } },
+    "required_specialists": { "type": "array", "items": { "type": "string" } },
+    "validation_status": {
+      "type": "string",
+      "enum": ["unvalidated", "pending", "validated", "rejected"]
+    },
+    "suggested_next_action": { "type": "string" },
+    "synchronization_state": {
+      "type": "string",
+      "enum": ["local_only", "queued_for_sync", "synced", "promoted"]
+    },
+    "operator_notes": { "type": "string" },
+    "capability_contribution": {
+      "type": "string",
+      "description": "What reusable capability this mission is expected to strengthen (Primary Law). Never empty - use 'unknown' if not yet determined."
+    },
+    "content_hash": { "type": "string", "description": "sha256 of objective+observation+context, used for duplicate detection." },
+    "journal_event_id": { "type": "string" }
+  }
+}
