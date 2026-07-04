@@ -120,6 +120,15 @@ doctrine)
 cat "$ROOT/doctrine/FORGEWORLD_RUNTIME.md" 2>/dev/null || echo "No doctrine file found."
 ;;
 
+route)
+shift
+"$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/forge-route.sh" "$@"
+;;
+
+discover)
+python3 "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../capabilities/discover.py"
+;;
+
 clean)
 pkg clean
 rm -rf "$ROOT/logs"/*.tmp 2>/dev/null || true
@@ -139,6 +148,8 @@ echo "forge sync"
 echo "forge archive"
 echo "forge map"
 echo "forge doctrine"
+echo "forge route --objective '...' --tags a,b,c"
+echo "forge discover"
 echo "forge clean"
 ;;
 
