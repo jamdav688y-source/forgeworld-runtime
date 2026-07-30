@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "capabilities": [
+    {
+      "id": "claude_code",
+      "kind": "ai_agent",
+      "provider": "anthropic",
+      "check": {"type": "command", "value": "claude"},
+      "tags": ["code_generation", "refactoring", "debugging", "testing", "file_editing", "shell_execution", "research", "documentation", "git_operations"],
+      "cost": {"dollar": 0.5, "latency": 0.4, "tokens": 0.6, "attention": 0.2, "complexity": 0.2}
+    },
+    {
+      "id": "chatgpt",
+      "kind": "ai_agent",
+      "provider": "openai",
+      "check": {"type": "env", "value": "OPENAI_API_KEY"},
+      "tags": ["research", "brainstorming", "writing", "general_qa"],
+      "cost": {"dollar": 0.5, "latency": 0.4, "tokens": 0.6, "attention": 0.3, "complexity": 0.3}
+    },
+    {
+      "id": "local_llm",
+      "kind": "ai_agent",
+      "provider": "local",
+      "check": {"type": "command", "value": "ollama"},
+      "tags": ["offline_inference", "privacy_sensitive", "low_cost_inference", "drafting"],
+      "cost": {"dollar": 0.05, "latency": 0.5, "tokens": 0.1, "attention": 0.4, "complexity": 0.5}
+    },
+    {
+      "id": "desktop_runtime",
+      "kind": "execution_environment",
+      "provider": "local",
+      "check": {"type": "self"},
+      "tags": ["local_execution", "testing", "build", "deployment", "file_system_access", "cinematic_asset_generation"],
+      "cost": {"dollar": 0.0, "latency": 0.1, "tokens": 0.0, "attention": 0.3, "complexity": 0.2}
+    },
+    {
+      "id": "python",
+      "kind": "tool",
+      "provider": "local",
+      "check": {"type": "command", "value": "python3"},
+      "tags": ["scripting", "data_processing", "automation", "analysis"],
+      "cost": {"dollar": 0.0, "latency": 0.1, "tokens": 0.0, "attention": 0.4, "complexity": 0.3}
+    },
+    {
+      "id": "git",
+      "kind": "tool",
+      "provider": "local",
+      "check": {"type": "command", "value": "git"},
+      "tags": ["version_control", "history_tracking", "branching"],
+      "cost": {"dollar": 0.0, "latency": 0.05, "tokens": 0.0, "attention": 0.2, "complexity": 0.2}
+    },
+    {
+      "id": "github",
+      "kind": "service",
+      "provider": "github",
+      "check": {"type": "network", "value": "api.github.com:443"},
+      "tags": ["remote_storage", "collaboration", "ci_cd", "issue_tracking", "pull_requests"],
+      "cost": {"dollar": 0.0, "latency": 0.2, "tokens": 0.0, "attention": 0.2, "complexity": 0.2}
+    },
+    {
+      "id": "zapier",
+      "kind": "service",
+      "provider": "zapier",
+      "check": {"type": "manual"},
+      "tags": ["workflow_automation", "third_party_integration", "notifications"],
+      "cost": {"dollar": 0.3, "latency": 0.3, "tokens": 0.0, "attention": 0.5, "complexity": 0.4}
+    },
+    {
+      "id": "gmail",
+      "kind": "service",
+      "provider": "google",
+      "check": {"type": "manual"},
+      "tags": ["email_capture", "email_sending", "communication"],
+      "cost": {"dollar": 0.0, "latency": 0.2, "tokens": 0.0, "attention": 0.4, "complexity": 0.3}
+    },
+    {
+      "id": "google_drive",
+      "kind": "service",
+      "provider": "google",
+      "check": {"type": "manual"},
+      "tags": ["document_storage", "file_sharing", "document_retrieval"],
+      "cost": {"dollar": 0.0, "latency": 0.2, "tokens": 0.0, "attention": 0.3, "complexity": 0.3}
+    },
+    {
+      "id": "airtable",
+      "kind": "service",
+      "provider": "airtable",
+      "check": {"type": "manual"},
+      "tags": ["structured_data", "database", "record_management", "reporting"],
+      "cost": {"dollar": 0.1, "latency": 0.2, "tokens": 0.0, "attention": 0.4, "complexity": 0.3}
+    }
+  ]
+}
