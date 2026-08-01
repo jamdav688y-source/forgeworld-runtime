@@ -1,0 +1,52 @@
+{
+  "content_types": [
+    "diagram", "infographic", "social_post", "comment_thread", "article",
+    "code", "terminal", "dashboard", "photograph", "conversation", "unknown"
+  ],
+  "research_domains": [
+    "agent_systems", "governance", "authority", "evidence", "validation",
+    "institutional_memory", "vector_databases", "rag", "knowledge_graphs",
+    "workflow_automation", "system_architecture", "multimodal_ai",
+    "cinema_and_video", "rpg_and_simulation", "commercialization",
+    "customer_discovery", "linkedin", "career_development",
+    "software_engineering", "data_engineering", "security", "unknown"
+  ],
+  "content_type_rules": [
+    {"rule_id": "ct_terminal_001", "content_type": "terminal", "match": "any", "keywords": ["$ ", "root@", "user@", "traceback (most recent call last)", "command not found", "sudo ", "~/"], "confidence": 0.75},
+    {"rule_id": "ct_code_001", "content_type": "code", "match": "any", "keywords": ["def ", "function(", "class ", "import ", "const ", "SELECT ", "public static", "#include", "</div>", "git commit"], "confidence": 0.7},
+    {"rule_id": "ct_social_001", "content_type": "social_post", "match": "any", "keywords": ["like", "comment", "share", "repost", "follow", "connections", "retweet"], "confidence": 0.5},
+    {"rule_id": "ct_comment_thread_001", "content_type": "comment_thread", "match": "any", "keywords": ["replied to", "reply", "thread", "@"], "confidence": 0.45},
+    {"rule_id": "ct_dashboard_001", "content_type": "dashboard", "match": "any", "keywords": ["dashboard", "metrics", "kpi", "uptime", "throughput", "latency"], "confidence": 0.55},
+    {"rule_id": "ct_diagram_001", "content_type": "diagram", "match": "any", "keywords": ["flowchart", "diagram", "architecture", "->", "node", "edge"], "confidence": 0.5},
+    {"rule_id": "ct_article_001", "content_type": "article", "match": "any", "keywords": ["abstract", "introduction", "conclusion", "references", "published"], "confidence": 0.5}
+  ],
+  "domain_rules": [
+    {"rule_id": "dom_agent_001", "domain": "agent_systems", "match": "any", "keywords": ["agent", "autonomous agent", "multi-agent", "tool use", "subagent"], "confidence": 0.6},
+    {"rule_id": "dom_governance_001", "domain": "governance", "match": "any", "keywords": ["governance", "policy", "compliance", "oversight"], "confidence": 0.6},
+    {"rule_id": "dom_authority_001", "domain": "authority", "match": "any", "keywords": ["authority", "authorization", "permission", "access control"], "confidence": 0.55},
+    {"rule_id": "dom_evidence_001", "domain": "evidence", "match": "any", "keywords": ["evidence", "provenance", "source of truth", "audit trail"], "confidence": 0.55},
+    {"rule_id": "dom_validation_001", "domain": "validation", "match": "any", "keywords": ["validation", "verify", "verification", "test coverage"], "confidence": 0.55},
+    {"rule_id": "dom_institutional_memory_001", "domain": "institutional_memory", "match": "any", "keywords": ["institutional memory", "organizational learning", "knowledge base", "tribal knowledge"], "confidence": 0.6},
+    {"rule_id": "dom_vector_db_001", "domain": "vector_databases", "match": "any", "keywords": ["vector database", "embedding", "pinecone", "chroma", "faiss", "qdrant", "weaviate"], "confidence": 0.65},
+    {"rule_id": "dom_rag_001", "domain": "rag", "match": "any", "keywords": ["retrieval augmented generation", "rag pipeline", " rag "], "confidence": 0.65},
+    {"rule_id": "dom_knowledge_graph_001", "domain": "knowledge_graphs", "match": "any", "keywords": ["knowledge graph", "ontology", "triple store", "graph database"], "confidence": 0.6},
+    {"rule_id": "dom_workflow_001", "domain": "workflow_automation", "match": "any", "keywords": ["workflow", "automation", "pipeline", "orchestration"], "confidence": 0.5},
+    {"rule_id": "dom_architecture_001", "domain": "system_architecture", "match": "any", "keywords": ["architecture", "microservice", "system design", "infrastructure"], "confidence": 0.55},
+    {"rule_id": "dom_multimodal_001", "domain": "multimodal_ai", "match": "any", "keywords": ["multimodal", "vision model", "image generation", "speech to text"], "confidence": 0.55},
+    {"rule_id": "dom_cinema_001", "domain": "cinema_and_video", "match": "any", "keywords": ["cinema", "24 fps", "frame rate", "cinematography", "video editing"], "confidence": 0.6},
+    {"rule_id": "dom_rpg_001", "domain": "rpg_and_simulation", "match": "any", "keywords": ["rpg", "npc", "game mechanic", "simulation", "quest"], "confidence": 0.6},
+    {"rule_id": "dom_commercialization_001", "domain": "commercialization", "match": "any", "keywords": ["pricing", "monetization", "go-to-market", "revenue model"], "confidence": 0.55},
+    {"rule_id": "dom_customer_discovery_001", "domain": "customer_discovery", "match": "any", "keywords": ["customer discovery", "customer validation", "user interview", "pain point"], "confidence": 0.6},
+    {"rule_id": "dom_linkedin_001", "domain": "linkedin", "match": "any", "keywords": ["linkedin", "connections", "endorsement"], "confidence": 0.6},
+    {"rule_id": "dom_career_001", "domain": "career_development", "match": "any", "keywords": ["career", "resume", "job offer", "promotion"], "confidence": 0.5},
+    {"rule_id": "dom_software_eng_001", "domain": "software_engineering", "match": "any", "keywords": ["pull request", "unit test", "refactor", "codebase", "compiler"], "confidence": 0.5},
+    {"rule_id": "dom_data_eng_001", "domain": "data_engineering", "match": "any", "keywords": ["etl", "data pipeline", "data warehouse", "schema migration"], "confidence": 0.55},
+    {"rule_id": "dom_security_001", "domain": "security", "match": "any", "keywords": ["vulnerability", "exploit", "cve", "penetration test", "encryption"], "confidence": 0.55}
+  ],
+  "entity_rules": {
+    "tools": ["claude code", "codex", "chatgpt", "notebooklm", "cursor", "copilot", "termux"],
+    "technologies": ["python", "flask", "sqlite", "tesseract", "docker", "kubernetes", "react", "node.js"],
+    "companies": ["anthropic", "openai", "google", "microsoft", "meta", "amazon"],
+    "frameworks": ["fastapi", "django", "pytorch", "tensorflow", "langchain", "llamaindex"]
+  }
+}
