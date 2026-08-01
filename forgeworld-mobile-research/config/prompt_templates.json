@@ -1,0 +1,64 @@
+{
+  "modes": {
+    "SUMMARIZE_SOURCES": {
+      "label": "Summarize Sources",
+      "instruction": "Summarize the selected sources using only what is present in the source-derived content below. Do not introduce facts that are not present or implied by the sources. Mark anything uncertain as UNKNOWN."
+    },
+    "COMPARE_ARCHITECTURES": {
+      "label": "Compare Architectures",
+      "instruction": "Compare the architectural approaches described across the selected sources. Identify agreements, disagreements, and gaps. Do not invent an architecture that is not evidenced in the sources."
+    },
+    "EXTRACT_MECHANISMS": {
+      "label": "Extract Mechanisms",
+      "instruction": "Extract the concrete mechanisms, algorithms, or procedures described in the selected sources. List each mechanism with the source ID it came from."
+    },
+    "IDENTIFY_CONTRADICTIONS": {
+      "label": "Identify Contradictions",
+      "instruction": "Identify contradictions or tensions between the selected sources. For each contradiction, cite the conflicting source IDs and quote the relevant excerpt."
+    },
+    "CREATE_CODEX_DIRECTIVE": {
+      "label": "Create Codex Directive",
+      "instruction": "Produce a directive suitable for OpenAI Codex, grounded strictly in the selected sources. State assumptions explicitly and mark anything not evidenced as UNKNOWN."
+    },
+    "CREATE_CLAUDE_CODE_DIRECTIVE": {
+      "label": "Create Claude Code Directive",
+      "instruction": "Produce a directive suitable for Claude Code, grounded strictly in the selected sources. Include explicit truth requirements and known uncertainty."
+    },
+    "CREATE_CHATGPT_DIRECTIVE": {
+      "label": "Create ChatGPT Directive",
+      "instruction": "Produce a directive suitable for ChatGPT, grounded strictly in the selected sources. Include explicit truth requirements and known uncertainty."
+    },
+    "CREATE_LINKEDIN_COMMENT": {
+      "label": "Create LinkedIn Comment",
+      "instruction": "Draft a short LinkedIn comment responding to the selected source(s). Keep it grounded in what the source actually shows; do not fabricate claims of authorship or affiliation."
+    },
+    "CREATE_LINKEDIN_POST": {
+      "label": "Create LinkedIn Post",
+      "instruction": "Draft a LinkedIn post inspired by the selected sources. Clearly separate source-derived facts from the operator's own commentary."
+    },
+    "CREATE_CINEMA_BRIEF": {
+      "label": "Create Cinema Brief",
+      "instruction": "Produce a cinema/video design brief grounded in the selected sources, covering only what the sources actually document (visual references, techniques, constraints)."
+    },
+    "CREATE_RPG_MECHANIC": {
+      "label": "Create RPG Mechanic",
+      "instruction": "Propose an RPG mechanic inspired by the selected sources. Clearly distinguish mechanics evidenced in the sources from new design proposals (system inference)."
+    },
+    "CREATE_RESEARCH_QUESTIONS": {
+      "label": "Create Research Questions",
+      "instruction": "Generate open research questions raised by the selected sources. Ground each question in a specific excerpt or gap."
+    },
+    "CREATE_NOTEBOOKLM_SOURCE_BRIEF": {
+      "label": "Create NotebookLM Source Brief",
+      "instruction": "Produce a source brief formatted for import into NotebookLM, listing each source with its excerpts and metadata."
+    },
+    "CREATE_COMMERCIAL_PROOF_BRIEF": {
+      "label": "Create Commercial Proof Brief",
+      "instruction": "Produce a commercial proof brief grounded in the selected sources, distinguishing evidenced traction/validation from aspirational claims."
+    },
+    "CREATE_CUSTOMER_DEMONSTRATION_BRIEF": {
+      "label": "Create Customer Demonstration Brief",
+      "instruction": "Produce a customer demonstration brief grounded in the selected sources, describing only capabilities the sources actually evidence."
+    }
+  }
+}

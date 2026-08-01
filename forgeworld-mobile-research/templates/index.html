@@ -1,0 +1,28 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ app_name }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">{{ app_name }}</div>
+    <div class="privacy-pill" title="Bound to 127.0.0.1 only, no cloud uploads">local-only</div>
+  </header>
+
+  <main id="view" class="view"></main>
+
+  <nav class="tabbar">
+    <button data-tab="dashboard" class="tab active">Dashboard</button>
+    <button data-tab="library" class="tab">Library</button>
+    <button data-tab="search" class="tab">Search</button>
+    <button data-tab="collections" class="tab">Collections</button>
+    <button data-tab="promptlab" class="tab">Prompt Lab</button>
+    <button data-tab="ingestion" class="tab">Ingestion</button>
+    <button data-tab="settings" class="tab">Settings</button>
+    <button data-tab="status" class="tab">System Status</button>
+  </nav>
+
+  <div id="modal-root"></div>
+</div>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>

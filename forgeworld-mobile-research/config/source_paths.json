@@ -1,0 +1,11 @@
+{
+  "note": "Seed candidate list. This container has no Android storage, so every candidate below is disabled. On the actual device, use Settings -> Probe Sources (or POST /api/sources/probe) to re-detect which paths exist and enable them.",
+  "sources": [
+    {"path": "~/storage/shared/DCIM/Screenshots", "label": "DCIM/Screenshots", "enabled": false},
+    {"path": "~/storage/shared/Pictures/Screenshots", "label": "Pictures/Screenshots", "enabled": false},
+    {"path": "~/storage/shared/Screenshots", "label": "Screenshots", "enabled": false},
+    {"path": "/storage/emulated/0/DCIM/Screenshots", "label": "emulated/DCIM/Screenshots", "enabled": false},
+    {"path": "/storage/emulated/0/Pictures/Screenshots", "label": "emulated/Pictures/Screenshots", "enabled": false},
+    {"path": "/storage/emulated/0/Screenshots", "label": "emulated/Screenshots", "enabled": false}
+  ]
+}

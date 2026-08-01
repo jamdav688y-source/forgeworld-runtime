@@ -1,0 +1,7 @@
+Flask
+Pillow
+pytesseract
+watchdog
+python-dateutil
+requests
+pytest
