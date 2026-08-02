@@ -1,0 +1,45 @@
+{
+  "audit_id": "cinema_final_recovery",
+  "generated_at": "2026-08-02T00:00:00Z",
+  "environment": {
+    "session_type": "cloud_dev_container",
+    "repository": "jamdav688y-source/forgeworld-runtime",
+    "os": "Linux",
+    "is_windows": false,
+    "note": "Windows-only paths like %APPDATA%\\Claude\\local-agent-mode-sessions cannot exist in this environment by construction."
+  },
+  "search_method": [
+    "find . -maxdepth 4 -iname *cinema* -o -iname .forge",
+    "find . -iname CLAUDE.md",
+    "find / -maxdepth 3 -iname *cinema*",
+    "git log --all --oneline (scanned for cinema references)"
+  ],
+  "artifact_classes": [
+    {"name": "CLAUDE.md", "found": false, "classification": "absent"},
+    {"name": ".forge/", "found": false, "classification": "absent"},
+    {"name": "cinema/", "found": false, "classification": "absent"},
+    {"name": "Cinema Engine source", "found": false, "classification": "absent"},
+    {"name": "Cinema Player source", "found": false, "classification": "absent"},
+    {"name": "cinematic_genome/", "found": false, "classification": "absent"},
+    {"name": "rendering scripts", "found": false, "classification": "absent"},
+    {"name": "scene recipes", "found": false, "classification": "absent"},
+    {"name": "audio generators", "found": false, "classification": "absent"},
+    {"name": "validators", "found": false, "classification": "absent"},
+    {"name": "launchers", "found": false, "classification": "absent"},
+    {"name": "previous 17-second proof", "found": false, "classification": "absent"},
+    {"name": "previous 90-second releases", "found": false, "classification": "absent"},
+    {"name": "scene 1/3/4/6/8 proof or pilot work", "found": false, "classification": "absent"},
+    {"name": "genome manifests", "found": false, "classification": "absent"},
+    {"name": "visual identity evidence", "found": false, "classification": "absent"},
+    {"name": "alerting / runtime-health implementations", "found": false, "classification": "absent"}
+  ],
+  "conflicts_found": 0,
+  "artifacts_copied": 0,
+  "artifacts_recovered": 0,
+  "conclusion": "no_prior_cinema_artifacts_exist_anywhere_in_this_repo_or_session",
+  "decision": "build_from_scratch_as_first_baseline_not_a_recovery",
+  "unrelated_prior_content_found": [
+    "text/JSON FORGEWORLD phone-node runtime (doctrine, mission router, capability discovery)",
+    "forgeworld-mobile-research/ Flask screenshot-OCR application built earlier in this same session"
+  ]
+}

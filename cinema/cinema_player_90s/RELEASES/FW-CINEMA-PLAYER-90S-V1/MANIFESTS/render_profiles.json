@@ -1,0 +1,42 @@
+{
+  "draft": {
+    "width": 480,
+    "height": 270,
+    "aspect_key": "draft",
+    "quality": "draft",
+    "crf": 30,
+    "preset": "ultrafast"
+  },
+  "preview_16x9": {
+    "width": 1920,
+    "height": 1080,
+    "aspect_key": "16x9",
+    "quality": "preview",
+    "crf": 23,
+    "preset": "veryfast"
+  },
+  "preview_4x5": {
+    "width": 1080,
+    "height": 1350,
+    "aspect_key": "4x5",
+    "quality": "preview",
+    "crf": 23,
+    "preset": "veryfast"
+  },
+  "master_16x9": {
+    "width": 1920,
+    "height": 1080,
+    "aspect_key": "16x9",
+    "quality": "master",
+    "crf": 17,
+    "preset": "slow"
+  },
+  "master_4x5": {
+    "width": 1080,
+    "height": 1350,
+    "aspect_key": "4x5",
+    "quality": "master",
+    "crf": 17,
+    "preset": "slow"
+  }
+}

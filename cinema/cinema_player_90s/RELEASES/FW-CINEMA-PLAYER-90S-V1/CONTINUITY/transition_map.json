@@ -1,0 +1,56 @@
+{
+  "total_transitions": 8,
+  "transitions": [
+    {
+      "from_scene": "latent_intelligence",
+      "to_scene": "sensory_contact",
+      "name": "latent pulse -> incoming signal",
+      "at_frame": 192
+    },
+    {
+      "from_scene": "sensory_contact",
+      "to_scene": "neural_convergence",
+      "name": "incoming signal -> normalized filament",
+      "at_frame": 432
+    },
+    {
+      "from_scene": "neural_convergence",
+      "to_scene": "executive_competition",
+      "name": "normalized filament -> candidate mission",
+      "at_frame": 720
+    },
+    {
+      "from_scene": "executive_competition",
+      "to_scene": "coordinated_construction",
+      "name": "surviving mission -> construction activation",
+      "at_frame": 984
+    },
+    {
+      "from_scene": "coordinated_construction",
+      "to_scene": "reality_testing",
+      "name": "constructed artifact -> validation stress",
+      "at_frame": 1368
+    },
+    {
+      "from_scene": "reality_testing",
+      "to_scene": "cinematic_emergence",
+      "name": "validated structure -> cinematic object",
+      "at_frame": 1632
+    },
+    {
+      "from_scene": "cinematic_emergence",
+      "to_scene": "external_release",
+      "name": "cinematic object -> release vessel",
+      "at_frame": 1896
+    },
+    {
+      "from_scene": "external_release",
+      "to_scene": "recursive_learning",
+      "name": "returning evidence -> updated memory",
+      "at_frame": 2088
+    }
+  ],
+  "scene_count": 9,
+  "check": "8 transitions for 9 scenes (one per boundary)",
+  "ok": true
+}

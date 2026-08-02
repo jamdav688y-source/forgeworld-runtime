@@ -1,0 +1,14 @@
+{
+  "gate_checks": {
+    "all_nine_scenes_present": true,
+    "correct_chronology_and_frame_totals": true,
+    "frame_cache_16x9_complete_no_missing_no_corrupt": true,
+    "frame_cache_4x5_complete_no_missing_no_corrupt": true,
+    "complete_audio_90s_no_clipping": true,
+    "transitions_valid_8_of_8": true,
+    "media_spec_validation_pass": true,
+    "alert_simulation_blocking_behavior_confirmed": true,
+    "no_letterbox_bars": "dominant cropdetect reading is full native resolution on both masters (86.7% of 16x9 frames, 87.8% of 4x5 frames read crop=full frame:0:0); minority readings vary per-frame and correspond to the darkest scene (Latent Intelligence, near-black palette), a cropdetect luma-threshold false positive on legitimately dark content, not a persistent black bar -- see REVIEWS/ for contact sheets showing full-bleed content at every sampled frame"
+  },
+  "overall_pass": true
+}

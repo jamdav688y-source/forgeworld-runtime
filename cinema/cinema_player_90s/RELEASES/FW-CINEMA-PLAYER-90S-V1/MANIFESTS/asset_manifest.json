@@ -1,0 +1,227 @@
+{
+  "release_id": "FW-CINEMA-PLAYER-90S-V1",
+  "file_count": 55,
+  "total_bytes": 269495481,
+  "files": [
+    {
+      "path": "ALERTS/alert_simulation_report.json",
+      "size_bytes": 7436
+    },
+    {
+      "path": "ALERTS/alerts.jsonl",
+      "size_bytes": 8789
+    },
+    {
+      "path": "ALERTS/current_state.json",
+      "size_bytes": 5659
+    },
+    {
+      "path": "AUDIO/audio_provenance.json",
+      "size_bytes": 1026
+    },
+    {
+      "path": "AUDIO/audio_validation.md",
+      "size_bytes": 1154
+    },
+    {
+      "path": "AUDIO/final_mix.wav",
+      "size_bytes": 17280044
+    },
+    {
+      "path": "AUDIO/music_and_effects.wav",
+      "size_bytes": 17280044
+    },
+    {
+      "path": "AUDIO/stems/atmosphere.wav",
+      "size_bytes": 17280044
+    },
+    {
+      "path": "AUDIO/stems/cognitive_pulse.wav",
+      "size_bytes": 17280044
+    },
+    {
+      "path": "AUDIO/stems/construction.wav",
+      "size_bytes": 17280044
+    },
+    {
+      "path": "AUDIO/stems/emergence.wav",
+      "size_bytes": 17280044
+    },
+    {
+      "path": "AUDIO/stems/executive_selection.wav",
+      "size_bytes": 17280044
+    },
+    {
+      "path": "AUDIO/stems/narration.wav",
+      "size_bytes": 17280044
+    },
+    {
+      "path": "AUDIO/stems/recursion.wav",
+      "size_bytes": 17280044
+    },
+    {
+      "path": "AUDIO/stems/release.wav",
+      "size_bytes": 17280044
+    },
+    {
+      "path": "AUDIO/stems/sensory_signals.wav",
+      "size_bytes": 17280044
+    },
+    {
+      "path": "AUDIO/stems/validation.wav",
+      "size_bytes": 17280044
+    },
+    {
+      "path": "CONTINUITY/cognitive_state_timeline.json",
+      "size_bytes": 1300612
+    },
+    {
+      "path": "CONTINUITY/continuity_validation.md",
+      "size_bytes": 644
+    },
+    {
+      "path": "CONTINUITY/transition_map.json",
+      "size_bytes": 1537
+    },
+    {
+      "path": "EVIDENCE/baseline_preservation.md",
+      "size_bytes": 1716
+    },
+    {
+      "path": "EVIDENCE/known_limitations.md",
+      "size_bytes": 3510
+    },
+    {
+      "path": "EVIDENCE/performance_report.md",
+      "size_bytes": 2739
+    },
+    {
+      "path": "EVIDENCE/release_summary.md",
+      "size_bytes": 2456
+    },
+    {
+      "path": "GENOME/genome_manifest.json",
+      "size_bytes": 3489
+    },
+    {
+      "path": "LAUNCH/ForgeWorld_Cinema_Player.cmd",
+      "size_bytes": 1847
+    },
+    {
+      "path": "LAUNCH/install_desktop_shortcut.ps1",
+      "size_bytes": 1471
+    },
+    {
+      "path": "LAUNCH/launcher_validation.md",
+      "size_bytes": 2635
+    },
+    {
+      "path": "LAUNCH/start_linux_macos.sh",
+      "size_bytes": 948
+    },
+    {
+      "path": "MANIFESTS/build_manifest.json",
+      "size_bytes": 1743
+    },
+    {
+      "path": "MANIFESTS/master_spec_snapshot.json",
+      "size_bytes": 2314
+    },
+    {
+      "path": "MANIFESTS/render_profiles.json",
+      "size_bytes": 758
+    },
+    {
+      "path": "MANIFESTS/source_map.json",
+      "size_bytes": 1774
+    },
+    {
+      "path": "MASTER/ForgeWorld_Cinema_Player_90s_1080p_24fps.mp4",
+      "size_bytes": 20406782
+    },
+    {
+      "path": "PREVIEW/FW_Cinema_Player_90s_16x9_preview.mp4",
+      "size_bytes": 10913903
+    },
+    {
+      "path": "PREVIEW/FW_Cinema_Player_90s_4x5_preview.mp4",
+      "size_bytes": 10199332
+    },
+    {
+      "path": "REVIEWS/artistic_review.md",
+      "size_bytes": 2609
+    },
+    {
+      "path": "REVIEWS/contact_sheet_16x9.jpg",
+      "size_bytes": 54740
+    },
+    {
+      "path": "REVIEWS/transition_contact_sheet.jpg",
+      "size_bytes": 26545
+    },
+    {
+      "path": "REVIEWS/waveform_final_mix.png",
+      "size_bytes": 10964
+    },
+    {
+      "path": "SCENES/scene_01_latent_intelligence.md",
+      "size_bytes": 2423
+    },
+    {
+      "path": "SCENES/scene_02_sensory_contact.md",
+      "size_bytes": 2390
+    },
+    {
+      "path": "SCENES/scene_03_neural_convergence.md",
+      "size_bytes": 2390
+    },
+    {
+      "path": "SCENES/scene_04_executive_competition.md",
+      "size_bytes": 2427
+    },
+    {
+      "path": "SCENES/scene_05_coordinated_construction.md",
+      "size_bytes": 2454
+    },
+    {
+      "path": "SCENES/scene_06_reality_testing.md",
+      "size_bytes": 2449
+    },
+    {
+      "path": "SCENES/scene_07_cinematic_emergence.md",
+      "size_bytes": 2407
+    },
+    {
+      "path": "SCENES/scene_08_external_release.md",
+      "size_bytes": 2379
+    },
+    {
+      "path": "SCENES/scene_09_recursive_learning.md",
+      "size_bytes": 2495
+    },
+    {
+      "path": "SOCIAL/ForgeWorld_Cinema_Player_90s_LinkedIn_4x5_24fps.mp4",
+      "size_bytes": 19136865
+    },
+    {
+      "path": "TYPOGRAPHY/typography_review.md",
+      "size_bytes": 1555
+    },
+    {
+      "path": "VALIDATION/final_media_validation.json",
+      "size_bytes": 1323
+    },
+    {
+      "path": "VALIDATION/final_media_validation.md",
+      "size_bytes": 798
+    },
+    {
+      "path": "VALIDATION/preview_gate_report.json",
+      "size_bytes": 901
+    },
+    {
+      "path": "VALIDATION/preview_validation_report.md",
+      "size_bytes": 2565
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "release_id": "FW-CINEMA-PLAYER-90S-V1",
+  "fps": {"num": 24, "den": 1},
+  "duration_seconds": 90.0,
+  "decoded_frame_count": 2160,
+  "masters": {
+    "16x9": {
+      "width": 1920,
+      "height": 1080,
+      "video_codec": "h264",
+      "pixel_format": "yuv420p",
+      "container": "mp4",
+      "audio_codec": "aac",
+      "audio_sample_rate_hz": 48000,
+      "audio_channels": 2,
+      "output_path": "cinema/cinema_player_90s/RELEASES/FW-CINEMA-PLAYER-90S-V1/MASTER/ForgeWorld_Cinema_Player_90s_1080p_24fps.mp4"
+    },
+    "4x5": {
+      "width": 1080,
+      "height": 1350,
+      "composition": "native",
+      "video_codec": "h264",
+      "pixel_format": "yuv420p",
+      "container": "mp4",
+      "audio_codec": "aac",
+      "audio_sample_rate_hz": 48000,
+      "audio_channels": 2,
+      "output_path": "cinema/cinema_player_90s/RELEASES/FW-CINEMA-PLAYER-90S-V1/SOCIAL/ForgeWorld_Cinema_Player_90s_LinkedIn_4x5_24fps.mp4"
+    }
+  },
+  "scenes": [
+    {"index": 1, "name": "Latent Intelligence", "start_s": 0, "end_s": 8, "frames": 192},
+    {"index": 2, "name": "Sensory Contact", "start_s": 8, "end_s": 18, "frames": 240},
+    {"index": 3, "name": "Neural Convergence", "start_s": 18, "end_s": 30, "frames": 288},
+    {"index": 4, "name": "Executive Competition", "start_s": 30, "end_s": 41, "frames": 264},
+    {"index": 5, "name": "Coordinated Construction", "start_s": 41, "end_s": 57, "frames": 384},
+    {"index": 6, "name": "Reality Testing", "start_s": 57, "end_s": 68, "frames": 264},
+    {"index": 7, "name": "Cinematic Emergence", "start_s": 68, "end_s": 79, "frames": 264},
+    {"index": 8, "name": "External Release", "start_s": 79, "end_s": 87, "frames": 192},
+    {"index": 9, "name": "Recursive Learning", "start_s": 87, "end_s": 90, "frames": 72}
+  ],
+  "scene_frame_total_check": 2160,
+  "render_profiles": ["draft", "preview_16x9", "preview_4x5", "master_16x9", "master_4x5"],
+  "content_provenance": "procedurally generated (deterministic geometric/particle system + synthesized audio); not sourced from a video-generation model or human-directed production",
+  "environment_disclaimer": "Authored and rendered in a Linux cloud dev container. Windows desktop launch scripts are written to spec but not executable/testable in this environment; see LAUNCH/launcher_validation.md."
+}

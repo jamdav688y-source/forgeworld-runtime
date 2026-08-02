@@ -1,0 +1,30 @@
+{
+  "release_id": "FW-CINEMA-PLAYER-90S-V1",
+  "repository": "jamdav688y-source/forgeworld-runtime",
+  "authoritative_project_root": "cinema/cinema_player_90s/",
+  "modules": {
+    "genome/state.py": "Continuity/cognitive-state model (9 scenes, 8 causal transitions, 12 tracked metrics)",
+    "genome/organism.py": "Procedural visual primitives (background, node graph, core, scene motifs, camera)",
+    "genome/typography.py": "Scene-title overlay",
+    "renderer/profiles.py": "Render profile definitions (draft/preview_16x9/preview_4x5/master_16x9/master_4x5)",
+    "renderer/manifest.py": "Frame checksum manifest, atomic writes",
+    "renderer/render.py": "Resumable, chunked, disk-space-checked frame rendering",
+    "renderer/encode.py": "ffmpeg encode + ffprobe-verified atomic promotion",
+    "renderer/continuity.py": "Continuity evidence export + validation",
+    "renderer/scene_recipes.py": "Scene recipe evidence generator",
+    "audio/synth.py": "Ten synthesized audio stems tied to CognitiveState",
+    "audio/wavio.py": "WAV I/O + silence detection",
+    "audio/build.py": "Audio deliverable assembly + validation",
+    "alerts/models.py": "Alert data model (classes, states, severity)",
+    "alerts/engine.py": "Cognitive Alert Engine (detect/acknowledge/action/resolve/dismiss/escalate)",
+    "player/app.py": "Local Flask Cinema Player application",
+    "LAUNCH/*": "Windows (.cmd/.ps1, untested) and Linux/macOS (.sh, tested) launchers",
+    "tests/test_alerts.py": "17 synthetic tests for the alert engine, all passing"
+  },
+  "prior_baseline": "none -- see .forge/AUDITS/cinema_final_recovery.md",
+  "not_included_by_design": [
+    "No video-generation model output",
+    "No recorded/sampled audio",
+    "No third-party visual or audio assets"
+  ]
+}

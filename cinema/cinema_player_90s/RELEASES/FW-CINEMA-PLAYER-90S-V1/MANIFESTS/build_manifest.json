@@ -1,0 +1,29 @@
+{
+  "release_id": "FW-CINEMA-PLAYER-90S-V1",
+  "build_environment": "Linux cloud dev container (jamdav688y-source/forgeworld-runtime session), not the target Windows desktop",
+  "toolchain": {
+    "python": "3.11 (venv at /tmp/testenv, not committed to the repo)",
+    "pillow": "12.3.0",
+    "numpy": "2.4.6",
+    "flask": "installed in the same venv",
+    "ffmpeg": "6.1.1-3ubuntu5 (apt-get install ffmpeg)",
+    "ffprobe": "6.1.1-3ubuntu5"
+  },
+  "build_steps_and_measured_wall_clock": [
+    {"step": "toolchain baseline check (PIL frames -> ffmpeg encode -> numpy audio -> AAC mux)", "seconds": "< 5"},
+    {"step": "render 16x9 frame cache (2160 frames, 1920x1080)", "seconds": 310.26},
+    {"step": "render 4x5 frame cache (2160 frames, 1080x1350)", "seconds": 240.72},
+    {"step": "encode 16x9 master (crf 17, preset slow)", "seconds": 111.6},
+    {"step": "encode 4x5 master (crf 17, preset slow)", "seconds": 87.8},
+    {"step": "encode 16x9 preview (crf 23, preset veryfast)", "seconds": 52.6},
+    {"step": "encode 4x5 preview (crf 23, preset veryfast)", "seconds": 40.3},
+    {"step": "build 10 audio stems + mix (numpy synthesis)", "seconds": 9.88},
+    {"step": "alert engine test suite (17 tests)", "seconds": "< 1"}
+  ],
+  "interruption_recovery_test": {
+    "performed": true,
+    "method": "deleted last 30 frames of a draft-resolution render + corrupted 1 mid-timeline frame, then re-ran render_aspect()",
+    "result": "31 frames correctly re-rendered, 2129 correctly skipped, verify_frame_cache() confirmed 100% valid afterward"
+  },
+  "frame_cache_reuse": "preview_* and master_* profiles for the same aspect ratio render frames exactly once and encode twice at different quality settings -- see renderer/profiles.py"
+}

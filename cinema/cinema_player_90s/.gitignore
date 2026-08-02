@@ -1,0 +1,6 @@
+# Regenerable, large -- deterministic from genome/ + renderer/ + the fixed seed.
+# See EVIDENCE/baseline_preservation.md.
+renderer/_frame_cache/
+__pycache__/
+*.pyc
+.pytest_cache/

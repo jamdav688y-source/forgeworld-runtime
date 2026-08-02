@@ -1,0 +1,37 @@
+{
+  "genome_id": "forgeworld-cinema-organism-v1",
+  "description": "Reusable visual/audio primitive catalog this release is built from. Source is not duplicated into the release folder -- these are pointers to the checked-in implementation so the manifest can't drift out of sync with what actually ran.",
+  "visual_primitives": [
+    {"name": "radial_background_gradient", "source": "cinema/cinema_player_90s/genome/organism.py:_background_array", "reused_by_scenes": "all"},
+    {"name": "node_edge_particle_graph", "source": "cinema/cinema_player_90s/genome/organism.py:_node_layout,draw_frame", "reused_by_scenes": "all"},
+    {"name": "central_polygon_core", "source": "cinema/cinema_player_90s/genome/organism.py:_draw_polygon", "reused_by_scenes": "all"},
+    {"name": "palette_interpolation", "source": "cinema/cinema_player_90s/genome/organism.py:_palette_color,_accent_color", "reused_by_scenes": "all"},
+    {"name": "native_aspect_view_window", "source": "cinema/cinema_player_90s/genome/organism.py:_view_window,ViewWindow", "reused_by_scenes": "all"},
+    {"name": "scene_title_typography", "source": "cinema/cinema_player_90s/genome/typography.py:draw_title", "reused_by_scenes": "all"},
+    {"name": "blueprint_accent_marks", "source": "cinema/cinema_player_90s/genome/organism.py:_draw_scene_motif (construction branch)", "reused_by_scenes": ["coordinated_construction"]},
+    {"name": "scan_line_sweep", "source": "cinema/cinema_player_90s/genome/organism.py:_draw_scene_motif (reality_testing branch)", "reused_by_scenes": ["reality_testing"]},
+    {"name": "radiating_release_lines", "source": "cinema/cinema_player_90s/genome/organism.py:_draw_scene_motif (external_release branch)", "reused_by_scenes": ["external_release"]},
+    {"name": "feedback_spiral", "source": "cinema/cinema_player_90s/genome/organism.py:_draw_scene_motif (recursive_learning branch)", "reused_by_scenes": ["recursive_learning"]}
+  ],
+  "audio_primitives": [
+    {"name": "detuned_pad_oscillators", "source": "cinema/cinema_player_90s/audio/synth.py:gen_atmosphere"},
+    {"name": "tempo_reactive_pulse", "source": "cinema/cinema_player_90s/audio/synth.py:gen_cognitive_pulse"},
+    {"name": "windowed_noise_blips", "source": "cinema/cinema_player_90s/audio/synth.py:gen_sensory_signals,gen_construction"},
+    {"name": "step_sequenced_motif", "source": "cinema/cinema_player_90s/audio/synth.py:gen_executive_selection"},
+    {"name": "confirming_chord", "source": "cinema/cinema_player_90s/audio/synth.py:gen_validation"},
+    {"name": "harmonic_stack_pad", "source": "cinema/cinema_player_90s/audio/synth.py:gen_emergence"},
+    {"name": "panned_sweep", "source": "cinema/cinema_player_90s/audio/synth.py:gen_release"},
+    {"name": "feedback_delay_motif", "source": "cinema/cinema_player_90s/audio/synth.py:gen_recursion"},
+    {"name": "scene_window_envelope", "source": "cinema/cinema_player_90s/audio/synth.py:_scene_window"}
+  ],
+  "state_model": {
+    "name": "CognitiveState continuity system",
+    "source": "cinema/cinema_player_90s/genome/state.py",
+    "metrics": [
+      "organism_maturity", "signal_density", "pathway_organization", "evidence_intensity",
+      "memory_depth", "external_connectivity", "structural_stability", "central_geometry",
+      "palette_t", "camera_distance", "cognitive_load", "release_readiness"
+    ]
+  },
+  "principle": "Only primitives required by actual scenes were added -- no speculative/unused primitive exists in genome/ or audio/synth.py."
+}

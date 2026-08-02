@@ -1,0 +1,10 @@
+{
+  "recovery_run": "CINEMA_FINAL_COMPLETION",
+  "generated_at": "2026-08-02T00:00:00Z",
+  "source_authoritative_repo": "jamdav688y-source/forgeworld-runtime",
+  "items": [],
+  "conflicts_dir": ".forge/RECOVERY/CINEMA_FINAL_COMPLETION/conflicts/",
+  "conflicts_count": 0,
+  "note": "Empty by design -- see .forge/AUDITS/cinema_final_recovery.md and .json. No prior Cinema artifacts were found to recover, so nothing was copied and no conflicts arose. This manifest exists to document that the search happened and found nothing, not to claim a recovery that didn't occur.",
+  "depends_on_temporary_session_paths": false
+}

@@ -1,0 +1,28 @@
+{
+  "sample_rate_hz": 48000,
+  "duration_seconds": 90.0,
+  "channels": 2,
+  "stems": [
+    "atmosphere",
+    "cognitive_pulse",
+    "sensory_signals",
+    "executive_selection",
+    "construction",
+    "validation",
+    "emergence",
+    "release",
+    "recursion",
+    "narration"
+  ],
+  "synthesis_method": "numpy oscillator/noise synthesis, no samples or recordings",
+  "narration_decision": "NARRATION_REJECTED",
+  "narration_rationale": "No speech-synthesis tool is available in this environment, and the project's own law against using narration to compensate for unclear visuals rules out faking it. The narration stem is preserved as an explicit, honestly silent track rather than omitted, so the required stem structure still holds and the decision is auditable.",
+  "mix_provenance": {
+    "peak_before_normalization": 1.2351690530776978,
+    "gain_applied": 0.7213587466265252,
+    "peak_after_normalization": 0.8910000324249268,
+    "clipped": false
+  },
+  "peak_final_mix": 0.8910000324249268,
+  "clipped": false
+}

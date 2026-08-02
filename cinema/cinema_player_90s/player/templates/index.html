@@ -1,0 +1,41 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ForgeWorld Cinema Player</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand">ForgeWorld Cinema Player</div>
+    <div class="pill" id="release-pill">local-only</div>
+  </header>
+
+  <main class="layout">
+    <section class="stage">
+      <video id="video" controls playsinline></video>
+      <div class="row controls-extra">
+        <button class="btn" id="btn-replay">Replay</button>
+        <button class="btn" id="btn-16x9">Select 16:9</button>
+        <button class="btn" id="btn-4x5">Select 4:5</button>
+        <button class="btn secondary" id="btn-fullscreen">Fullscreen</button>
+      </div>
+      <div class="row controls-extra">
+        <button class="btn secondary" id="btn-folder">Open Release Folder</button>
+        <button class="btn secondary" id="btn-validation">Open Validation Report</button>
+        <button class="btn secondary" id="btn-review">Open Artistic Review</button>
+        <button class="btn secondary" id="btn-alerts">Inspect Alerts</button>
+        <button class="btn secondary" id="btn-preview">Run Preview</button>
+        <button class="btn secondary" id="btn-resume">Resume Render</button>
+      </div>
+    </section>
+
+    <aside class="status-panel">
+      <h2>Status</h2>
+      <div id="status-body">loading...</div>
+    </aside>
+  </main>
+
+  <div id="modal-root"></div>
+</div>
+
+<script id="spec-data" type="application/json">{{ spec | tojson }}</script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>

@@ -1,0 +1,46 @@
+{
+  "generated_by": "ffprobe -count_frames (actual decode, not header read)",
+  "masters": {
+    "16x9": {
+      "path": "RELEASES/FW-CINEMA-PLAYER-90S-V1/MASTER/ForgeWorld_Cinema_Player_90s_1080p_24fps.mp4",
+      "measured": {
+        "width": 1920,
+        "height": 1080,
+        "decoded_frame_count": 2160,
+        "r_frame_rate": "24/1",
+        "avg_frame_rate": "24/1",
+        "duration_seconds": 90.0,
+        "video_codec": "h264",
+        "pix_fmt": "yuv420p",
+        "audio_codec": "aac",
+        "audio_sample_rate": 48000,
+        "audio_channels": 2,
+        "bit_rate": 1813936,
+        "file_size_bytes": 20406782
+      },
+      "pass": true,
+      "problems": []
+    },
+    "4x5": {
+      "path": "RELEASES/FW-CINEMA-PLAYER-90S-V1/SOCIAL/ForgeWorld_Cinema_Player_90s_LinkedIn_4x5_24fps.mp4",
+      "measured": {
+        "width": 1080,
+        "height": 1350,
+        "decoded_frame_count": 2160,
+        "r_frame_rate": "24/1",
+        "avg_frame_rate": "24/1",
+        "duration_seconds": 90.0,
+        "video_codec": "h264",
+        "pix_fmt": "yuv420p",
+        "audio_codec": "aac",
+        "audio_sample_rate": 48000,
+        "audio_channels": 2,
+        "bit_rate": 1701054,
+        "file_size_bytes": 19136865
+      },
+      "pass": true,
+      "problems": []
+    }
+  },
+  "overall_pass": true
+}
