@@ -58,13 +58,26 @@ manage this around long batches, and the app has no Termux:API
 dependency for core operation. If you script a wake lock around a scan,
 you are responsible for releasing it; the app doesn't know it was taken.
 
-## Bounded polling and scheduled scan are unimplemented beyond a stub
+## Bounded polling is wired in, but unproven under real load; scheduled scan is a stub
 
-`watcher.BoundedPoller` exists and is fully wired to `indexer.scan`, but
-it is off by default (`bounded_polling_enabled: false`) and has not been
-run for an extended period to validate battery/memory behavior. Scheduled
-scan (Termux:API-triggered) is explicitly out of scope for this cycle
+`watcher.BoundedPoller` is now wired into `app.py`: toggling
+`bounded_polling_enabled` in Settings starts/stops it, and
+`/api/polling/start` / `/api/polling/stop` control it directly. It is
+still off by default and has not been run for an extended period to
+validate battery/memory behavior on a real device. Scheduled scan
+(Termux:API-triggered) remains explicitly out of scope for this cycle
 (`scheduled_scan_enabled` stays `false`; no Termux:API code exists).
+
+## Concurrent OCR rerun/correct on the same screenshot can lose an update
+
+Two simultaneous requests to rerun or correct OCR on the *same*
+screenshot (e.g. a double-tap) can race on the final `UPDATE`, and the
+second write silently wins. Scan-level concurrency is guarded (see
+`VALIDATION_REPORT.md`'s Stabilization Sprint section), but this
+narrower, much less likely race was deliberately left undefended rather
+than adding per-resource locking for a single-operator tool. See
+`VALIDATION_REPORT.md` for the two documented ways to close this if it
+ever matters in practice.
 
 ## UI is a functional MVP, not a polished client
 

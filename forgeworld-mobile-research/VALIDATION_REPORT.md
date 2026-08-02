@@ -49,11 +49,115 @@ nothing should claim more understanding/verification than it has.
    `/api/screenshots/<id>/ocr/correct` all returned expected
    `200`/payloads in a live end-to-end run against two real generated
    screenshot images.
-7. `python -m pytest tests/` -- 13/13 passing.
+7. `python -m pytest tests/` -- 26/26 passing (see Stabilization Sprint
+   section below for what was added in this cycle).
 8. `python -m pip check` -- no broken requirements with the pinned
    `requirements.txt` package set (Flask, Pillow, pytesseract, watchdog,
    python-dateutil, requests, pytest only; no Pydantic/Rust/compiled
    deps required).
+
+## Stabilization sprint (post-initial-build hardening)
+
+A follow-up pass audited the initial build for defects via code inspection
+plus a live smoke test, then fixed and re-verified everything found. Full
+methodology and each fix's verification are in the corresponding modules'
+docstrings/tests; this is the summary.
+
+**Data integrity**
+- **Fixed a real bug**: a screenshot whose row was inserted but whose
+  OCR/classification never completed (process killed mid-`ingest_file`)
+  used to be permanently stuck at `PENDING` -- a rescan saw the hash
+  already existed and silently classified it `DUPLICATE` forever, so it
+  never got OCR'd. Reproduced by directly inserting a `PENDING` row and
+  rescanning, confirmed stuck, then fixed in `indexer.py` (`ingest_file`
+  now resumes any `PENDING`/`FAILED` row instead of skipping it) and
+  confirmed fixed the same way. Same fix covers a `FAILED` row from a
+  prior OCR crash. Regression tests:
+  `tests/test_indexer.py::test_interrupted_scan_resumes_stranded_pending_row`,
+  `::test_interrupted_scan_resumes_failed_row`,
+  `::test_already_processed_row_stays_duplicate` (confirms only
+  unfinished rows resume, not already-`PROCESSED` ones).
+- A race between two scans discovering the same new hash simultaneously
+  (`sqlite3.IntegrityError` on the `UNIQUE(sha256)` insert) is now caught
+  and falls through to the resume/duplicate path instead of crashing.
+
+**Concurrency**
+- `/api/scan` now holds a process-wide lock for the duration of a scan;
+  a second concurrent scan request gets a clean `409` instead of racing
+  the first scan's DB writes. Verified live (two scans fired back-to-back,
+  second got 409 while the first completed normally) and in
+  `tests/test_app.py::test_scan_returns_409_when_already_in_progress`.
+
+**API reliability**
+- Every route now returns JSON on error instead of Flask's default HTML
+  error page: malformed JSON bodies, invalid numeric query params
+  (`/api/library?limit=x`, `/api/search?min_confidence=x`,
+  `/api/exports/<kind>?collection_id=x`), and any other unhandled
+  exception, via three new `app.errorhandler`s in `app.py`. Verified live
+  with `curl` for each case and in `tests/test_app.py`.
+- `/api/settings` now type-coerces and validates incoming values against
+  the `Settings` dataclass's declared types instead of blindly
+  `setattr`-ing whatever JSON came in; invalid values are rejected with a
+  `400` and a per-field reason, and nothing is partially saved.
+
+**Security**
+- `static/app.js` previously interpolated several fields straight into
+  `innerHTML` without escaping: screenshot titles/filenames, search
+  excerpts (which come from OCR'd image text via FTS5 `snippet()`), tag/
+  entity names, and source paths. A crafted filename or OCR'd string
+  could inject markup. All of these now go through `escapeHtml()`.
+
+**Observability**
+- Added a rotating file logger (`runtime/logs/app.log`, 2MB x 3 backups)
+  wired into `config.py`, and log calls along the scan lifecycle
+  (start/finish/lock-rejected), OCR outcomes (PASS/EMPTY/FAILED/TIMEOUT
+  with timing), resume/duplicate/discovery events, and rejected input.
+  Previously `runtime/logs/` existed but nothing ever wrote to it.
+  Verified live: ran a scan and confirmed the full lifecycle appeared in
+  `app.log`.
+
+**User experience**
+- Silent-failure click handlers (OCR correct/rerun/unusable, add note,
+  create collection, search, ingestion actions) now surface errors to
+  the operator instead of failing invisibly.
+- Scan summaries now report a `resumed_count` alongside new/duplicate/
+  skipped/error counts, so a resumed interrupted scan is visible in the
+  UI, not indistinguishable from a normal duplicate.
+- `watcher.BoundedPoller` (previously fully implemented but never
+  imported anywhere) is now wired into `app.py`: toggling
+  `bounded_polling_enabled` in Settings actually starts/stops it, plus
+  explicit `/api/polling/start` and `/api/polling/stop` endpoints.
+
+**Incidentally found and fixed while testing the above**
+- `Settings.save()`, `save_source_paths()`, and related `config.py`
+  loaders took their file path as a default argument bound at *function
+  definition* time, not call time -- so monkeypatching the module-level
+  path constant in a test had no effect, and (more importantly) it meant
+  every `Settings` instance's `.save()` always wrote to the one real
+  `config/settings.json` regardless of what settings object it was
+  called on. Changed to a `None`-sentinel pattern that resolves the path
+  dynamically at call time. This was caught because an early version of
+  the new `tests/test_app.py` fixture silently corrupted the real
+  `config/settings.json` during a test run before this fix -- restored
+  from git and reproduced clean afterward.
+- `/api/scan` checked "any sources enabled" before checking the
+  concurrency lock, so a request could get a `400` instead of a `409`
+  when no sources were configured. Reordered so the lock check always
+  wins first.
+
+## Not fixed -- documented as accepted / needs a design decision
+
+- **Lost-update race on concurrent OCR rerun/correct for the same
+  screenshot**: two simultaneous requests to `/api/screenshots/<id>/ocr/
+  rerun` (or one rerun racing one correction) can both read-then-write
+  `screenshots.raw_ocr_text`/`corrected_ocr_text`, and the second write
+  wins silently. Given this is a single-operator mobile tool where that
+  requires deliberately double-tapping the same button on the same
+  screenshot, this was judged not worth a per-resource locking mechanism
+  in this sprint (would add real complexity for a very unlikely
+  scenario). If it becomes a real problem, the fix is either an
+  optimistic-concurrency `updated_at` check on the `UPDATE`, or a
+  per-screenshot lock dict alongside the existing scan lock.
 
 ## What was NOT validated (must be verified on-device before relying on it)
 
@@ -80,10 +184,19 @@ nothing should claim more understanding/verification than it has.
   real device under real load.
 - WAL-mode behavior under Android's stricter storage/process lifecycle
   (e.g. the OS killing the app mid-scan) -- the scan loop commits after
-  each `ingest_file` call (via `Database.cursor()`'s per-call commit), so
-  a kill mid-scan should leave the database consistent up to the last
-  completed file, but this has not been tested under an actual forced
-  process kill.
+  each SQL statement (via `Database.cursor()`'s per-call commit), and a
+  file whose row exists but never reached `PROCESSED` is now correctly
+  resumed on the next scan (see Stabilization Sprint above, verified by
+  directly inserting a stranded `PENDING` row and confirming a live
+  `/api/scan` call resumes and completes it). What's still unverified is
+  an actual forced OS process kill mid-write on the real device -- this
+  test simulated the *symptom* (a stranded row) rather than the kill
+  itself, which behaves differently under Android's process lifecycle
+  than a clean container.
+- Restart persistence was re-verified live in this sprint: scanned 3
+  screenshots, killed the server process, restarted it, and confirmed
+  `/api/dashboard` still reported all 3 -- but still only in this
+  container, not on-device.
 
 ## Recommendation
 

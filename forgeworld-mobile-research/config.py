@@ -6,7 +6,9 @@ compile under Termux/Android via Rust+Maturin).
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass, field, asdict
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Any
 
@@ -72,7 +74,12 @@ class Settings:
     scheduled_scan_enabled: bool = False
 
     @classmethod
-    def load(cls, path: Path = SETTINGS_PATH) -> "Settings":
+    def load(cls, path: Path | None = None) -> "Settings":
+        # Resolved at call time (not bound as a default-argument value at
+        # def time) so callers/tests can point SETTINGS_PATH elsewhere and
+        # have it actually take effect.
+        if path is None:
+            path = SETTINGS_PATH
         if not path.exists():
             settings = cls()
             _write_json(path, asdict(settings))
@@ -81,7 +88,9 @@ class Settings:
         known = {f: data[f] for f in cls.__dataclass_fields__ if f in data}
         return cls(**known)
 
-    def save(self, path: Path = SETTINGS_PATH) -> None:
+    def save(self, path: Path | None = None) -> None:
+        if path is None:
+            path = SETTINGS_PATH
         _write_json(path, asdict(self))
 
     def database_full_path(self) -> Path:
@@ -107,7 +116,9 @@ class SourceLocation:
             return False
 
 
-def load_source_paths(path: Path = SOURCE_PATHS_PATH) -> list[SourceLocation]:
+def load_source_paths(path: Path | None = None) -> list[SourceLocation]:
+    if path is None:
+        path = SOURCE_PATHS_PATH
     if not path.exists():
         seed = {
             "sources": [
@@ -122,17 +133,21 @@ def load_source_paths(path: Path = SOURCE_PATHS_PATH) -> list[SourceLocation]:
     return [SourceLocation(**s) for s in data.get("sources", [])]
 
 
-def save_source_paths(sources: list[SourceLocation], path: Path = SOURCE_PATHS_PATH) -> None:
+def save_source_paths(sources: list[SourceLocation], path: Path | None = None) -> None:
+    if path is None:
+        path = SOURCE_PATHS_PATH
     _write_json(path, {"sources": [asdict(s) for s in sources]})
 
 
-def probe_source_paths(path: Path = SOURCE_PATHS_PATH) -> list[SourceLocation]:
+def probe_source_paths(path: Path | None = None) -> list[SourceLocation]:
     """Re-check every known candidate directory and enable only those that exist.
 
     Also runs a bounded (maxdepth 5) search under ~/storage/shared for any
     directory whose name contains 'screenshot', adding newly discovered
     paths as disabled-by-default entries for the operator to review.
     """
+    if path is None:
+        path = SOURCE_PATHS_PATH
     sources = load_source_paths(path)
     by_path = {s.path: s for s in sources}
 
@@ -179,18 +194,61 @@ def _bounded_screenshot_dir_search(root: Path, max_depth: int) -> list[Path]:
     return results
 
 
-def enabled_source_paths(path: Path = SOURCE_PATHS_PATH) -> list[SourceLocation]:
+def enabled_source_paths(path: Path | None = None) -> list[SourceLocation]:
+    if path is None:
+        path = SOURCE_PATHS_PATH
     return [s for s in load_source_paths(path) if s.enabled and s.exists()]
 
 
-def load_classification_rules(path: Path = CLASSIFICATION_RULES_PATH) -> dict[str, Any]:
+def load_classification_rules(path: Path | None = None) -> dict[str, Any]:
+    if path is None:
+        path = CLASSIFICATION_RULES_PATH
     return _read_json(path)
 
 
-def load_prompt_templates(path: Path = PROMPT_TEMPLATES_PATH) -> dict[str, Any]:
+def load_prompt_templates(path: Path | None = None) -> dict[str, Any]:
+    if path is None:
+        path = PROMPT_TEMPLATES_PATH
     return _read_json(path)
 
 
 def ensure_runtime_dirs() -> None:
     for sub in ("database", "backups", "cache", "previews", "ocr", "logs", "exports", "tmp"):
         (RUNTIME_DIR / sub).mkdir(parents=True, exist_ok=True)
+
+
+_LOGGING_CONFIGURED = False
+
+
+def configure_logging(runtime_dir: Path | None = None, level: int = logging.INFO) -> logging.Logger:
+    """Wire up the 'forgeworld' logger tree to runtime/logs/app.log.
+
+    Idempotent -- safe to call from app.py on every startup and from tests.
+    Bounded with a rotating handler (2MB x 3 backups) so logs never grow
+    unbounded on a phone with limited storage.
+    """
+    if runtime_dir is None:
+        runtime_dir = RUNTIME_DIR
+    global _LOGGING_CONFIGURED
+    root = logging.getLogger("forgeworld")
+    if _LOGGING_CONFIGURED:
+        return root
+
+    logs_dir = runtime_dir / "logs"
+    logs_dir.mkdir(parents=True, exist_ok=True)
+
+    formatter = logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+
+    file_handler = RotatingFileHandler(logs_dir / "app.log", maxBytes=2_000_000, backupCount=3)
+    file_handler.setFormatter(formatter)
+
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+
+    root.setLevel(level)
+    root.addHandler(file_handler)
+    root.addHandler(stream_handler)
+    root.propagate = False
+
+    _LOGGING_CONFIGURED = True
+    return root

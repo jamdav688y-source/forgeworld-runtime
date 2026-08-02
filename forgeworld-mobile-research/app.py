@@ -8,14 +8,17 @@ Ingestion/Settings/System Status) through this JSON API. Binds to
 from __future__ import annotations
 
 import csv
+import dataclasses
 import io
 import json
 import shutil
+import threading
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
 
 from flask import Flask, jsonify, request, render_template, send_file, abort
+from werkzeug.exceptions import HTTPException
 
 import config as cfg
 from config import Settings, SourceLocation
@@ -25,12 +28,18 @@ from ocr import run_ocr, OCR_STATE_CORRECTED, OCR_STATE_UNUSABLE, VALID_OCR_STAT
 from search import SearchFilters, search_screenshots
 from prompts import VALID_MODES, build_source_inventory, render_prompt, save_generated_prompt, save_prompt_template
 from summarizer import build_labeled_summary
+from watcher import BoundedPoller
+from integrations import get_integration_adapters
 
 PROJECT_ROOT = cfg.PROJECT_ROOT
+
+log = cfg.configure_logging()
+app_log = log.getChild("app")
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
 _state: dict = {}
+_scan_lock = threading.Lock()
 
 
 def init_app_state() -> None:
@@ -40,6 +49,13 @@ def init_app_state() -> None:
     _state["settings"] = settings
     _state["db"] = db
     _state["last_scan"] = None
+    _state["poller"] = BoundedPoller(db, settings, cfg.enabled_source_paths, PROJECT_ROOT)
+    if settings.bounded_polling_enabled:
+        try:
+            _state["poller"].start()
+            app_log.info("bounded polling started at startup (interval=%ss)", settings.bounded_polling_interval_seconds)
+        except Exception:
+            app_log.exception("failed to start bounded polling at startup")
 
 
 def get_db() -> Database:
@@ -48,6 +64,32 @@ def get_db() -> Database:
 
 def get_settings() -> Settings:
     return _state["settings"]
+
+
+def get_poller() -> BoundedPoller:
+    return _state["poller"]
+
+
+# --------------------------------------------------------- error handling -
+
+@app.errorhandler(ValueError)
+@app.errorhandler(TypeError)
+def handle_bad_input(e):
+    app_log.warning("bad input on %s: %s", request.path, e)
+    return jsonify({"error": str(e)}), 400
+
+
+@app.errorhandler(HTTPException)
+def handle_http_exception(e):
+    response = jsonify({"error": e.description, "code": e.code})
+    response.status_code = e.code
+    return response
+
+
+@app.errorhandler(Exception)
+def handle_unexpected_exception(e):
+    app_log.exception("unhandled exception on %s", request.path)
+    return jsonify({"error": "internal error", "detail": str(e)}), 500
 
 
 # ---------------------------------------------------------------- shell ---
@@ -253,6 +295,7 @@ def api_rerun_ocr(screenshot_id: int):
         (result.normalized_text, result.confidence, summary, utcnow(), screenshot_id),
     )
     db.record_event(screenshot_id, "OCR_RERUN", f"state={result.success_state}")
+    app_log.info("OCR rerun for screenshot %s -> %s", screenshot_id, result.success_state)
     return jsonify({"success_state": result.success_state, "normalized_text": result.normalized_text})
 
 
@@ -276,6 +319,7 @@ def api_correct_ocr(screenshot_id: int):
         (corrected_text, utcnow(), screenshot_id),
     )
     db.record_event(screenshot_id, "OCR_CORRECTED", note)
+    app_log.info("OCR correction saved for screenshot %s", screenshot_id)
     return jsonify({"ok": True})
 
 
@@ -312,8 +356,6 @@ def api_search():
         offset=int(request.args.get("offset", 0)),
     )
     results = search_screenshots(db, filters)
-    for r in results:
-        r["preview_path"] = f"/previews/{r['sha256']}.jpg"
     return jsonify({"results": results, "count": len(results)})
 
 
@@ -440,11 +482,31 @@ def api_scan():
     settings = get_settings()
     payload = request.get_json(silent=True) or {}
     batch_limit = payload.get("batch_limit", settings.max_normal_batch)
-    sources = cfg.enabled_source_paths()
-    if not sources:
-        return jsonify({"error": "no enabled + existing source directories. Probe sources first."}), 400
-    summary = run_scan(db, settings, sources, PROJECT_ROOT, batch_limit=batch_limit)
+    try:
+        batch_limit = int(batch_limit)
+    except (TypeError, ValueError):
+        return jsonify({"error": "batch_limit must be an integer"}), 400
+
+    if not _scan_lock.acquire(blocking=False):
+        app_log.info("scan request rejected: a scan is already in progress")
+        return jsonify({"error": "a scan is already in progress"}), 409
+
+    try:
+        sources = cfg.enabled_source_paths()
+        if not sources:
+            return jsonify({"error": "no enabled + existing source directories. Probe sources first."}), 400
+
+        app_log.info("scan starting: sources=%s batch_limit=%s", [s.path for s in sources], batch_limit)
+        summary = run_scan(db, settings, sources, PROJECT_ROOT, batch_limit=batch_limit)
+    finally:
+        _scan_lock.release()
+
     _state["last_scan"] = asdict(summary) | {"outcomes": [asdict(o) for o in summary.outcomes]}
+    app_log.info(
+        "scan finished: new=%s resumed=%s dup=%s skipped=%s errors=%s",
+        summary.new_count, summary.resumed_count, summary.duplicate_count,
+        summary.skipped_count, summary.error_count,
+    )
     return jsonify(_state["last_scan"])
 
 
@@ -453,19 +515,79 @@ def api_scan_last():
     return jsonify(_state.get("last_scan"))
 
 
+@app.route("/api/scan/status")
+def api_scan_status():
+    return jsonify({"scan_in_progress": _scan_lock.locked()})
+
+
 # --------------------------------------------------------------- settings -
+
+_SETTINGS_FIELD_TYPES = {f.name: f.type for f in dataclasses.fields(Settings)}
+
+
+def _coerce_setting_value(key: str, value):
+    """Best-effort type coercion so a stray string from a form field
+    ('5' for max_normal_batch) doesn't silently store the wrong type, and
+    an outright invalid value (e.g. a non-numeric port) is rejected with a
+    clear error instead of corrupting settings.json."""
+    declared_type = _SETTINGS_FIELD_TYPES.get(key)
+    if declared_type in ("int", int):
+        return int(value)
+    if declared_type in ("float", float):
+        return float(value)
+    if declared_type in ("bool", bool):
+        if isinstance(value, str):
+            return value.strip().lower() in ("1", "true", "yes", "on")
+        return bool(value)
+    return value
+
 
 @app.route("/api/settings", methods=["GET", "PUT"])
 def api_settings():
     if request.method == "PUT":
         payload = request.get_json(force=True) or {}
         settings = get_settings()
+        rejected = {}
         for key, value in payload.items():
-            if hasattr(settings, key):
-                setattr(settings, key, value)
+            if not hasattr(settings, key):
+                continue
+            try:
+                setattr(settings, key, _coerce_setting_value(key, value))
+            except (TypeError, ValueError) as exc:
+                rejected[key] = str(exc)
+        if rejected:
+            return jsonify({"error": "some settings were invalid and not applied", "rejected": rejected}), 400
         settings.save()
+        app_log.info("settings updated: %s", list(payload.keys()))
+        _sync_poller_with_settings()
         return jsonify(asdict(settings))
     return jsonify(asdict(get_settings()))
+
+
+def _sync_poller_with_settings() -> None:
+    settings = get_settings()
+    poller = get_poller()
+    if settings.bounded_polling_enabled and not poller.running:
+        poller.start()
+        app_log.info("bounded polling started via settings update")
+    elif not settings.bounded_polling_enabled and poller.running:
+        poller.stop()
+        app_log.info("bounded polling stopped via settings update")
+
+
+@app.route("/api/polling/start", methods=["POST"])
+def api_polling_start():
+    settings = get_settings()
+    if not settings.bounded_polling_enabled:
+        return jsonify({"error": "bounded_polling_enabled is false in settings"}), 400
+    get_poller().start()
+    return jsonify({"running": get_poller().running})
+
+
+@app.route("/api/polling/stop", methods=["POST"])
+def api_polling_stop():
+    get_poller().stop()
+    return jsonify({"running": get_poller().running})
 
 
 @app.route("/api/system_status")
@@ -482,7 +604,12 @@ def api_system_status():
         "free_storage_bytes": free_bytes,
         "semantic_search_enabled": settings.semantic_search_enabled,
         "bounded_polling_enabled": settings.bounded_polling_enabled,
+        "bounded_polling_running": get_poller().running,
         "cloud_uploads_enabled": settings.cloud_uploads_enabled,
+        "scan_in_progress": _scan_lock.locked(),
+        "forgeworld_integrations": {
+            key: adapter.describe() for key, adapter in get_integration_adapters().items()
+        },
     })
 
 

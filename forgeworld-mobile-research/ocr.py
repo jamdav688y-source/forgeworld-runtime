@@ -5,6 +5,7 @@ derivative only.
 """
 from __future__ import annotations
 
+import logging
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -21,6 +22,8 @@ try:
 except ImportError:  # pragma: no cover - pytesseract is a required dependency
     pytesseract = None  # type: ignore
     Output = None  # type: ignore
+
+log = logging.getLogger("forgeworld.ocr")
 
 OCR_STATE_PASS = "PASS"
 OCR_STATE_EMPTY = "EMPTY"
@@ -130,6 +133,7 @@ def run_ocr(
     engine_version = _engine_version()
 
     if Image is None or pytesseract is None:
+        log.error("OCR unavailable for %s: Pillow or pytesseract not installed", image_path)
         return OcrResult(
             raw_text="",
             normalized_text="",
@@ -149,6 +153,7 @@ def run_ocr(
         derivative = _build_derivative(image_path, max_dimension)
     except Exception as exc:
         duration_ms = int((time.monotonic() - started) * 1000)
+        log.error("failed to prepare OCR derivative for %s: %s", image_path, exc)
         return OcrResult(
             raw_text="",
             normalized_text="",
@@ -172,6 +177,7 @@ def run_ocr(
         duration_ms = int((time.monotonic() - started) * 1000)
         message = str(exc).lower()
         state = OCR_STATE_TIMEOUT if "timeout" in message else OCR_STATE_FAILED
+        log.warning("OCR %s for %s after %dms: %s", state, image_path, duration_ms, exc)
         return OcrResult(
             raw_text="",
             normalized_text="",
@@ -185,6 +191,7 @@ def run_ocr(
         )
     except Exception as exc:
         duration_ms = int((time.monotonic() - started) * 1000)
+        log.error("Tesseract invocation failed for %s: %s", image_path, exc)
         return OcrResult(
             raw_text="",
             normalized_text="",
@@ -204,8 +211,10 @@ def run_ocr(
     if not normalized:
         state = OCR_STATE_EMPTY
         warnings.append("OCR completed but produced no readable text.")
+        log.info("OCR EMPTY for %s after %dms", image_path, duration_ms)
     else:
         state = OCR_STATE_PASS
+        log.info("OCR PASS for %s after %dms (confidence=%s)", image_path, duration_ms, confidence)
 
     return OcrResult(
         raw_text=raw_text,

@@ -20,7 +20,8 @@ database server, and no background daemon that outlives the process.
 | `search.py` | FTS5 query construction (safe against operator-syntax injection) + structured filters. |
 | `prompts.py` | Builds the source inventory and renders mode-specific, source-grounded prompt text with explicit SOURCE-DERIVED / OPERATOR NOTES / SYSTEM INFERENCE / UNKNOWN sections. |
 | `embeddings.py` | Disabled `SemanticIndexAdapter` -- no heavy imports, no-op by default. |
-| `watcher.py` | Optional bounded polling loop (explicitly enabled only); routes through `indexer.scan`. |
+| `watcher.py` | Bounded polling loop (explicitly enabled only, wired into `app.py`'s settings/`/api/polling/*`); routes through `indexer.scan`. |
+| `integrations.py` | Disabled ForgeWorld ecosystem extension points (Cinema Engine, Repository Intelligence, Executive Bootstrap, Knowledge Graph) -- same no-op-adapter pattern as `embeddings.py`. |
 | `app.py` | Flask routes: page shell + full JSON API for every tab. |
 
 ## Data flow (ingestion)
@@ -105,6 +106,17 @@ interpolation into SQL anywhere in the codebase.
 `get_semantic_index_adapter()`. No embedding library is imported. This
 stays disabled until FTS5 has been used in real operation and its
 shortcomings are documented (see `KNOWN_LIMITATIONS.md`).
+
+## ForgeWorld integration boundary
+
+`integrations.py` reserves four extension points for later, explicitly
+authorized cycles: Cinema Engine, Repository Intelligence, Executive
+Bootstrap, and Knowledge Graph. Each is a disabled adapter (same
+`Protocol` + no-op-default pattern as `embeddings.py`) whose methods raise
+`NotImplementedError` if ever called. `/api/system_status` reports each
+adapter's `describe()` output so the operator can see what's reserved
+without any of it doing anything. Nothing else in the codebase imports or
+calls these adapters -- the app is fully functional with all four absent.
 
 ## Resource governance
 

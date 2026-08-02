@@ -6,12 +6,17 @@ Primary laws enforced here:
   - every derivative artifact keeps its source screenshot ID, hash,
     original path, processing status, timestamp, and known uncertainty
   - repeated scans are idempotent
+  - a scan interrupted mid-file (process killed, battery pull, OOM) must
+    be safely resumable: a screenshot row that exists but never reached
+    PROCESSED is finished on the next scan, not silently treated as a
+    permanent duplicate
 """
 from __future__ import annotations
 
 import hashlib
+import logging
+import sqlite3
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -30,10 +35,16 @@ try:
 except ImportError:  # pragma: no cover
     Image = None  # type: ignore
 
+log = logging.getLogger("forgeworld.indexer")
+
 
 STATUS_PENDING = "PENDING"
 STATUS_PROCESSED = "PROCESSED"
 STATUS_FAILED = "FAILED"
+
+# Statuses that mean "the pipeline never finished for this row" -- on a
+# rescan these are resumed/completed rather than skipped as duplicates.
+_UNFINISHED_STATUSES = (STATUS_PENDING, STATUS_FAILED)
 
 
 class PathTraversalError(ValueError):
@@ -42,7 +53,7 @@ class PathTraversalError(ValueError):
 
 @dataclass
 class IngestOutcome:
-    status: str  # NEW | DUPLICATE | SKIPPED | ERROR
+    status: str  # NEW | RESUMED | DUPLICATE | SKIPPED | ERROR
     screenshot_id: int | None = None
     message: str = ""
     path: str = ""
@@ -54,6 +65,7 @@ class ScanSummary:
     finished_at: str = ""
     scanned: int = 0
     new_count: int = 0
+    resumed_count: int = 0
     duplicate_count: int = 0
     skipped_count: int = 0
     error_count: int = 0
@@ -120,7 +132,8 @@ def create_preview(image_path: Path, sha256: str, max_dimension: int, previews_d
             img = img.resize((max(1, int(width * scale)), max(1, int(height * scale))), Image.LANCZOS)
         img.save(dest, "JPEG", quality=85)
         return dest
-    except Exception:
+    except Exception as exc:
+        log.warning("preview generation failed for %s: %s", image_path, exc)
         return None
 
 
@@ -223,78 +236,32 @@ def _get_or_create_source_location(db: Database, source: SourceLocation) -> int:
     return cur.lastrowid
 
 
-def ingest_file(
+def _link_source(db: Database, screenshot_id: int, source_location_id: int) -> None:
+    already_linked = db.query_one(
+        "SELECT 1 FROM screenshot_sources WHERE screenshot_id = ? AND source_location_id = ?",
+        (screenshot_id, source_location_id),
+    )
+    if not already_linked:
+        db.execute(
+            "INSERT INTO screenshot_sources (screenshot_id, source_location_id, discovered_at) VALUES (?, ?, ?)",
+            (screenshot_id, source_location_id, utcnow()),
+        )
+
+
+def _run_processing_pipeline(
     db: Database,
     settings: Settings,
-    source: SourceLocation,
-    file_path: Path,
+    screenshot_id: int,
+    resolved: Path,
     project_root: Path,
-    rules: dict[str, Any] | None = None,
-) -> IngestOutcome:
-    source_location_id = _get_or_create_source_location(db, source)
-
-    try:
-        resolved = resolve_within_source(file_path, source.expanded_path())
-    except PathTraversalError as exc:
-        db.record_event(None, "REJECTED_PATH_TRAVERSAL", str(exc))
-        return IngestOutcome(status="ERROR", message=str(exc), path=str(file_path))
-
-    if not resolved.is_file() or not is_supported_image(resolved):
-        return IngestOutcome(status="SKIPPED", message="unsupported or missing file", path=str(resolved))
-
-    try:
-        digest = sha256_of_file(resolved)
-    except OSError as exc:
-        db.record_event(None, "HASH_FAILED", f"{resolved}: {exc}")
-        return IngestOutcome(status="ERROR", message=str(exc), path=str(resolved))
-
-    existing = db.query_one("SELECT id FROM screenshots WHERE sha256 = ?", (digest,))
-    if existing is not None:
-        screenshot_id = existing["id"]
-        already_linked = db.query_one(
-            "SELECT 1 FROM screenshot_sources WHERE screenshot_id = ? AND source_location_id = ?",
-            (screenshot_id, source_location_id),
-        )
-        if not already_linked:
-            db.execute(
-                "INSERT INTO screenshot_sources (screenshot_id, source_location_id, discovered_at) VALUES (?, ?, ?)",
-                (screenshot_id, source_location_id, utcnow()),
-            )
-        db.record_event(screenshot_id, "DUPLICATE_SKIPPED", f"hash already present at {resolved}")
-        return IngestOutcome(status="DUPLICATE", screenshot_id=screenshot_id, path=str(resolved))
-
-    stat = resolved.stat()
-    width = height = None
-    image_format = resolved.suffix.lstrip(".").lower()
-    if Image is not None:
-        try:
-            with Image.open(resolved) as im:
-                width, height = im.size
-                image_format = (im.format or image_format).lower()
-        except Exception:
-            pass
-
-    now = utcnow()
-    cur = db.execute(
-        """INSERT INTO screenshots (
-            sha256, original_path, filename, file_size, width, height, image_format,
-            captured_at, discovered_at, processing_status, source_platform, content_type,
-            created_at, updated_at
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-        (
-            digest, str(resolved), resolved.name, stat.st_size, width, height, image_format,
-            None, now, STATUS_PENDING, None, "unknown", now, now,
-        ),
-    )
-    screenshot_id = cur.lastrowid
-    db.execute(
-        "INSERT INTO screenshot_sources (screenshot_id, source_location_id, discovered_at) VALUES (?, ?, ?)",
-        (screenshot_id, source_location_id, now),
-    )
-    db.record_event(screenshot_id, "DISCOVERED", f"new screenshot at {resolved}")
-
+    rules: dict[str, Any] | None,
+) -> None:
+    """OCR + classify + summarize a screenshot row that already exists
+    (either freshly inserted, or a PENDING/FAILED row being resumed after
+    an interrupted scan). Always leaves the row at PROCESSED or FAILED --
+    never leaves it stuck at PENDING."""
     previews_dir = project_root / "runtime" / "previews"
-    create_preview(resolved, digest, settings.max_preview_dimension, previews_dir)
+    create_preview(resolved, sha256_of_file(resolved), settings.max_preview_dimension, previews_dir)
 
     try:
         ocr_result = run_ocr(
@@ -304,12 +271,13 @@ def ingest_file(
             max_dimension=settings.max_ocr_dimension,
         )
     except Exception as exc:
+        log.error("OCR crashed for screenshot %s (%s): %s", screenshot_id, resolved, exc)
         db.execute(
             "UPDATE screenshots SET processing_status = ?, error_message = ?, updated_at = ? WHERE id = ?",
             (STATUS_FAILED, f"OCR crashed: {exc}", utcnow(), screenshot_id),
         )
         db.record_event(screenshot_id, "OCR_CRASHED", str(exc))
-        return IngestOutcome(status="NEW", screenshot_id=screenshot_id, message="ocr crashed", path=str(resolved))
+        return
 
     db.execute(
         """INSERT INTO ocr_extractions (
@@ -353,7 +321,7 @@ def ingest_file(
     db.execute(
         """UPDATE screenshots SET
             processing_status = ?, processed_at = ?, content_type = ?, title = ?, summary = ?,
-            raw_ocr_text = ?, ocr_confidence = ?, classification_confidence = ?, updated_at = ?
+            raw_ocr_text = ?, ocr_confidence = ?, classification_confidence = ?, error_message = NULL, updated_at = ?
            WHERE id = ?""",
         (
             STATUS_PROCESSED, utcnow(), classification.content_type, title, summary,
@@ -363,7 +331,97 @@ def ingest_file(
     )
     db.record_event(screenshot_id, "PROCESSED", f"ocr={ocr_result.success_state} content_type={classification.content_type}")
 
-    return IngestOutcome(status="NEW", screenshot_id=screenshot_id, path=str(resolved))
+
+def ingest_file(
+    db: Database,
+    settings: Settings,
+    source: SourceLocation,
+    file_path: Path,
+    project_root: Path,
+    rules: dict[str, Any] | None = None,
+) -> IngestOutcome:
+    source_location_id = _get_or_create_source_location(db, source)
+
+    try:
+        resolved = resolve_within_source(file_path, source.expanded_path())
+    except PathTraversalError as exc:
+        log.warning("rejected path traversal attempt: %s", exc)
+        db.record_event(None, "REJECTED_PATH_TRAVERSAL", str(exc))
+        return IngestOutcome(status="ERROR", message=str(exc), path=str(file_path))
+
+    if not resolved.is_file() or not is_supported_image(resolved):
+        return IngestOutcome(status="SKIPPED", message="unsupported or missing file", path=str(resolved))
+
+    try:
+        digest = sha256_of_file(resolved)
+    except OSError as exc:
+        log.error("hashing failed for %s: %s", resolved, exc)
+        db.record_event(None, "HASH_FAILED", f"{resolved}: {exc}")
+        return IngestOutcome(status="ERROR", message=str(exc), path=str(resolved))
+
+    existing = db.query_one("SELECT id, processing_status FROM screenshots WHERE sha256 = ?", (digest,))
+
+    if existing is None:
+        stat = resolved.stat()
+        width = height = None
+        image_format = resolved.suffix.lstrip(".").lower()
+        if Image is not None:
+            try:
+                with Image.open(resolved) as im:
+                    width, height = im.size
+                    image_format = (im.format or image_format).lower()
+            except Exception:
+                pass
+
+        now = utcnow()
+        try:
+            cur = db.execute(
+                """INSERT INTO screenshots (
+                    sha256, original_path, filename, file_size, width, height, image_format,
+                    captured_at, discovered_at, processing_status, source_platform, content_type,
+                    created_at, updated_at
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (
+                    digest, str(resolved), resolved.name, stat.st_size, width, height, image_format,
+                    None, now, STATUS_PENDING, None, "unknown", now, now,
+                ),
+            )
+        except sqlite3.IntegrityError:
+            # Another concurrent scan inserted this hash between our SELECT
+            # and INSERT (e.g. two /api/scan calls racing). Fall through to
+            # the existing-row path instead of crashing.
+            log.info("hash %s inserted concurrently, treating as duplicate/resume", digest)
+            existing = db.query_one("SELECT id, processing_status FROM screenshots WHERE sha256 = ?", (digest,))
+            screenshot_id = existing["id"]
+            _link_source(db, screenshot_id, source_location_id)
+            if existing["processing_status"] in _UNFINISHED_STATUSES:
+                _run_processing_pipeline(db, settings, screenshot_id, resolved, project_root, rules)
+                return IngestOutcome(status="RESUMED", screenshot_id=screenshot_id, path=str(resolved))
+            db.record_event(screenshot_id, "DUPLICATE_SKIPPED", f"hash already present at {resolved}")
+            return IngestOutcome(status="DUPLICATE", screenshot_id=screenshot_id, path=str(resolved))
+
+        screenshot_id = cur.lastrowid
+        _link_source(db, screenshot_id, source_location_id)
+        db.record_event(screenshot_id, "DISCOVERED", f"new screenshot at {resolved}")
+        log.info("discovered new screenshot %s (id=%s)", resolved, screenshot_id)
+
+        _run_processing_pipeline(db, settings, screenshot_id, resolved, project_root, rules)
+        return IngestOutcome(status="NEW", screenshot_id=screenshot_id, path=str(resolved))
+
+    screenshot_id = existing["id"]
+    _link_source(db, screenshot_id, source_location_id)
+
+    if existing["processing_status"] in _UNFINISHED_STATUSES:
+        # A prior scan discovered this file but was interrupted (or OCR
+        # failed) before it reached PROCESSED. Finish the pipeline now
+        # instead of leaving it stranded forever.
+        log.info("resuming unfinished screenshot id=%s status=%s", screenshot_id, existing["processing_status"])
+        db.record_event(screenshot_id, "RESUMED", f"resuming from {existing['processing_status']}")
+        _run_processing_pipeline(db, settings, screenshot_id, resolved, project_root, rules)
+        return IngestOutcome(status="RESUMED", screenshot_id=screenshot_id, path=str(resolved))
+
+    db.record_event(screenshot_id, "DUPLICATE_SKIPPED", f"hash already present at {resolved}")
+    return IngestOutcome(status="DUPLICATE", screenshot_id=screenshot_id, path=str(resolved))
 
 
 def scan(
@@ -373,11 +431,12 @@ def scan(
     project_root: Path,
     batch_limit: int | None = None,
 ) -> ScanSummary:
-    """Idempotent bounded scan across all enabled + existing sources."""
+    """Idempotent, resumable, bounded scan across all enabled + existing sources."""
     rules = load_classification_rules()
     started_at = utcnow()
     summary = ScanSummary(started_at=started_at)
     limit = batch_limit if batch_limit is not None else settings.max_normal_batch
+    limit = max(1, int(limit))
 
     processed_count = 0
     for source in sources:
@@ -392,6 +451,9 @@ def scan(
             if outcome.status == "NEW":
                 summary.new_count += 1
                 processed_count += 1
+            elif outcome.status == "RESUMED":
+                summary.resumed_count += 1
+                processed_count += 1
             elif outcome.status == "DUPLICATE":
                 summary.duplicate_count += 1
             elif outcome.status == "SKIPPED":
@@ -402,10 +464,15 @@ def scan(
             break
 
     summary.finished_at = utcnow()
+    log.info(
+        "scan complete: scanned=%s new=%s resumed=%s dup=%s skipped=%s errors=%s",
+        summary.scanned, summary.new_count, summary.resumed_count, summary.duplicate_count,
+        summary.skipped_count, summary.error_count,
+    )
     db.record_event(
         None,
         "SCAN_COMPLETE",
-        f"scanned={summary.scanned} new={summary.new_count} dup={summary.duplicate_count} "
-        f"skipped={summary.skipped_count} errors={summary.error_count}",
+        f"scanned={summary.scanned} new={summary.new_count} resumed={summary.resumed_count} "
+        f"dup={summary.duplicate_count} skipped={summary.skipped_count} errors={summary.error_count}",
     )
     return summary

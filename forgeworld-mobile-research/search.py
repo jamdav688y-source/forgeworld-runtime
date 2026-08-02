@@ -127,6 +127,6 @@ def search_screenshots(db: Database, filters: SearchFilters) -> list[dict]:
             (row_dict["id"],),
         )
         row_dict["top_tags"] = [dict(t) for t in tag_rows]
-        row_dict["preview_path"] = f"runtime/previews/{row_dict['sha256']}.jpg"
+        row_dict["preview_path"] = f"/previews/{row_dict['sha256']}.jpg"
         results.append(row_dict)
     return results

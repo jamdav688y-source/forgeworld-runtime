@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from config import SourceLocation
+from database import utcnow
 from indexer import (
     classify_text,
     ingest_file,
@@ -10,6 +11,8 @@ from indexer import (
     sha256_of_file,
     scan,
     PathTraversalError,
+    STATUS_FAILED,
+    STATUS_PENDING,
 )
 
 
@@ -82,3 +85,74 @@ def test_ingest_preserves_original_file_unchanged(db, settings, project_root, tm
 
     after = image_path.read_bytes()
     assert before == after
+
+
+def test_interrupted_scan_resumes_stranded_pending_row(db, settings, project_root, tmp_path):
+    """Simulates a process kill right after the screenshots row INSERT but
+    before OCR/classification ran (see indexer.ingest_file). A screenshot
+    stuck at PENDING with no OCR text must be completed on the next scan,
+    not permanently treated as a duplicate."""
+    source_dir = tmp_path / "Screenshots"
+    source_dir.mkdir()
+    image_path = source_dir / "stranded.png"
+    _make_image(image_path, "Interrupted scan governance agent")
+    source = SourceLocation(path=str(source_dir), label="fixture", enabled=True)
+
+    digest = sha256_of_file(image_path)
+    now = utcnow()
+    db.execute(
+        """INSERT INTO screenshots (sha256, original_path, filename, discovered_at,
+           processing_status, created_at, updated_at) VALUES (?,?,?,?,?,?,?)""",
+        (digest, str(image_path.resolve()), image_path.name, now, STATUS_PENDING, now, now),
+    )
+
+    summary = scan(db, settings, [source], project_root, batch_limit=10)
+
+    assert summary.new_count == 0
+    assert summary.resumed_count == 1
+    assert summary.duplicate_count == 0
+
+    row = db.query_one("SELECT processing_status, raw_ocr_text FROM screenshots WHERE sha256 = ?", (digest,))
+    assert row["processing_status"] == "PROCESSED"
+    assert row["raw_ocr_text"]
+
+
+def test_interrupted_scan_resumes_failed_row(db, settings, project_root, tmp_path):
+    """A row that previously failed OCR (e.g. Tesseract crashed) should
+    also be retried on the next scan rather than staying FAILED forever."""
+    source_dir = tmp_path / "Screenshots"
+    source_dir.mkdir()
+    image_path = source_dir / "failed.png"
+    _make_image(image_path, "Retry me")
+    source = SourceLocation(path=str(source_dir), label="fixture", enabled=True)
+
+    digest = sha256_of_file(image_path)
+    now = utcnow()
+    db.execute(
+        """INSERT INTO screenshots (sha256, original_path, filename, discovered_at,
+           processing_status, error_message, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)""",
+        (digest, str(image_path.resolve()), image_path.name, now, STATUS_FAILED, "OCR crashed: boom", now, now),
+    )
+
+    summary = scan(db, settings, [source], project_root, batch_limit=10)
+
+    assert summary.resumed_count == 1
+    row = db.query_one("SELECT processing_status, error_message FROM screenshots WHERE sha256 = ?", (digest,))
+    assert row["processing_status"] == "PROCESSED"
+    assert row["error_message"] is None
+
+
+def test_already_processed_row_stays_duplicate(db, settings, project_root, tmp_path):
+    """A fully processed row must not be reprocessed on rescan -- only
+    PENDING/FAILED rows get resumed."""
+    source_dir = tmp_path / "Screenshots"
+    source_dir.mkdir()
+    image_path = source_dir / "done.png"
+    _make_image(image_path, "Already done")
+    source = SourceLocation(path=str(source_dir), label="fixture", enabled=True)
+
+    scan(db, settings, [source], project_root, batch_limit=10)
+    summary2 = scan(db, settings, [source], project_root, batch_limit=10)
+
+    assert summary2.resumed_count == 0
+    assert summary2.duplicate_count == 1
