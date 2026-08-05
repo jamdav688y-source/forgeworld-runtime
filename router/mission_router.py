@@ -28,6 +28,9 @@ DECISIONS_PATH = ROUTER_DIR / "decisions.jsonl"
 sys.path.insert(0, str(CAPABILITIES_DIR))
 import discover  # noqa: E402
 
+CAPABILITY_NEGOTIATION_DIR = Path(__file__).resolve().parent.parent / "capability_negotiation"
+sys.path.insert(0, str(CAPABILITY_NEGOTIATION_DIR))
+
 CONFIDENCE_WEIGHTS = {
     "reachability": 0.35,
     "task_fit": 0.30,
@@ -136,9 +139,44 @@ def build_tradeoff(selected, runner_up):
     )
 
 
-def route(objective, required_tags, mission_id=None):
+def route(objective, required_tags, mission_id=None, negotiation_mission_id=None, live_connectors=None):
+    """negotiation_mission_id: optional id into capability_negotiation/missions.py.
+    When given, the Capability Negotiation Engine runs FIRST as a preflight
+    gate -- if the mission's declared requirements aren't satisfied, routing
+    never runs and the decision records the capability gap + the exact
+    operator actions instead of a routing score. This is what "every future
+    mission can invoke the negotiation engine before execution" means in
+    practice: pass the flag, don't call two separate tools by hand."""
+    if negotiation_mission_id is not None:
+        import engine as negotiation_engine  # local import: optional dependency, only needed on this path
+
+        negotiation = negotiation_engine.negotiate(negotiation_mission_id, live_connectors=live_connectors)
+        negotiation_engine.publish_report(negotiation)
+        if not negotiation.can_proceed:
+            decision = {
+                "mission_id": mission_id or f"M-{int(time.time())}",
+                "objective": objective,
+                "required_tags": required_tags,
+                "mission_class": mission_class(required_tags),
+                "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "status": "queued_capability_gap",
+                "selected_capability": None,
+                "capability_negotiation": negotiation.as_dict(),
+                "tradeoffs": "Routing did not run -- capability negotiation found unmet requirements before any capability was scored.",
+                "expected_outcome": (
+                    f"Blocked on {len(negotiation.gaps)} capability gap(s) for mission "
+                    f"'{negotiation_mission_id}': {[g.capability_id for g in negotiation.gaps]}. "
+                    f"See capability_negotiation/reports/{negotiation_mission_id}/OPERATOR_ACTIONS.md."
+                ),
+                "provider_actually_used": None, "artifacts": None, "validation": None,
+                "commercial_outcome": None, "knowledge_contribution": None, "future_recommendations": None,
+            }
+            with open(DECISIONS_PATH, "a") as f:
+                f.write(json.dumps(decision) + "\n")
+            return decision
+
     registry = load_registry()
-    reachability_state = discover.probe_all()
+    reachability_state = discover.probe_all(live_connectors=live_connectors)
     discover.write_state(reachability_state)
     history = load_history()
 
@@ -196,10 +234,14 @@ def main():
     parser.add_argument("--objective", required=True, help="What the mission is trying to accomplish.")
     parser.add_argument("--tags", default="", help="Comma-separated required capability tags.")
     parser.add_argument("--mission-id", default=None)
+    parser.add_argument("--negotiate", default=None, dest="negotiation_mission_id",
+                         help="capability_negotiation mission id to gate this route on before scoring capabilities.")
+    parser.add_argument("--live-connectors", default="", help="Comma-separated list of connector names known-connected right now.")
     args = parser.parse_args()
 
     required_tags = [t.strip() for t in args.tags.split(",") if t.strip()]
-    decision = route(args.objective, required_tags, args.mission_id)
+    live = [c.strip() for c in args.live_connectors.split(",") if c.strip()] or None
+    decision = route(args.objective, required_tags, args.mission_id, args.negotiation_mission_id, live)
     json.dump(decision, sys.stdout, indent=2)
     print()
 

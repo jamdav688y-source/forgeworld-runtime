@@ -1,0 +1,22 @@
+{
+  "mission_id": "cinema_release_commit",
+  "generated_at": "2026-08-05T18:42:55Z",
+  "evidence": {
+    "git": {
+      "state": "AVAILABLE",
+      "evidence": "command 'git' found on PATH"
+    },
+    "python": {
+      "state": "AVAILABLE",
+      "evidence": "command 'python3' found on PATH"
+    },
+    "github": {
+      "state": "AVAILABLE",
+      "evidence": "TCP connect to api.github.com:443 succeeded"
+    },
+    "desktop_runtime": {
+      "state": "AVAILABLE",
+      "evidence": "capability is the local runtime itself"
+    }
+  }
+}

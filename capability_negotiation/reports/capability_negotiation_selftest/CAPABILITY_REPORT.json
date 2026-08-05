@@ -1,0 +1,16 @@
+{
+  "mission_id": "capability_negotiation_selftest",
+  "objective": "Dedicated fixture mission for testing check_resume() -- not a real deployment mission.",
+  "generated_at": "2026-08-05T18:41:06Z",
+  "can_proceed": true,
+  "requirements": [
+    {
+      "capability_id": "chatgpt",
+      "state": "DISCOVERED_AFTER_STARTUP",
+      "evidence": "env var 'OPENAI_API_KEY' set",
+      "gap_class": null,
+      "resolution_action": null
+    }
+  ],
+  "gaps": []
+}

@@ -1,0 +1,27 @@
+{
+  "mission_id": "windows_desktop_deployment",
+  "gap_count": 3,
+  "gaps": [
+    {
+      "capability_id": "windows_filesystem_execution",
+      "state": "UNAVAILABLE",
+      "evidence": "platform.system()='Linux', required 'Windows'",
+      "gap_class": "missing_filesystem_access",
+      "resolution_action": "This capability requires running on Windows -- it cannot be satisfied from the current platform. Execute the mission (or this specific step) on a real Windows machine."
+    },
+    {
+      "capability_id": "windows_shell_execution",
+      "state": "UNAVAILABLE",
+      "evidence": "platform.system()='Linux', required 'Windows'",
+      "gap_class": "missing_filesystem_access",
+      "resolution_action": "This capability requires running on Windows -- it cannot be satisfied from the current platform. Execute the mission (or this specific step) on a real Windows machine."
+    },
+    {
+      "capability_id": "remote_desktop_access",
+      "state": "OPERATOR_REQUIRED",
+      "evidence": "connector 'remote_desktop' unconfirmed: no live connector list supplied to this probe",
+      "gap_class": "missing_operator_authorization",
+      "resolution_action": "Connect/authorize the 'remote_desktop' connector, or have the calling agent supply live connector evidence when negotiating this mission."
+    }
+  ]
+}

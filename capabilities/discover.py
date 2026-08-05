@@ -4,14 +4,24 @@
 Reachability is measured, not assumed. Each check type maps to a concrete
 probe so the confidence score reflects what was actually observed on this
 machine at this moment:
-  command -> is the binary on PATH
-  env     -> is the credential/env var present
-  network -> can we open a TCP connection to the service
-  self    -> the capability is this runtime itself (always reachable)
-  manual  -> cannot be probed statically; operator must confirm (neutral 0.5)
+  command   -> is the binary on PATH
+  env       -> is the credential/env var present
+  network   -> can we open a TCP connection to the service
+  self      -> the capability is this runtime itself (always reachable)
+  manual    -> cannot be probed statically; operator must confirm (neutral 0.5)
+  platform  -> does platform.system() match the required OS (deterministic,
+               e.g. Windows-only capabilities correctly read UNAVAILABLE
+               when this process is running on Linux)
+  connector -> is this id present in a live connector-status list. That
+               list can only come from the calling agent (a plain Python
+               process here has no way to query a host's connector
+               session) -- pass it via probe_all(live_connectors=[...]).
+               Without one, this resolves to the neutral 'unconfirmed'
+               reading, same as 'manual', rather than guessing.
 """
 import json
 import os
+import platform
 import shutil
 import socket
 import sys
@@ -47,13 +57,32 @@ def probe_one(check):
         return 1.0, "capability is the local runtime itself"
     if check_type == "manual":
         return 0.5, "static probe not possible; requires operator/runtime confirmation"
+    if check_type == "platform":
+        actual = platform.system()
+        matched = actual == check["value"]
+        return (1.0 if matched else 0.0), f"platform.system()='{actual}', required '{check['value']}'"
+    if check_type == "connector":
+        return 0.0, f"connector '{check['value']}' unconfirmed: no live connector list supplied to this probe"
     return 0.0, f"unknown check type '{check_type}'"
 
 
-def probe_all():
+def probe_all(live_connectors=None):
+    """live_connectors: optional list of connector names known-connected
+    right now (only the calling agent can supply this -- see module
+    docstring). When present, 'connector' checks resolve against it
+    instead of returning the neutral 'unconfirmed' reading."""
     results = {}
     for cap in load_registry():
-        confidence, evidence = probe_one(cap["check"])
+        check = cap["check"]
+        if check.get("type") == "connector" and live_connectors is not None:
+            present = check["value"] in live_connectors
+            confidence, evidence = (
+                (1.0, f"connector '{check['value']}' present in supplied live connector list")
+                if present else
+                (0.0, f"connector '{check['value']}' NOT present in supplied live connector list {sorted(live_connectors)}")
+            )
+        else:
+            confidence, evidence = probe_one(check)
         results[cap["id"]] = {
             "reachability_confidence": confidence,
             "evidence": evidence,

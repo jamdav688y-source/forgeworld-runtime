@@ -1,0 +1,18 @@
+{
+  "mission_id": "windows_desktop_deployment",
+  "generated_at": "2026-08-05T18:42:55Z",
+  "evidence": {
+    "windows_filesystem_execution": {
+      "state": "UNAVAILABLE",
+      "evidence": "platform.system()='Linux', required 'Windows'"
+    },
+    "windows_shell_execution": {
+      "state": "UNAVAILABLE",
+      "evidence": "platform.system()='Linux', required 'Windows'"
+    },
+    "remote_desktop_access": {
+      "state": "OPERATOR_REQUIRED",
+      "evidence": "connector 'remote_desktop' unconfirmed: no live connector list supplied to this probe"
+    }
+  }
+}

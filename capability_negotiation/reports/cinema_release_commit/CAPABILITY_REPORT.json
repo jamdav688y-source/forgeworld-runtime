@@ -1,0 +1,37 @@
+{
+  "mission_id": "cinema_release_commit",
+  "objective": "Build, test, and push a Cinema Player release to the forgeworld-runtime repository from this runtime.",
+  "generated_at": "2026-08-05T18:42:55Z",
+  "can_proceed": true,
+  "requirements": [
+    {
+      "capability_id": "git",
+      "state": "AVAILABLE",
+      "evidence": "command 'git' found on PATH",
+      "gap_class": null,
+      "resolution_action": null
+    },
+    {
+      "capability_id": "python",
+      "state": "AVAILABLE",
+      "evidence": "command 'python3' found on PATH",
+      "gap_class": null,
+      "resolution_action": null
+    },
+    {
+      "capability_id": "github",
+      "state": "AVAILABLE",
+      "evidence": "TCP connect to api.github.com:443 succeeded",
+      "gap_class": null,
+      "resolution_action": null
+    },
+    {
+      "capability_id": "desktop_runtime",
+      "state": "AVAILABLE",
+      "evidence": "capability is the local runtime itself",
+      "gap_class": null,
+      "resolution_action": null
+    }
+  ],
+  "gaps": []
+}

@@ -1,0 +1,14 @@
+{
+  "mission_id": "third_party_notification_workflow",
+  "generated_at": "2026-08-05T18:40:49Z",
+  "evidence": {
+    "slack": {
+      "state": "AVAILABLE",
+      "evidence": "connector 'Slack' present in supplied live connector list"
+    },
+    "gmail": {
+      "state": "AVAILABLE",
+      "evidence": "connector 'Gmail' present in supplied live connector list"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "mission_id": "capability_negotiation_selftest",
+  "generated_at": "2026-08-05T18:41:06Z",
+  "evidence": {
+    "chatgpt": {
+      "state": "DISCOVERED_AFTER_STARTUP",
+      "evidence": "env var 'OPENAI_API_KEY' set"
+    }
+  }
+}

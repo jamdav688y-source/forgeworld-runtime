@@ -129,6 +129,11 @@ discover)
 python3 "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../capabilities/discover.py"
 ;;
 
+negotiate)
+shift
+python3 "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../capability_negotiation/negotiate.py" "$@"
+;;
+
 clean)
 pkg clean
 rm -rf "$ROOT/logs"/*.tmp 2>/dev/null || true
@@ -150,6 +155,7 @@ echo "forge map"
 echo "forge doctrine"
 echo "forge route --objective '...' --tags a,b,c"
 echo "forge discover"
+echo "forge negotiate --mission <id> [--live-connectors a,b,c] [--resume]"
 echo "forge clean"
 ;;
 

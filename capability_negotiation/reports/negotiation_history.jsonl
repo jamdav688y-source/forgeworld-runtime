@@ -1,0 +1,20 @@
+{"mission_id": "windows_desktop_deployment", "generated_at": "2026-08-05T18:40:32Z", "can_proceed": false, "gap_count": 3, "gap_capability_ids": ["windows_filesystem_execution", "windows_shell_execution", "remote_desktop_access"]}
+{"mission_id": "cinema_release_commit", "generated_at": "2026-08-05T18:40:41Z", "can_proceed": true, "gap_count": 0, "gap_capability_ids": []}
+{"mission_id": "third_party_notification_workflow", "generated_at": "2026-08-05T18:40:41Z", "can_proceed": false, "gap_count": 2, "gap_capability_ids": ["slack", "gmail"]}
+{"mission_id": "third_party_notification_workflow", "generated_at": "2026-08-05T18:40:41Z", "can_proceed": true, "gap_count": 0, "gap_capability_ids": []}
+{"mission_id": "third_party_notification_workflow", "generated_at": "2026-08-05T18:40:49Z", "can_proceed": false, "gap_count": 2, "gap_capability_ids": ["slack", "gmail"]}
+{"mission_id": "third_party_notification_workflow", "generated_at": "2026-08-05T18:40:49Z", "can_proceed": true, "gap_count": 0, "gap_capability_ids": []}
+{"mission_id": "capability_negotiation_selftest", "generated_at": "2026-08-05T18:41:06Z", "can_proceed": false, "gap_count": 1, "gap_capability_ids": ["chatgpt"]}
+{"mission_id": "capability_negotiation_selftest", "generated_at": "2026-08-05T18:41:06Z", "can_proceed": true, "gap_count": 0, "gap_capability_ids": []}
+{"mission_id": "cinema_release_commit", "generated_at": "2026-08-05T18:41:46Z", "can_proceed": true, "gap_count": 0, "gap_capability_ids": []}
+{"mission_id": "capability_negotiation_selftest", "generated_at": "2026-08-05T18:41:46Z", "can_proceed": false, "gap_count": 1, "gap_capability_ids": ["chatgpt"]}
+{"mission_id": "capability_negotiation_selftest", "generated_at": "2026-08-05T18:41:46Z", "can_proceed": true, "gap_count": 0, "gap_capability_ids": []}
+{"mission_id": "windows_desktop_deployment", "generated_at": "2026-08-05T18:41:46Z", "can_proceed": false, "gap_count": 3, "gap_capability_ids": ["windows_filesystem_execution", "windows_shell_execution", "remote_desktop_access"]}
+{"mission_id": "windows_desktop_deployment", "generated_at": "2026-08-05T18:41:46Z", "can_proceed": false, "gap_count": 3, "gap_capability_ids": ["windows_filesystem_execution", "windows_shell_execution", "remote_desktop_access"]}
+{"mission_id": "windows_desktop_deployment", "generated_at": "2026-08-05T18:42:55Z", "can_proceed": false, "gap_count": 3, "gap_capability_ids": ["windows_filesystem_execution", "windows_shell_execution", "remote_desktop_access"]}
+{"mission_id": "cinema_release_commit", "generated_at": "2026-08-05T18:42:55Z", "can_proceed": true, "gap_count": 0, "gap_capability_ids": []}
+{"mission_id": "cinema_release_commit", "generated_at": "2026-08-05T18:43:10Z", "can_proceed": true, "gap_count": 0, "gap_capability_ids": []}
+{"mission_id": "capability_negotiation_selftest", "generated_at": "2026-08-05T18:43:10Z", "can_proceed": false, "gap_count": 1, "gap_capability_ids": ["chatgpt"]}
+{"mission_id": "capability_negotiation_selftest", "generated_at": "2026-08-05T18:43:10Z", "can_proceed": true, "gap_count": 0, "gap_capability_ids": []}
+{"mission_id": "windows_desktop_deployment", "generated_at": "2026-08-05T18:43:10Z", "can_proceed": false, "gap_count": 3, "gap_capability_ids": ["windows_filesystem_execution", "windows_shell_execution", "remote_desktop_access"]}
+{"mission_id": "windows_desktop_deployment", "generated_at": "2026-08-05T18:43:11Z", "can_proceed": false, "gap_count": 3, "gap_capability_ids": ["windows_filesystem_execution", "windows_shell_execution", "remote_desktop_access"]}

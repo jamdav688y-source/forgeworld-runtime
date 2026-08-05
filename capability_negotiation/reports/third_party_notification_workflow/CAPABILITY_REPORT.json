@@ -1,0 +1,23 @@
+{
+  "mission_id": "third_party_notification_workflow",
+  "objective": "Notify an operator via a connected service (e.g. Slack or Gmail) when a long-running render or validation completes.",
+  "generated_at": "2026-08-05T18:40:49Z",
+  "can_proceed": true,
+  "requirements": [
+    {
+      "capability_id": "slack",
+      "state": "AVAILABLE",
+      "evidence": "connector 'Slack' present in supplied live connector list",
+      "gap_class": null,
+      "resolution_action": null
+    },
+    {
+      "capability_id": "gmail",
+      "state": "AVAILABLE",
+      "evidence": "connector 'Gmail' present in supplied live connector list",
+      "gap_class": null,
+      "resolution_action": null
+    }
+  ],
+  "gaps": []
+}
