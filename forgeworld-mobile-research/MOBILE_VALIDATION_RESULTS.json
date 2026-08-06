@@ -1,0 +1,36 @@
+{
+  "validated_in_environment": "Linux cloud dev container (jamdav688y-source/forgeworld-runtime session) -- NOT an Android device, NOT Termux",
+  "generated_at": "2026-08-06T19:10:00Z",
+  "test_suites": {
+    "forgeworld-mobile-research/tests/ (pytest)": {
+      "total": 77,
+      "passed": 77,
+      "failed": 0,
+      "breakdown": {
+        "pre-existing (test_app, test_database, test_indexer, test_search, test_summarizer, test_integrations)": 26,
+        "test_device_profile.py (new)": 11,
+        "test_resource_guard.py (new)": 12,
+        "test_mission_handoff.py (new)": 15,
+        "test_cinema_review.py (new)": 13
+      }
+    },
+    "capability_negotiation/test_engine.py (unittest)": {"total": 18, "passed": 18, "failed": 0},
+    "cinema/cinema_player_90s/tests/test_alerts.py (pytest, unrelated subsystem regression check)": {"total": 17, "passed": 17, "failed": 0}
+  },
+  "live_checks_performed": [
+    "Started player Flask app for real (python3 app.py), confirmed binds to 127.0.0.1:5055 only",
+    "curl-exercised every new API route (/api/system_status, /api/capability_state, /api/resource_state, /api/device_profile, /api/missions [GET+POST], /api/missions/<id>, /api/cinema/artifacts, /api/cinema/validation/<version>, /api/cinema/reviews [GET+POST])",
+    "Real headless-browser (Playwright/Chromium) click-through of the Status tab: Mobile Substrate card renders, Capability State/Mission Handoffs/Cinema Review/Device Profile modals all open and show real API data, screenshot captured",
+    "Confirmed device_profile.py discovers real artifacts (10 files) from the actual Cinema Player release built earlier in this session, not mock data",
+    "Confirmed mission_handoff.py's capability bucketing correctly classifies AVAILABLE/BLOCKED_BY_PLATFORM/OPERATOR_REQUIRED capabilities using real probe evidence"
+  ],
+  "explicitly_not_validated": [
+    "Anything requiring a real Android device or Termux install -- none was reachable from this session (see MOBILE_KNOWN_LIMITATIONS.md)",
+    "Real screenshot capture from a phone camera/screen",
+    "Real battery/thermal sensor readings",
+    "Termux home-screen shortcut / one-tap launch",
+    "Behavior under actual mobile data/offline network transitions",
+    "Real Cinema render or desktop shortcut creation on an actual Windows machine (that remains delegated and untested per the separate windows_desktop_deployment mission)"
+  ],
+  "regression_check": "all 26 pre-existing forgeworld-mobile-research tests plus the unrelated Cinema alert-engine test suite (17 tests) still pass unchanged -- nothing in this cycle broke prior work"
+}

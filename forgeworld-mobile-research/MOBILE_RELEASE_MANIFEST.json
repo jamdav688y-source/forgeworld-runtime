@@ -1,0 +1,106 @@
+{
+  "mission_id": "FORGEWORLD-MOBILE-SUBSTRATE-001",
+  "generated_at": "2026-08-06T19:15:00Z",
+  "build_environment": "Linux cloud dev container -- NOT an Android device",
+  "file_count": 15,
+  "files": [
+    {
+      "path": "device_profile.py",
+      "sha256": "7a086c3f5a3eef52b348d60249455dee3d345c51bf4585afb8899a3b74307eba",
+      "size_bytes": 9409
+    },
+    {
+      "path": "resource_guard.py",
+      "sha256": "2bf1d2b91b2f1ad09b575bb2ddc82e8b6f29e9af0d24733f9065d185bbae50f1",
+      "size_bytes": 6196
+    },
+    {
+      "path": "mission_handoff.py",
+      "sha256": "201b5aa0a0380ad33518808b7ef2e878dc7006a2fdb8c4d1cc3b46488c01e47b",
+      "size_bytes": 7550
+    },
+    {
+      "path": "cinema_review.py",
+      "sha256": "af64f7c5f06e4c4b9bf9804fa1e16b4d5ddabb30d646ef3cf355c93017fde738",
+      "size_bytes": 5519
+    },
+    {
+      "path": "tests/test_device_profile.py",
+      "sha256": "9c73662299969270f8339bb01a6f831fb3fe8b437c31ff227bf756472e0422fd",
+      "size_bytes": 3937
+    },
+    {
+      "path": "tests/test_resource_guard.py",
+      "sha256": "ecac3156e820e2dc55ec380e35d0ff0756702ddb76fef5b485d9c4371a71e3bf",
+      "size_bytes": 3072
+    },
+    {
+      "path": "tests/test_mission_handoff.py",
+      "sha256": "2c8a3f860e247fc43b6722b740dffbafd52983ca1fa8dc4be7bdd4fa79d0a757",
+      "size_bytes": 3945
+    },
+    {
+      "path": "tests/test_cinema_review.py",
+      "sha256": "ceda53e7169c23171fe165184d1f446c7094aa987fbe452e63ff2c4c6f747308",
+      "size_bytes": 3525
+    },
+    {
+      "path": "app.py",
+      "sha256": "e51ed0611ffd97f68a2ae51e458ee977727f7a3c2f3e0bb382cba015d1f517c2",
+      "size_bytes": 35097
+    },
+    {
+      "path": "static/app.js",
+      "sha256": "6e7dc8b63be1e103eaa4ce0858f612252f6dd526eb21674d21c6864c664474a2",
+      "size_bytes": 29844
+    },
+    {
+      "path": "MOBILE_DEPLOYMENT_REPORT.md",
+      "sha256": "a2e71b5519e89471766ac977bfb5dfdb3948dcc9578780d051c710fedee6a3c5",
+      "size_bytes": 5238
+    },
+    {
+      "path": "MOBILE_CAPABILITY_STATE.json",
+      "sha256": "f8450083d319948cb1c3dfe8d702b397043acea8d9bce7afcfbfac7070c1d367",
+      "size_bytes": 5827
+    },
+    {
+      "path": "MOBILE_VALIDATION_RESULTS.json",
+      "sha256": "4baadb6ab9bcddcf9b4a2abfe83bf2cbe86695d72b7392c10cd22818034f5e08",
+      "size_bytes": 2617
+    },
+    {
+      "path": "MOBILE_CINEMA_HANDOFF_SPEC.md",
+      "sha256": "f93c1a93d1d743507c4b84376a61e6b5e6c930253caa5e2ea50dddddf7f98eec",
+      "size_bytes": 4015
+    },
+    {
+      "path": "MOBILE_KNOWN_LIMITATIONS.md",
+      "sha256": "89a5a92e88d6d3e5a61a5c650abc9cc69913e3ee96ef1c9cbf9f9c12ee2633c2",
+      "size_bytes": 4569
+    }
+  ],
+  "new_capabilities_registered": [
+    "android_filesystem_access",
+    "termux_shell_execution",
+    "camera_capture",
+    "screenshot_ingestion",
+    "local_research_index",
+    "cinema_review",
+    "desktop_shortcut_creation",
+    "cinema_render_1080p_24fps",
+    "connector_authentication"
+  ],
+  "new_states_added": [
+    "BLOCKED_BY_PLATFORM",
+    "DELEGATE_TO_WINDOWS"
+  ],
+  "new_mission_defined": "android_mobile_deployment",
+  "test_totals": {
+    "forgeworld_mobile_research": 77,
+    "capability_negotiation": 18,
+    "cinema_alert_regression_check": 17
+  },
+  "device_validated": false,
+  "device_validation_reason": "no Android/Termux connector reachable from this session -- see MOBILE_KNOWN_LIMITATIONS.md"
+}

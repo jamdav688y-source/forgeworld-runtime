@@ -1,13 +1,13 @@
 {
   "mission_id": "windows_desktop_deployment",
-  "generated_at": "2026-08-05T18:42:55Z",
+  "generated_at": "2026-08-06T18:57:30Z",
   "evidence": {
     "windows_filesystem_execution": {
-      "state": "UNAVAILABLE",
+      "state": "BLOCKED_BY_PLATFORM",
       "evidence": "platform.system()='Linux', required 'Windows'"
     },
     "windows_shell_execution": {
-      "state": "UNAVAILABLE",
+      "state": "BLOCKED_BY_PLATFORM",
       "evidence": "platform.system()='Linux', required 'Windows'"
     },
     "remote_desktop_access": {

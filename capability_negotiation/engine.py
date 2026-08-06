@@ -35,8 +35,9 @@ sys.path.insert(0, str(CAP_NEG_ROOT))
 import discover  # noqa: E402
 from states import (  # noqa: E402
     AVAILABLE, UNAVAILABLE, UNKNOWN, BLOCKED_BY_POLICY, OPERATOR_REQUIRED,
-    DISCOVERED_AFTER_STARTUP, SATISFIED_STATES, CHECK_TYPE_TO_DEFAULT_GAP,
-    GAP_MISSING_OPERATOR_AUTHORIZATION,
+    DISCOVERED_AFTER_STARTUP, BLOCKED_BY_PLATFORM, DELEGATE_TO_WINDOWS,
+    SATISFIED_STATES, CHECK_TYPE_TO_DEFAULT_GAP, GAP_MISSING_OPERATOR_AUTHORIZATION,
+    RESUME_READY, RESUME_STILL_BLOCKED, RESUME_NO_PRIOR_GAP,
 )
 from missions import get_mission  # noqa: E402
 
@@ -113,8 +114,13 @@ def _resolve_state(cap_id: str, registry_by_id: dict, probe: dict, policy_overri
 
     if confidence <= 0.0:
         gap = CHECK_TYPE_TO_DEFAULT_GAP.get(check_type, "missing_dependency")
+        # A 'platform' check failure is always a deterministic cross-platform
+        # mismatch, not a generic "not installed" gap -- label it precisely
+        # so the resolution action reads as "run this on the right machine,"
+        # not "install something here."
+        state = BLOCKED_BY_PLATFORM if check_type == "platform" else UNAVAILABLE
         return RequirementResult(
-            capability_id=cap_id, state=UNAVAILABLE, evidence=evidence,
+            capability_id=cap_id, state=state, evidence=evidence,
             gap_class=gap, resolution_action=_resolution_action_for(cap_id, entry, gap, evidence),
         )
 
@@ -137,7 +143,31 @@ def _resolution_action_for(cap_id: str, entry: dict, gap_class: str, evidence: s
     if gap_class == "missing_filesystem_access":
         return (f"This capability requires running on {check['value']} -- it cannot be satisfied from the "
                 f"current platform. Execute the mission (or this specific step) on a real {check['value']} machine.")
+    if gap_class == "missing_runtime" and check.get("type") == "termux":
+        return ("This capability requires running inside Termux on the actual Android device -- it cannot be "
+                "satisfied from any other environment, including this one. Run negotiation from within Termux "
+                "on the phone itself (`python3 capability_negotiation/negotiate.py ...` under Termux, once the "
+                "repo is cloned there).")
     return f"Resolve: {evidence}"
+
+
+def _delegated_result(cap_id: str, registry_by_id: dict) -> RequirementResult:
+    """A mission-level policy decision, not a probe result: this
+    capability is never attempted on this device, by design -- it always
+    routes to Windows via a mission_handoff package. Unlike
+    BLOCKED_BY_POLICY (which blocks a mission), DELEGATE_TO_WINDOWS is a
+    complete, intended resolution and counts as satisfied."""
+    known = registry_by_id.get(cap_id) is not None
+    evidence = (
+        f"'{cap_id}' is declared out of scope for this device by mission design"
+        + ("" if known else f" (not found in capabilities/registry.json either -- register it if it needs its own probe)")
+    )
+    return RequirementResult(
+        capability_id=cap_id, state=DELEGATE_TO_WINDOWS, evidence=evidence,
+        gap_class=None,
+        resolution_action="Execute via a mission_handoff package addressed to the Windows runtime "
+                           "(see forgeworld-mobile-research/mission_handoff.py); no local action needed.",
+    )
 
 
 def negotiate(mission_id: str, live_connectors: list[str] | None = None,
@@ -150,9 +180,13 @@ def negotiate(mission_id: str, live_connectors: list[str] | None = None,
     probe = discover.probe_all(live_connectors=live_connectors)
     policy_overrides = policy_overrides or {}
 
+    delegated_ids = set(mission.get("delegate_to_windows_ids", []))
     requirements = [
         _resolve_state(cap_id, registry_by_id, probe, policy_overrides)
         for cap_id in mission["required_capability_ids"]
+        if cap_id not in delegated_ids
+    ] + [
+        _delegated_result(cap_id, registry_by_id) for cap_id in delegated_ids
     ]
     gaps = [r for r in requirements if r.state not in SATISFIED_STATES]
     can_proceed = len(gaps) == 0
@@ -255,8 +289,16 @@ def check_resume(mission_id: str, live_connectors: list[str] | None = None,
 
     publish_report(result, out_dir=out_dir)
 
+    if not prior_gap_ids:
+        overall_status = RESUME_NO_PRIOR_GAP
+    elif result.can_proceed:
+        overall_status = RESUME_READY
+    else:
+        overall_status = RESUME_STILL_BLOCKED
+
     return {
         "mission_id": mission_id,
+        "overall_status": overall_status,
         "previously_gapped": sorted(prior_gap_ids),
         "newly_resolved": newly_resolved,
         "still_gapped": [g.capability_id for g in result.gaps],

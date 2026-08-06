@@ -1,0 +1,101 @@
+{
+  "mission_id": "android_mobile_deployment",
+  "objective": "Configure a new Android phone as a ForgeWorld mobile substrate: capture/index/retrieve local research, support Cinema review, and hand off mission packages to the Windows runtime -- without reproducing the full Windows ForgeWorld runtime on the phone.",
+  "generated_at": "2026-08-06T19:10:14Z",
+  "can_proceed": false,
+  "requirements": [
+    {
+      "capability_id": "android_filesystem_access",
+      "state": "UNAVAILABLE",
+      "evidence": "not running under Termux: TERMUX_VERSION unset, PREFIX='' (actual platform: Linux)",
+      "gap_class": "missing_runtime",
+      "resolution_action": "This capability requires running inside Termux on the actual Android device -- it cannot be satisfied from any other environment, including this one. Run negotiation from within Termux on the phone itself (`python3 capability_negotiation/negotiate.py ...` under Termux, once the repo is cloned there)."
+    },
+    {
+      "capability_id": "termux_shell_execution",
+      "state": "UNAVAILABLE",
+      "evidence": "not running under Termux: TERMUX_VERSION unset, PREFIX='' (actual platform: Linux)",
+      "gap_class": "missing_runtime",
+      "resolution_action": "This capability requires running inside Termux on the actual Android device -- it cannot be satisfied from any other environment, including this one. Run negotiation from within Termux on the phone itself (`python3 capability_negotiation/negotiate.py ...` under Termux, once the repo is cloned there)."
+    },
+    {
+      "capability_id": "screenshot_ingestion",
+      "state": "AVAILABLE",
+      "evidence": "capability is the local runtime itself",
+      "gap_class": null,
+      "resolution_action": null
+    },
+    {
+      "capability_id": "local_research_index",
+      "state": "AVAILABLE",
+      "evidence": "capability is the local runtime itself",
+      "gap_class": null,
+      "resolution_action": null
+    },
+    {
+      "capability_id": "cinema_review",
+      "state": "AVAILABLE",
+      "evidence": "capability is the local runtime itself",
+      "gap_class": null,
+      "resolution_action": null
+    },
+    {
+      "capability_id": "camera_capture",
+      "state": "UNKNOWN",
+      "evidence": "static probe not possible; requires operator/runtime confirmation",
+      "gap_class": "missing_dependency",
+      "resolution_action": "Reachability of 'camera_capture' could not be conclusively determined (static probe not possible; requires operator/runtime confirmation); an operator should confirm it directly."
+    },
+    {
+      "capability_id": "connector_authentication",
+      "state": "UNKNOWN",
+      "evidence": "static probe not possible; requires operator/runtime confirmation",
+      "gap_class": "missing_dependency",
+      "resolution_action": "Reachability of 'connector_authentication' could not be conclusively determined (static probe not possible; requires operator/runtime confirmation); an operator should confirm it directly."
+    },
+    {
+      "capability_id": "desktop_shortcut_creation",
+      "state": "DELEGATE_TO_WINDOWS",
+      "evidence": "'desktop_shortcut_creation' is declared out of scope for this device by mission design",
+      "gap_class": null,
+      "resolution_action": "Execute via a mission_handoff package addressed to the Windows runtime (see forgeworld-mobile-research/mission_handoff.py); no local action needed."
+    },
+    {
+      "capability_id": "cinema_render_1080p_24fps",
+      "state": "DELEGATE_TO_WINDOWS",
+      "evidence": "'cinema_render_1080p_24fps' is declared out of scope for this device by mission design",
+      "gap_class": null,
+      "resolution_action": "Execute via a mission_handoff package addressed to the Windows runtime (see forgeworld-mobile-research/mission_handoff.py); no local action needed."
+    }
+  ],
+  "gaps": [
+    {
+      "capability_id": "android_filesystem_access",
+      "state": "UNAVAILABLE",
+      "evidence": "not running under Termux: TERMUX_VERSION unset, PREFIX='' (actual platform: Linux)",
+      "gap_class": "missing_runtime",
+      "resolution_action": "This capability requires running inside Termux on the actual Android device -- it cannot be satisfied from any other environment, including this one. Run negotiation from within Termux on the phone itself (`python3 capability_negotiation/negotiate.py ...` under Termux, once the repo is cloned there)."
+    },
+    {
+      "capability_id": "termux_shell_execution",
+      "state": "UNAVAILABLE",
+      "evidence": "not running under Termux: TERMUX_VERSION unset, PREFIX='' (actual platform: Linux)",
+      "gap_class": "missing_runtime",
+      "resolution_action": "This capability requires running inside Termux on the actual Android device -- it cannot be satisfied from any other environment, including this one. Run negotiation from within Termux on the phone itself (`python3 capability_negotiation/negotiate.py ...` under Termux, once the repo is cloned there)."
+    },
+    {
+      "capability_id": "camera_capture",
+      "state": "UNKNOWN",
+      "evidence": "static probe not possible; requires operator/runtime confirmation",
+      "gap_class": "missing_dependency",
+      "resolution_action": "Reachability of 'camera_capture' could not be conclusively determined (static probe not possible; requires operator/runtime confirmation); an operator should confirm it directly."
+    },
+    {
+      "capability_id": "connector_authentication",
+      "state": "UNKNOWN",
+      "evidence": "static probe not possible; requires operator/runtime confirmation",
+      "gap_class": "missing_dependency",
+      "resolution_action": "Reachability of 'connector_authentication' could not be conclusively determined (static probe not possible; requires operator/runtime confirmation); an operator should confirm it directly."
+    }
+  ]
+}

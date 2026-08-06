@@ -30,8 +30,14 @@ from prompts import VALID_MODES, build_source_inventory, render_prompt, save_gen
 from summarizer import build_labeled_summary
 from watcher import BoundedPoller
 from integrations import get_integration_adapters
+import mission_handoff
+import cinema_review
+import resource_guard
+import device_profile
 
 PROJECT_ROOT = cfg.PROJECT_ROOT
+MISSIONS_DIR = PROJECT_ROOT / "missions"
+EVIDENCE_DIR = PROJECT_ROOT / "evidence" / "cinema_reviews"
 
 log = cfg.configure_logging()
 app_log = log.getChild("app")
@@ -595,6 +601,13 @@ def api_system_status():
     db = get_db()
     settings = get_settings()
     free_bytes = shutil.disk_usage(PROJECT_ROOT).free
+
+    metrics = resource_guard.ResourceMetrics(
+        free_storage_gb=round(free_bytes / 1e9, 2),
+        pending_indexing_queue=0,
+    )
+    resource_decision = resource_guard.evaluate(metrics)
+
     return jsonify({
         "application_name": settings.application_name,
         "host": settings.host,
@@ -610,6 +623,107 @@ def api_system_status():
         "forgeworld_integrations": {
             key: adapter.describe() for key, adapter in get_integration_adapters().items()
         },
+        "mobile_keel_state": "MOBILE_KEEL_IDLE" if not _scan_lock.locked() else "ACTIVE",
+        "mobile_resource_state": resource_decision.as_dict(),
+        "mobile_platform_class": device_profile.detect_termux()[0] and "TERMUX_ANDROID" or "NOT_ANDROID",
+        "pending_mission_handoffs": len(mission_handoff.list_mission_packages(MISSIONS_DIR)),
+        "pending_cinema_reviews": cinema_review.review_queue_summary(EVIDENCE_DIR)["pending"],
+    })
+
+
+# ----------------------------------------------------------- capability --
+
+@app.route("/api/capability_state")
+def api_capability_state():
+    """Honest capability negotiation for this device, right now -- reuses
+    capability_negotiation/engine.py rather than re-deriving reachability."""
+    import sys as _sys
+    cap_neg_dir = PROJECT_ROOT.parent / "capability_negotiation"
+    _sys.path.insert(0, str(cap_neg_dir))
+    import engine as negotiation_engine  # noqa: E402
+
+    result = negotiation_engine.negotiate("android_mobile_deployment")
+    return jsonify(result.as_dict())
+
+
+@app.route("/api/resource_state")
+def api_resource_state():
+    free_bytes = shutil.disk_usage(PROJECT_ROOT).free
+    metrics = resource_guard.ResourceMetrics(free_storage_gb=round(free_bytes / 1e9, 2))
+    decision = resource_guard.evaluate(metrics)
+    return jsonify(decision.as_dict())
+
+
+@app.route("/api/device_profile")
+def api_device_profile():
+    return jsonify(device_profile.build_profile(PROJECT_ROOT))
+
+
+# ------------------------------------------------------------- missions --
+
+@app.route("/api/missions", methods=["GET", "POST"])
+def api_missions():
+    if request.method == "POST":
+        data = request.get_json(force=True)
+        try:
+            pkg = mission_handoff.create_mission_package(
+                requested_outcome=data["requested_outcome"],
+                source_records=data.get("source_records"),
+                required_capabilities=data.get("required_capabilities"),
+                constraints=data.get("constraints"),
+                evidence=data.get("evidence"),
+                priority=data.get("priority", "normal"),
+                resource_profile=data.get("resource_profile"),
+                resume_condition=data.get("resume_condition"),
+            )
+            mission_handoff.save_mission_package(pkg, MISSIONS_DIR)
+        except (KeyError, ValueError) as e:
+            return jsonify({"error": str(e)}), 400
+        return jsonify(pkg), 201
+    return jsonify(mission_handoff.list_mission_packages(MISSIONS_DIR))
+
+
+@app.route("/api/missions/<mission_id>")
+def api_mission_detail(mission_id: str):
+    pkg = mission_handoff.load_mission_package(MISSIONS_DIR, mission_id)
+    if pkg is None:
+        abort(404)
+    return jsonify(pkg)
+
+
+# --------------------------------------------------------- cinema review --
+
+@app.route("/api/cinema/artifacts")
+def api_cinema_artifacts():
+    return jsonify(cinema_review.discover_cinema_artifacts())
+
+
+@app.route("/api/cinema/validation/<version>")
+def api_cinema_validation(version: str):
+    summary = cinema_review.read_validation_summary(version)
+    if summary is None:
+        abort(404)
+    return jsonify(summary)
+
+
+@app.route("/api/cinema/reviews", methods=["GET", "POST"])
+def api_cinema_reviews():
+    if request.method == "POST":
+        data = request.get_json(force=True)
+        try:
+            review = cinema_review.create_review(
+                artifact=data["artifact"], version=data["version"], device=data.get("device", "unknown"),
+                review_type=data["review_type"], observations=data.get("observations"),
+                defects=data.get("defects"), approval_state=data.get("approval_state", "pending"),
+                operator_notes=data.get("operator_notes", ""),
+            )
+            cinema_review.save_review(review, EVIDENCE_DIR)
+        except (KeyError, ValueError) as e:
+            return jsonify({"error": str(e)}), 400
+        return jsonify(review), 201
+    return jsonify({
+        "reviews": cinema_review.list_reviews(EVIDENCE_DIR),
+        "summary": cinema_review.review_queue_summary(EVIDENCE_DIR),
     })
 
 

@@ -128,6 +128,78 @@
       "check": {"type": "self"},
       "tags": ["preflight_validation", "gap_detection", "operator_action_generation", "mission_gating"],
       "cost": {"dollar": 0.0, "latency": 0.05, "tokens": 0.0, "attention": 0.1, "complexity": 0.2}
+    },
+    {
+      "id": "android_filesystem_access",
+      "kind": "execution_environment",
+      "provider": "local",
+      "check": {"type": "termux", "value": null},
+      "tags": ["mobile_deployment", "file_system_access", "screenshot_ingestion"],
+      "cost": {"dollar": 0.0, "latency": 0.1, "tokens": 0.0, "attention": 0.2, "complexity": 0.2}
+    },
+    {
+      "id": "termux_shell_execution",
+      "kind": "execution_environment",
+      "provider": "local",
+      "check": {"type": "termux", "value": null},
+      "tags": ["mobile_deployment", "shell_execution", "launcher_testing"],
+      "cost": {"dollar": 0.0, "latency": 0.1, "tokens": 0.0, "attention": 0.2, "complexity": 0.2}
+    },
+    {
+      "id": "camera_capture",
+      "kind": "service",
+      "provider": "local",
+      "check": {"type": "manual"},
+      "tags": ["mobile_deployment", "capture", "screenshot_ingestion"],
+      "cost": {"dollar": 0.0, "latency": 0.2, "tokens": 0.0, "attention": 0.3, "complexity": 0.2}
+    },
+    {
+      "id": "screenshot_ingestion",
+      "kind": "tool",
+      "provider": "local",
+      "check": {"type": "self"},
+      "tags": ["mobile_deployment", "capture", "local_research_index"],
+      "cost": {"dollar": 0.0, "latency": 0.1, "tokens": 0.0, "attention": 0.2, "complexity": 0.2}
+    },
+    {
+      "id": "local_research_index",
+      "kind": "tool",
+      "provider": "local",
+      "check": {"type": "self"},
+      "tags": ["mobile_deployment", "search", "retrieval", "offline_capable"],
+      "cost": {"dollar": 0.0, "latency": 0.1, "tokens": 0.0, "attention": 0.2, "complexity": 0.2}
+    },
+    {
+      "id": "cinema_review",
+      "kind": "tool",
+      "provider": "local",
+      "check": {"type": "self"},
+      "tags": ["mobile_deployment", "cinema_support", "review", "offline_capable"],
+      "cost": {"dollar": 0.0, "latency": 0.1, "tokens": 0.0, "attention": 0.2, "complexity": 0.2}
+    },
+    {
+      "id": "desktop_shortcut_creation",
+      "kind": "execution_environment",
+      "provider": "local",
+      "check": {"type": "platform", "value": "Windows"},
+      "tags": ["windows_deployment", "launcher_testing"],
+      "cost": {"dollar": 0.0, "latency": 0.1, "tokens": 0.0, "attention": 0.2, "complexity": 0.2}
+    },
+    {
+      "id": "cinema_render_1080p_24fps",
+      "kind": "execution_environment",
+      "provider": "local",
+      "check": {"type": "manual"},
+      "tags": ["windows_deployment", "cinema_support", "heavy_compute"],
+      "cost": {"dollar": 0.0, "latency": 0.5, "tokens": 0.0, "attention": 0.3, "complexity": 0.6}
+    },
+    {
+      "id": "connector_authentication",
+      "kind": "service",
+      "provider": "local",
+      "check": {"type": "manual"},
+      "tags": ["mobile_deployment", "connector", "operator_gated"],
+      "cost": {"dollar": 0.0, "latency": 0.2, "tokens": 0.0, "attention": 0.4, "complexity": 0.3}
     }
   ]
 }

@@ -18,3 +18,26 @@
 {"mission_id": "capability_negotiation_selftest", "generated_at": "2026-08-05T18:43:10Z", "can_proceed": true, "gap_count": 0, "gap_capability_ids": []}
 {"mission_id": "windows_desktop_deployment", "generated_at": "2026-08-05T18:43:10Z", "can_proceed": false, "gap_count": 3, "gap_capability_ids": ["windows_filesystem_execution", "windows_shell_execution", "remote_desktop_access"]}
 {"mission_id": "windows_desktop_deployment", "generated_at": "2026-08-05T18:43:11Z", "can_proceed": false, "gap_count": 3, "gap_capability_ids": ["windows_filesystem_execution", "windows_shell_execution", "remote_desktop_access"]}
+{"mission_id": "android_mobile_deployment", "generated_at": "2026-08-06T18:57:14Z", "can_proceed": false, "gap_count": 4, "gap_capability_ids": ["android_filesystem_access", "termux_shell_execution", "camera_capture", "connector_authentication"]}
+{"mission_id": "android_mobile_deployment", "generated_at": "2026-08-06T18:57:30Z", "can_proceed": false, "gap_count": 4, "gap_capability_ids": ["android_filesystem_access", "termux_shell_execution", "camera_capture", "connector_authentication"]}
+{"mission_id": "windows_desktop_deployment", "generated_at": "2026-08-06T18:57:30Z", "can_proceed": false, "gap_count": 3, "gap_capability_ids": ["windows_filesystem_execution", "windows_shell_execution", "remote_desktop_access"]}
+{"mission_id": "cinema_release_commit", "generated_at": "2026-08-06T18:58:11Z", "can_proceed": true, "gap_count": 0, "gap_capability_ids": []}
+{"mission_id": "capability_negotiation_selftest", "generated_at": "2026-08-06T18:58:11Z", "can_proceed": false, "gap_count": 1, "gap_capability_ids": ["chatgpt"]}
+{"mission_id": "capability_negotiation_selftest", "generated_at": "2026-08-06T18:58:11Z", "can_proceed": true, "gap_count": 0, "gap_capability_ids": []}
+{"mission_id": "windows_desktop_deployment", "generated_at": "2026-08-06T18:58:11Z", "can_proceed": false, "gap_count": 3, "gap_capability_ids": ["windows_filesystem_execution", "windows_shell_execution", "remote_desktop_access"]}
+{"mission_id": "windows_desktop_deployment", "generated_at": "2026-08-06T18:58:11Z", "can_proceed": false, "gap_count": 3, "gap_capability_ids": ["windows_filesystem_execution", "windows_shell_execution", "remote_desktop_access"]}
+{"mission_id": "cinema_release_commit", "generated_at": "2026-08-06T18:58:11Z", "can_proceed": true, "gap_count": 0, "gap_capability_ids": []}
+{"mission_id": "cinema_release_commit", "generated_at": "2026-08-06T19:10:01Z", "can_proceed": true, "gap_count": 0, "gap_capability_ids": []}
+{"mission_id": "capability_negotiation_selftest", "generated_at": "2026-08-06T19:10:01Z", "can_proceed": false, "gap_count": 1, "gap_capability_ids": ["chatgpt"]}
+{"mission_id": "capability_negotiation_selftest", "generated_at": "2026-08-06T19:10:01Z", "can_proceed": true, "gap_count": 0, "gap_capability_ids": []}
+{"mission_id": "windows_desktop_deployment", "generated_at": "2026-08-06T19:10:01Z", "can_proceed": false, "gap_count": 3, "gap_capability_ids": ["windows_filesystem_execution", "windows_shell_execution", "remote_desktop_access"]}
+{"mission_id": "windows_desktop_deployment", "generated_at": "2026-08-06T19:10:01Z", "can_proceed": false, "gap_count": 3, "gap_capability_ids": ["windows_filesystem_execution", "windows_shell_execution", "remote_desktop_access"]}
+{"mission_id": "cinema_release_commit", "generated_at": "2026-08-06T19:10:01Z", "can_proceed": true, "gap_count": 0, "gap_capability_ids": []}
+{"mission_id": "android_mobile_deployment", "generated_at": "2026-08-06T19:10:14Z", "can_proceed": false, "gap_count": 4, "gap_capability_ids": ["android_filesystem_access", "termux_shell_execution", "camera_capture", "connector_authentication"]}
+{"mission_id": "cinema_release_commit", "generated_at": "2026-08-06T19:12:03Z", "can_proceed": true, "gap_count": 0, "gap_capability_ids": []}
+{"mission_id": "capability_negotiation_selftest", "generated_at": "2026-08-06T19:12:03Z", "can_proceed": false, "gap_count": 1, "gap_capability_ids": ["chatgpt"]}
+{"mission_id": "capability_negotiation_selftest", "generated_at": "2026-08-06T19:12:03Z", "can_proceed": true, "gap_count": 0, "gap_capability_ids": []}
+{"mission_id": "windows_desktop_deployment", "generated_at": "2026-08-06T19:12:03Z", "can_proceed": false, "gap_count": 3, "gap_capability_ids": ["windows_filesystem_execution", "windows_shell_execution", "remote_desktop_access"]}
+{"mission_id": "windows_desktop_deployment", "generated_at": "2026-08-06T19:12:03Z", "can_proceed": false, "gap_count": 3, "gap_capability_ids": ["windows_filesystem_execution", "windows_shell_execution", "remote_desktop_access"]}
+{"mission_id": "cinema_release_commit", "generated_at": "2026-08-06T19:12:03Z", "can_proceed": true, "gap_count": 0, "gap_capability_ids": []}
+{"mission_id": "android_mobile_deployment", "generated_at": "2026-08-06T19:12:16Z", "can_proceed": false, "gap_count": 4, "gap_capability_ids": ["android_filesystem_access", "termux_shell_execution", "camera_capture", "connector_authentication"]}

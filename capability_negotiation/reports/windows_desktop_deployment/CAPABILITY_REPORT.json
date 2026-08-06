@@ -1,19 +1,19 @@
 {
   "mission_id": "windows_desktop_deployment",
   "objective": "Deploy, install, and validate the Cinema Player on an actual Windows desktop machine, including a working double-clickable desktop shortcut.",
-  "generated_at": "2026-08-05T18:42:55Z",
+  "generated_at": "2026-08-06T18:57:30Z",
   "can_proceed": false,
   "requirements": [
     {
       "capability_id": "windows_filesystem_execution",
-      "state": "UNAVAILABLE",
+      "state": "BLOCKED_BY_PLATFORM",
       "evidence": "platform.system()='Linux', required 'Windows'",
       "gap_class": "missing_filesystem_access",
       "resolution_action": "This capability requires running on Windows -- it cannot be satisfied from the current platform. Execute the mission (or this specific step) on a real Windows machine."
     },
     {
       "capability_id": "windows_shell_execution",
-      "state": "UNAVAILABLE",
+      "state": "BLOCKED_BY_PLATFORM",
       "evidence": "platform.system()='Linux', required 'Windows'",
       "gap_class": "missing_filesystem_access",
       "resolution_action": "This capability requires running on Windows -- it cannot be satisfied from the current platform. Execute the mission (or this specific step) on a real Windows machine."
@@ -29,14 +29,14 @@
   "gaps": [
     {
       "capability_id": "windows_filesystem_execution",
-      "state": "UNAVAILABLE",
+      "state": "BLOCKED_BY_PLATFORM",
       "evidence": "platform.system()='Linux', required 'Windows'",
       "gap_class": "missing_filesystem_access",
       "resolution_action": "This capability requires running on Windows -- it cannot be satisfied from the current platform. Execute the mission (or this specific step) on a real Windows machine."
     },
     {
       "capability_id": "windows_shell_execution",
-      "state": "UNAVAILABLE",
+      "state": "BLOCKED_BY_PLATFORM",
       "evidence": "platform.system()='Linux', required 'Windows'",
       "gap_class": "missing_filesystem_access",
       "resolution_action": "This capability requires running on Windows -- it cannot be satisfied from the current platform. Execute the mission (or this specific step) on a real Windows machine."

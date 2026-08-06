@@ -533,6 +533,7 @@ async function renderSettings() {
 
 async function renderStatus() {
   const s = await api("/api/system_status");
+  const rs = s.mobile_resource_state || {};
   view.innerHTML = `
     <div class="card">
       <h2>System Status</h2>
@@ -547,6 +548,31 @@ async function renderStatus() {
       <div>cloud uploads enabled: ${s.cloud_uploads_enabled}</div>
     </div>
     <div class="card">
+      <h3>Mobile Substrate</h3>
+      <div class="muted">Per FORGEWORLD-MOBILE-SUBSTRATE-001: this device's actual platform, resource state, and pending handoffs -- not a reduced Windows workstation.</div>
+      <div class="row" style="justify-content:space-between; padding:0.2rem 0;">
+        <span>Keel state</span><span class="badge ${s.mobile_keel_state === 'MOBILE_KEEL_IDLE' ? 'ok' : ''}">${escapeHtml(s.mobile_keel_state || "unknown")}</span>
+      </div>
+      <div class="row" style="justify-content:space-between; padding:0.2rem 0;">
+        <span>Platform class</span><span class="badge">${escapeHtml(s.mobile_platform_class || "unknown")}</span>
+      </div>
+      <div class="row" style="justify-content:space-between; padding:0.2rem 0;">
+        <span>Resource state</span><span class="badge ${rs.state === 'GREEN' ? 'ok' : rs.state === 'RED' ? 'err' : rs.state ? 'warn' : ''}">${escapeHtml(rs.state || "unknown")}</span>
+      </div>
+      <div class="row" style="justify-content:space-between; padding:0.2rem 0;">
+        <span>Pending mission handoffs</span><span>${s.pending_mission_handoffs ?? 0}</span>
+      </div>
+      <div class="row" style="justify-content:space-between; padding:0.2rem 0;">
+        <span>Pending Cinema reviews</span><span>${s.pending_cinema_reviews ?? 0}</span>
+      </div>
+      <div class="row" style="margin-top:0.5rem;">
+        <button class="btn secondary" id="btn-capability-state">Capability State</button>
+        <button class="btn secondary" id="btn-mission-list">Mission Handoffs</button>
+        <button class="btn secondary" id="btn-cinema-review">Cinema Review</button>
+        <button class="btn secondary" id="btn-device-profile">Device Profile</button>
+      </div>
+    </div>
+    <div class="card">
       <h3>ForgeWorld Integrations</h3>
       <div class="muted">Extension points for a later cycle -- all disabled, app is fully functional without them.</div>
       ${Object.values(s.forgeworld_integrations || {}).map((i) => `
@@ -557,6 +583,53 @@ async function renderStatus() {
       `).join("")}
     </div>
   `;
+
+  document.getElementById("btn-capability-state").addEventListener("click", async () => {
+    const cap = await api("/api/capability_state");
+    const rows = cap.requirements.map((r) => `
+      <div class="row" style="justify-content:space-between; padding:0.2rem 0; border-bottom:1px solid var(--border, #333);">
+        <span>${escapeHtml(r.capability_id)}</span>
+        <span class="badge ${r.state === 'AVAILABLE' ? 'ok' : ''}">${escapeHtml(r.state)}</span>
+      </div>
+      <div class="muted" style="font-size:0.8rem;">${escapeHtml(r.evidence)}</div>
+    `).join("");
+    openModal(`<h2>Capability State -- android_mobile_deployment</h2><div class="muted">can_proceed: ${cap.can_proceed}</div>${rows}`);
+  });
+
+  document.getElementById("btn-mission-list").addEventListener("click", async () => {
+    const missions = await api("/api/missions");
+    const rows = missions.map((m) => `
+      <div class="card">
+        <strong>${escapeHtml(m.mission_id)}</strong> (${escapeHtml(m.priority)})<br>
+        <span class="muted">${escapeHtml(m.requested_outcome)}</span><br>
+        mobile_available: ${m.mobile_available.length}, windows_required: ${m.windows_required.length}, operator_required: ${m.operator_required.length}
+      </div>
+    `).join("") || "<div class='muted'>No mission handoffs yet.</div>";
+    openModal(`<h2>Mission Handoffs</h2>${rows}`);
+  });
+
+  document.getElementById("btn-cinema-review").addEventListener("click", async () => {
+    const data = await api("/api/cinema/reviews");
+    const artifacts = await api("/api/cinema/artifacts");
+    const summary = data.summary;
+    const rows = data.reviews.map((r) => `
+      <div class="card">
+        <strong>${escapeHtml(r.artifact)}</strong> (${escapeHtml(r.version)})<br>
+        <span class="badge ${r.approval_state === 'approved' ? 'ok' : ''}">${escapeHtml(r.approval_state)}</span>
+        <span class="muted">${escapeHtml(r.review_type)}</span>
+      </div>
+    `).join("") || "<div class='muted'>No reviews yet.</div>";
+    openModal(`
+      <h2>Cinema Review</h2>
+      <div class="muted">${artifacts.length} artifact(s) available to review (real Cinema Player release data). Queue: ${JSON.stringify(summary)}</div>
+      ${rows}
+    `);
+  });
+
+  document.getElementById("btn-device-profile").addEventListener("click", async () => {
+    const profile = await api("/api/device_profile");
+    openModal(`<h2>Device Profile</h2><pre class="prompt-output">${escapeHtml(JSON.stringify(profile, null, 2))}</pre>`);
+  });
 }
 
 activateTab("dashboard");

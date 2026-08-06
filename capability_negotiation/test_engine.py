@@ -13,7 +13,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import engine
-from states import AVAILABLE, UNAVAILABLE, OPERATOR_REQUIRED, DISCOVERED_AFTER_STARTUP, BLOCKED_BY_POLICY
+from states import (
+    AVAILABLE, UNAVAILABLE, UNKNOWN, OPERATOR_REQUIRED, DISCOVERED_AFTER_STARTUP,
+    BLOCKED_BY_POLICY, BLOCKED_BY_PLATFORM, DELEGATE_TO_WINDOWS,
+    RESUME_READY, RESUME_STILL_BLOCKED, RESUME_NO_PRIOR_GAP,
+)
 
 
 class CapabilityNegotiationEngineTests(unittest.TestCase):
@@ -29,9 +33,45 @@ class CapabilityNegotiationEngineTests(unittest.TestCase):
         result = engine.negotiate("windows_desktop_deployment")
         self.assertFalse(result.can_proceed)
         states = {r.capability_id: r.state for r in result.requirements}
-        self.assertEqual(states["windows_filesystem_execution"], UNAVAILABLE)
-        self.assertEqual(states["windows_shell_execution"], UNAVAILABLE)
+        self.assertEqual(states["windows_filesystem_execution"], BLOCKED_BY_PLATFORM)
+        self.assertEqual(states["windows_shell_execution"], BLOCKED_BY_PLATFORM)
         self.assertEqual(states["remote_desktop_access"], OPERATOR_REQUIRED)
+
+    def test_android_mission_is_honest_about_running_on_neither_phone_nor_windows(self):
+        result = engine.negotiate("android_mobile_deployment")
+        self.assertFalse(result.can_proceed)
+        states = {r.capability_id: r.state for r in result.requirements}
+        # this container is neither a phone nor Windows -- Termux-only
+        # capabilities must read UNAVAILABLE, never a guessed AVAILABLE
+        self.assertEqual(states["android_filesystem_access"], UNAVAILABLE)
+        self.assertEqual(states["termux_shell_execution"], UNAVAILABLE)
+        # these ARE real, working software in this repo -- self-checks
+        self.assertEqual(states["screenshot_ingestion"], AVAILABLE)
+        self.assertEqual(states["local_research_index"], AVAILABLE)
+        self.assertEqual(states["cinema_review"], AVAILABLE)
+        # manual/operator-gated capabilities must never be guessed either way
+        self.assertEqual(states["camera_capture"], UNKNOWN)
+        self.assertEqual(states["connector_authentication"], UNKNOWN)
+
+    def test_delegated_capabilities_do_not_block_the_mobile_mission(self):
+        result = engine.negotiate("android_mobile_deployment")
+        states = {r.capability_id: r.state for r in result.requirements}
+        self.assertEqual(states["desktop_shortcut_creation"], DELEGATE_TO_WINDOWS)
+        self.assertEqual(states["cinema_render_1080p_24fps"], DELEGATE_TO_WINDOWS)
+        gap_ids = {g.capability_id for g in result.gaps}
+        self.assertNotIn("desktop_shortcut_creation", gap_ids)
+        self.assertNotIn("cinema_render_1080p_24fps", gap_ids)
+
+    def test_termux_probe_is_not_fooled_by_platform_system_reporting_linux(self):
+        # Termux's own Python reports platform.system() == 'Linux', same as
+        # this container -- the termux check type must use TERMUX_VERSION/
+        # PREFIX, not platform.system(), or it could never tell them apart
+        # in either direction. Confirm the two checks are actually distinct.
+        import discover
+        platform_result = discover.probe_one({"type": "platform", "value": "Linux"})
+        termux_result = discover.probe_one({"type": "termux", "value": None})
+        self.assertEqual(platform_result[0], 1.0)  # this really is Linux
+        self.assertEqual(termux_result[0], 0.0)    # but it is not Termux
 
     def test_windows_gap_evidence_is_specific_not_generic_failed(self):
         result = engine.negotiate("windows_desktop_deployment")
@@ -101,6 +141,7 @@ class CapabilityNegotiationEngineTests(unittest.TestCase):
         outcome = engine.check_resume("capability_negotiation_selftest", out_dir=self.out_dir)
         self.assertIn("chatgpt", outcome["newly_resolved"])
         self.assertTrue(outcome["can_proceed_now"])
+        self.assertEqual(outcome["overall_status"], RESUME_READY)
 
     def test_resume_is_a_noop_when_nothing_changed(self):
         result = engine.negotiate("windows_desktop_deployment")
@@ -108,6 +149,11 @@ class CapabilityNegotiationEngineTests(unittest.TestCase):
         outcome = engine.check_resume("windows_desktop_deployment", out_dir=self.out_dir)
         self.assertEqual(outcome["newly_resolved"], [])
         self.assertFalse(outcome["can_proceed_now"])
+        self.assertEqual(outcome["overall_status"], RESUME_STILL_BLOCKED)
+
+    def test_resume_with_no_prior_report_is_labeled_no_prior_gap(self):
+        outcome = engine.check_resume("cinema_release_commit", out_dir=self.out_dir)
+        self.assertEqual(outcome["overall_status"], RESUME_NO_PRIOR_GAP)
 
     def test_unknown_mission_raises(self):
         with self.assertRaises(KeyError):

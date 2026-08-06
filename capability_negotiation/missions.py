@@ -35,6 +35,53 @@ MISSIONS = {
         "required_capability_ids": ["git", "python", "github", "desktop_runtime"],
         "notes": "All four are expected to be satisfiable inside this container -- used as the negotiation engine's positive-path acceptance test.",
     },
+    "android_mobile_deployment": {
+        "objective": (
+            "Configure a new Android phone as a ForgeWorld mobile substrate: "
+            "capture/index/retrieve local research, support Cinema review, "
+            "and hand off mission packages to the Windows runtime -- without "
+            "reproducing the full Windows ForgeWorld runtime on the phone."
+        ),
+        "required_capability_ids": [
+            "android_filesystem_access",
+            "termux_shell_execution",
+            "screenshot_ingestion",
+            "local_research_index",
+            "cinema_review",
+            "camera_capture",
+            "connector_authentication",
+        ],
+        "delegate_to_windows_ids": [
+            "desktop_shortcut_creation",
+            "cinema_render_1080p_24fps",
+        ],
+        "notes": (
+            "android_filesystem_access/termux_shell_execution resolve via the "
+            "'termux' probe (TERMUX_VERSION/PREFIX env markers), which "
+            "correctly reads UNAVAILABLE outside Termux -- including from "
+            "this Linux container, which is neither the phone nor Windows. "
+            "There is no way to fabricate a phone-side AVAILABLE reading "
+            "from here; on-device negotiation must be run by the Termux "
+            "process itself. camera_capture and connector_authentication "
+            "are 'manual' checks (operator confirmation only, by design -- "
+            "see the project's connector policy). Cross-platform mismatches "
+            "(windows_shell_execution, windows_filesystem_execution) are "
+            "demonstrated by the separate windows_desktop_deployment "
+            "mission, not duplicated here -- this mission's job is the "
+            "phone side only, per the project's own rule that the phone is "
+            "not a reduced Windows workstation. NOTE on delegate_to_windows_ids: "
+            "cinema_render_1080p_24fps is delegated here as a MOBILE POLICY "
+            "decision (phones shouldn't attempt heavy rendering locally), "
+            "not because it's a hard Windows-platform requirement -- the "
+            "Cinema Player's actual 1080p/24fps master was rendered "
+            "successfully on a Linux container in this same repository "
+            "(see cinema/cinema_player_90s/), so registering it in "
+            "capabilities/registry.json as a Windows-only 'platform' check "
+            "would be factually wrong. Delegation here is real, but the "
+            "reason is 'don't run this on a battery-powered phone,' not "
+            "'this cannot run outside Windows.'"
+        ),
+    },
     "capability_negotiation_selftest": {
         "objective": "Dedicated fixture mission for testing check_resume() -- not a real deployment mission.",
         "required_capability_ids": ["chatgpt"],

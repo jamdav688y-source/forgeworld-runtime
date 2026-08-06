@@ -1,0 +1,42 @@
+{
+  "mission_id": "android_mobile_deployment",
+  "generated_at": "2026-08-06T19:12:16Z",
+  "evidence": {
+    "android_filesystem_access": {
+      "state": "UNAVAILABLE",
+      "evidence": "not running under Termux: TERMUX_VERSION unset, PREFIX='' (actual platform: Linux)"
+    },
+    "termux_shell_execution": {
+      "state": "UNAVAILABLE",
+      "evidence": "not running under Termux: TERMUX_VERSION unset, PREFIX='' (actual platform: Linux)"
+    },
+    "screenshot_ingestion": {
+      "state": "AVAILABLE",
+      "evidence": "capability is the local runtime itself"
+    },
+    "local_research_index": {
+      "state": "AVAILABLE",
+      "evidence": "capability is the local runtime itself"
+    },
+    "cinema_review": {
+      "state": "AVAILABLE",
+      "evidence": "capability is the local runtime itself"
+    },
+    "camera_capture": {
+      "state": "UNKNOWN",
+      "evidence": "static probe not possible; requires operator/runtime confirmation"
+    },
+    "connector_authentication": {
+      "state": "UNKNOWN",
+      "evidence": "static probe not possible; requires operator/runtime confirmation"
+    },
+    "desktop_shortcut_creation": {
+      "state": "DELEGATE_TO_WINDOWS",
+      "evidence": "'desktop_shortcut_creation' is declared out of scope for this device by mission design"
+    },
+    "cinema_render_1080p_24fps": {
+      "state": "DELEGATE_TO_WINDOWS",
+      "evidence": "'cinema_render_1080p_24fps' is declared out of scope for this device by mission design"
+    }
+  }
+}

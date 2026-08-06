@@ -18,6 +18,15 @@ machine at this moment:
                session) -- pass it via probe_all(live_connectors=[...]).
                Without one, this resolves to the neutral 'unconfirmed'
                reading, same as 'manual', rather than guessing.
+  termux    -> are we actually running inside Termux right now. Checked
+               via TERMUX_VERSION / PREFIX env vars (the standard Termux
+               markers), NOT platform.system() -- Termux's Python reports
+               platform.system() == 'Linux', same as any other Linux
+               process, so a plain platform check can never distinguish
+               "real Android/Termux" from "a Linux container" and would
+               silently misclassify both directions. This deterministically
+               reads UNAVAILABLE outside Termux (e.g. in this cloud
+               container) rather than guessing.
 """
 import json
 import os
@@ -63,6 +72,14 @@ def probe_one(check):
         return (1.0 if matched else 0.0), f"platform.system()='{actual}', required '{check['value']}'"
     if check_type == "connector":
         return 0.0, f"connector '{check['value']}' unconfirmed: no live connector list supplied to this probe"
+    if check_type == "termux":
+        termux_version = os.environ.get("TERMUX_VERSION")
+        prefix = os.environ.get("PREFIX", "")
+        in_termux = bool(termux_version) or "/com.termux/" in prefix
+        if in_termux:
+            return 1.0, f"Termux environment detected (TERMUX_VERSION={termux_version!r}, PREFIX={prefix!r})"
+        return 0.0, (f"not running under Termux: TERMUX_VERSION unset, PREFIX={prefix!r} "
+                      f"(actual platform: {platform.system()})")
     return 0.0, f"unknown check type '{check_type}'"
 
 
