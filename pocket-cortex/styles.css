@@ -379,16 +379,31 @@ button {
   fill: none;
   stroke: var(--line);
   stroke-width: 0.6;
-  transition: stroke 0.6s ease, stroke-width 0.6s ease, opacity 0.6s ease;
+  opacity: 1;
+  transition: stroke 0.5s ease, stroke-width 0.5s ease, opacity 0.5s ease, filter 0.5s ease;
 }
 
 .link-path.link-active {
-  stroke: var(--accent);
-  stroke-width: 1.1;
+  stroke: var(--core-hot);
+  stroke-width: 1.7;
   opacity: 1;
+  filter: url(#softGlow);
 }
 
-.node-group { cursor: default; }
+#constellation.routing-active .link-path:not(.link-active) {
+  opacity: 0.16;
+  stroke: var(--line-dim);
+}
+
+.node-group { cursor: default; transition: opacity 0.5s ease; }
+
+#constellation.routing-active .node-group:not(.node-active) {
+  opacity: 0.4;
+}
+
+#constellation.routing-active .node-group:not(.node-active) .node-dot {
+  stroke: var(--line);
+}
 
 .node-halo {
   fill: var(--core-mid);
@@ -414,12 +429,19 @@ button {
 .node-group.node-active .node-dot {
   fill: var(--core-hot);
   stroke: var(--core-hot);
+  r: 5.6;
 }
 .node-group.node-active .node-label { fill: var(--text-hi); }
 .node-group.node-active .node-halo {
-  opacity: 0.35;
-  r: 13;
+  opacity: 0.55;
+  r: 15;
   filter: url(#softGlow);
+  animation: nodeActivePulse 1.8s ease-in-out infinite;
+}
+
+@keyframes nodeActivePulse {
+  0%, 100% { opacity: 0.42; r: 13; }
+  50%      { opacity: 0.7;  r: 16.5; }
 }
 
 .secondary-node {
@@ -622,6 +644,11 @@ button {
   font-size: 0.5rem;
   letter-spacing: 0.28em;
   color: var(--text-dim);
+}
+
+.bottom-spacer {
+  flex: 1 1 auto;
+  min-height: 10px;
 }
 
 .controls {

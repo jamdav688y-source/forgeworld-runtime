@@ -3,6 +3,12 @@
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    });
+  }
+
   /* ============================================================
      SCREEN 1 — AWAKENING
      ============================================================ */
@@ -111,11 +117,17 @@
     secondaryGroup.appendChild(dot);
   }
 
+  const constellationSvg = document.getElementById("constellation");
+
   function setNodeActive(id, active) {
     const rec = registry[id];
     if (!rec) return;
     rec.groupEl.classList.toggle("node-active", active);
     rec.pathEl.classList.toggle("link-active", active);
+  }
+
+  function setRoutingActive(active) {
+    constellationSvg.classList.toggle("routing-active", active);
   }
 
   function clearAllActive() {
@@ -194,15 +206,18 @@
     const text = goalInput.value.trim();
     clearAllActive();
     if (!text) {
+      setRoutingActive(false);
       intentReadout.textContent = " ";
       return;
     }
     const matched = matchNodes(text);
 
     if (!matched.length) {
+      setRoutingActive(false);
       intentReadout.textContent = " ";
       return;
     }
+    setRoutingActive(true);
     matched.forEach((id) => {
       setNodeActive(id, true);
       firePulse(id, 750);
@@ -369,6 +384,7 @@
     demoInterrupted = false;
     btnDemo.textContent = "RUNNING…";
     clearAllActive();
+    setRoutingActive(false);
     goalInput.blur();
 
     coreGroup.classList.add("core--intense");
@@ -380,6 +396,7 @@
     if (demoInterrupted) return;
 
     const target = ["learn", "explain", "analyze"];
+    setRoutingActive(true);
     for (const id of target) {
       firePulse(id, 750);
       setNodeActive(id, true);
