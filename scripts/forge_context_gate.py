@@ -14,7 +14,7 @@ the task and the codebase simply weren't describing the same reality.
 That should be caught mechanically, in one second, before any reasoning
 about "how to fix" begins.
 
-Five phases, each producing PASS / WARNING / CONTEXT_MISMATCH / BLOCKED:
+Six phases, each producing PASS / WARNING / CONTEXT_MISMATCH / BLOCKED:
 
   1. Repository Identity   -- root, branch, commit, working tree, remote
   2. Workspace Integrity   -- expected files/dirs, interpreter, venv, tools
@@ -23,14 +23,31 @@ Five phases, each producing PASS / WARNING / CONTEXT_MISMATCH / BLOCKED:
                                a hand-maintained manifest
   4. Context Consistency   -- do the specific files/imports a task claims
                                exist actually exist
-  5. Repair Authorization  -- PASS/WARNING from 1-4 => proceed; anything
-                               else => stop, do not fabricate a fix
+  5. Execution Intent      -- does the actual operator request (modify /
+                               create / delete / read a specific artifact)
+                               match reality: exists, tracked by git, in
+                               the confirmed repository/branch
+  6. Repair Authorization  -- PASS/WARNING from 1-5 => proceed; anything
+                               else => BLOCK EXECUTION, do not fabricate a fix
+
+This is meant to be the mandatory first step of the pipeline, not an
+optional diagnostic:
+
+    OPERATOR REQUEST -> CONTEXT INTEGRITY GATE -> [CONTEXT VERIFIED ->
+    Evidence Retrieval -> Planning -> Execution] | [CONTEXT MISMATCH ->
+    BLOCK EXECUTION]
 
 Severity order (most severe wins when combining phase results):
   BLOCKED > CONTEXT_MISMATCH > WARNING > PASS
 
 Exit code is 0 when authorized_for_repair is true, 1 otherwise, so this
 can gate a shell pipeline with a plain `&&`.
+
+Output contract: the JSON report is versioned (`"schema": "context_gate.v1"`)
+so downstream components can consume it without parsing the human-readable
+summary. Field names in that schema are stable within a version; add
+fields freely, but don't rename or repurpose one without bumping the
+schema version.
 
 Scope note (v1): local-module resolution for API Integrity only looks at
 modules that live directly inside --project (flat files, or one-level
@@ -42,9 +59,11 @@ CONTEXT_MISMATCH, since that limitation is in the checker, not the code.
 
 Examples
 --------
-Before touching a file a task claims exists:
+Declare what the task actually intends to do -- this is the strongest
+check: it verifies the operator's request against reality, not just that
+imports resolve:
     forge_context_gate.py --project forgeworld-mobile-research \\
-        --target-file validate_search.py \\
+        --intent "modify: validate_search.py" \\
         --assert-import "from database import init_db, insert_particle"
 
 General pre-flight for a whole project:
@@ -66,9 +85,12 @@ import sys
 import time
 from pathlib import Path
 
+SCHEMA_VERSION = "context_gate.v1"
 SEVERITY = {"PASS": 0, "WARNING": 1, "CONTEXT_MISMATCH": 2, "BLOCKED": 3}
 SKIP_DIRS = {".git", "__pycache__", ".venv", "venv", "env", "node_modules", ".pytest_cache", ".mypy_cache"}
 ASSERT_IMPORT_RE = re.compile(r"^from\s+(?P<module>[\w.]+)\s+import\s+(?P<names>.+)$")
+INTENT_RE = re.compile(r"^(?P<action>modify|create|delete|read)\s*:\s*(?P<path>.+)$", re.IGNORECASE)
+INTENT_ACTIONS_REQUIRE_EXISTENCE = {"modify", "delete", "read"}
 
 
 def worse(a: str, b: str) -> str:
@@ -484,6 +506,76 @@ def phase_context_consistency(
     return status, findings, data
 
 
+def parse_intents(raw_intents: list[str]) -> list[dict]:
+    """Parse "ACTION: path" strings; a bare path with no recognized action
+    prefix defaults to action 'modify'."""
+    parsed = []
+    for raw in raw_intents:
+        text = raw.strip()
+        m = INTENT_RE.match(text)
+        if m:
+            parsed.append({"action": m.group("action").lower(), "path": m.group("path").strip(), "raw": raw})
+        else:
+            parsed.append({"action": "modify", "path": text, "raw": raw})
+    return parsed
+
+
+def git_tracked(repo_root: Path, abs_path: Path) -> bool | None:
+    """True/False if git can answer, None if git itself is unusable here."""
+    result = run_git(["ls-files", "--error-unmatch", "--", str(abs_path)], repo_root)
+    if result is None:
+        # run_git collapses "not tracked" (git exits 1) and "git unusable" into the
+        # same None -- disambiguate by checking whether git works at all here.
+        if run_git(["rev-parse", "--is-inside-work-tree"], repo_root) is None:
+            return None
+        return False
+    return True
+
+
+def phase_execution_intent(
+    repo_root: Path, project_root: Path, branch: str | None, intents: list[dict]
+) -> tuple[str, list[str], dict]:
+    findings: list[str] = []
+    status = "PASS"
+    results = []
+
+    for intent in intents:
+        action, path = intent["action"], intent["path"]
+        abs_path = project_root / path
+        exists = abs_path.exists()
+        tracked = git_tracked(repo_root, abs_path) if exists else None
+
+        checks = {
+            "file_exists": exists,
+            "tracked_by_git": tracked,
+            "branch_confirmed": branch is not None,
+            "repository_root_confirmed": repo_root.is_dir(),
+        }
+
+        must_exist = action in INTENT_ACTIONS_REQUIRE_EXISTENCE
+        entry_status = "PASS"
+
+        if must_exist and not exists:
+            entry_status = "CONTEXT_MISMATCH"
+            findings.append(
+                f"Requested target '{path}' ({action}): NOT FOUND in verified repository at {project_root}. "
+                "Execution blocked. Reason: requested artifact is absent from verified repository."
+            )
+        elif action == "create" and exists:
+            entry_status = worse(entry_status, "WARNING")
+            findings.append(f"Requested target '{path}' (create): already exists -- confirm this is an intentional overwrite.")
+
+        if exists and tracked is False:
+            entry_status = worse(entry_status, "WARNING")
+            findings.append(f"Requested target '{path}': exists but is not tracked by git (untracked file).")
+
+        status = worse(status, entry_status)
+        results.append({"action": action, "path": path, "status": entry_status, "checks": checks})
+
+    data = {"intents": results}
+    return status, findings, data
+
+
 def phase_repair_authorization(overall_status: str) -> tuple[bool, list[str]]:
     authorized = overall_status in ("PASS", "WARNING")
     if authorized:
@@ -508,6 +600,28 @@ def print_summary(report: dict) -> None:
     print(f"Commit:       {report['commit']}")
     wtc = report["working_tree_clean"]
     print(f"Working tree: {'clean' if wtc else 'DIRTY' if wtc is False else 'unknown'}")
+
+    intent_phase = report["phases"].get("execution_intent")
+    if intent_phase and intent_phase.get("intents"):
+        print()
+        print("Intent:")
+        for entry in intent_phase["intents"]:
+            print(f"  {entry['action']}: {entry['path']}")
+        print()
+        print("Verification:")
+        for entry in intent_phase["intents"]:
+            c = entry["checks"]
+            for label, key in (
+                ("file exists", "file_exists"),
+                ("tracked by git", "tracked_by_git"),
+                ("current branch confirmed", "branch_confirmed"),
+                ("repository root confirmed", "repository_root_confirmed"),
+            ):
+                mark = "?" if c[key] is None else ("✓" if c[key] else "✗")
+                print(f"  {mark} {label}")
+        print()
+        print(f"Authorization: {intent_phase['status']}")
+
     print()
     for name, phase in report["phases"].items():
         label = name.replace("_", " ").upper()
@@ -527,6 +641,10 @@ def main() -> None:
                     "refactoring, patch-generation, validation, or release workflow runs.",
     )
     parser.add_argument("--project", default=".", help="Path to the project/workspace to verify (default: current directory).")
+    parser.add_argument("--intent", action="append", default=[], dest="intents",
+                        help='Declared operator intent, e.g. "modify: database.py" (action is one of '
+                             'modify/create/delete/read; a bare path defaults to modify). Verified against '
+                             'reality: existence, git-tracked state, branch, repository root. Repeatable.')
     parser.add_argument("--target-file", action="append", default=[], help="File the upcoming task is about, relative to --project. Repeatable.")
     parser.add_argument("--assert-import", action="append", default=[], dest="assert_imports",
                         help='Import the task assumes is valid, e.g. "from database import Database". Repeatable.')
@@ -542,6 +660,7 @@ def main() -> None:
 
     project_root = Path(args.project).resolve()
     repo_root = find_repo_root(project_root)
+    intents = parse_intents(args.intents)
 
     all_findings: list[dict] = []
     phases: dict[str, dict] = {}
@@ -564,19 +683,29 @@ def main() -> None:
     full_py_files = discover_python_files(project_root)
     mod_map = local_module_map(project_root, full_py_files)
 
-    s, f, d = phase_api_integrity(project_root, args.target_file, args.scan_whole_project, mod_map)
+    # Intent targets feed the same seed set as --target-file: a declared "modify:
+    # database.py" gets its local import closure checked by API Integrity too.
+    intent_paths = [i["path"] for i in intents]
+    effective_target_files = list(dict.fromkeys([*args.target_file, *intent_paths]))
+
+    s, f, d = phase_api_integrity(project_root, effective_target_files, args.scan_whole_project, mod_map)
     record("api_integrity", s, f, d)
 
     s, f, d = phase_context_consistency(project_root, args.target_file, args.assert_imports, mod_map)
     record("context_consistency", s, f, d)
 
-    # This phase is a summary derived from the four above -- it never introduces new
-    # findings of its own, so it's deliberately excluded from the warnings/errors
-    # aggregation below (status/authorized_for_repair already carry its meaning).
+    s, f, d = phase_execution_intent(repo_root, project_root, repo_data["branch"], intents)
+    record("execution_intent", s, f, d)
+
+    # This phase is a summary derived from the phases above -- it never introduces
+    # new findings of its own, so it's deliberately excluded from the
+    # warnings/blockers aggregation below (status/authorized_for_repair already
+    # carry its meaning).
     authorized, auth_findings = phase_repair_authorization(overall)
     phases["repair_authorization"] = {"status": overall, "findings": auth_findings, "authorized": authorized}
 
     report = {
+        "schema": SCHEMA_VERSION,
         "status": overall,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "project": str(project_root),
@@ -588,9 +717,10 @@ def main() -> None:
         "context_verified": overall not in ("CONTEXT_MISMATCH", "BLOCKED"),
         "api_verified": phases["api_integrity"]["status"] not in ("CONTEXT_MISMATCH", "BLOCKED"),
         "workspace_verified": phases["workspace_integrity"]["status"] not in ("CONTEXT_MISMATCH", "BLOCKED"),
+        "intent_verified": phases["execution_intent"]["status"] not in ("CONTEXT_MISMATCH", "BLOCKED"),
         "authorized_for_repair": authorized,
         "warnings": [x["message"] for x in all_findings if x["status"] == "WARNING"],
-        "errors": [x["message"] for x in all_findings if x["status"] in ("CONTEXT_MISMATCH", "BLOCKED")],
+        "blockers": [x["message"] for x in all_findings if x["status"] in ("CONTEXT_MISMATCH", "BLOCKED")],
         "phases": phases,
     }
 
