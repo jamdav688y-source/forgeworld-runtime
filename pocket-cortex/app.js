@@ -157,13 +157,20 @@
     if (reducedMotion) return;
     const delay = 4200 + Math.random() * 3200;
     ambientTimer = setTimeout(() => {
-      const ids = Object.keys(registry);
-      const id = ids[Math.floor(Math.random() * ids.length)];
-      firePulse(id, 1000);
-      setNodeActive(id, true);
-      setTimeout(() => {
-        if (!goalInput.value.trim()) setNodeActive(id, false);
-      }, 700);
+      if (state.mode === "ACTIVE" || state.mode === "EDITING") {
+        if (state.route.length) {
+          const id = state.route[Math.floor(Math.random() * state.route.length)];
+          firePulse(id, 1000);
+        }
+      } else {
+        const ids = Object.keys(registry);
+        const id = ids[Math.floor(Math.random() * ids.length)];
+        firePulse(id, 1000);
+        setNodeActive(id, true);
+        setTimeout(() => {
+          if (!goalInput.value.trim()) setNodeActive(id, false);
+        }, 700);
+      }
       scheduleAmbientPulse();
     }, delay);
   }
@@ -179,6 +186,7 @@
   const PHRASE_RULES = [
     { test: (t) => t.includes("teach"), nodes: ["learn", "explain", "analyze"] },
     { test: (t) => t.includes("create") && /image|picture|art|visual|logo/.test(t), nodes: ["create", "design", "discover"] },
+    { test: (t) => t.includes("design") && /interface|screen|layout|\bui\b|workspace/.test(t), nodes: ["create", "design", "discover"] },
     { test: (t) => t.includes("solve") || t.includes("problem"), nodes: ["analyze", "discover", "execute"] },
   ];
 
@@ -459,35 +467,454 @@
   let isGoalSubmitting = false;
   let shakeTimer = null;
 
+  function shakeAndWarn(formEl) {
+    clearTimeout(shakeTimer);
+    formEl.classList.remove("shake");
+    void formEl.offsetWidth;
+    formEl.classList.add("shake");
+    shakeTimer = setTimeout(() => formEl.classList.remove("shake"), 420);
+    showBanner("ENTER A GOAL TO ROUTE", 1800);
+  }
+
+  function autoGrow(textarea) {
+    textarea.style.height = "auto";
+    textarea.style.height = Math.min(textarea.scrollHeight, 130) + "px";
+  }
+
+  function wireEnterSubmit(textarea, formEl) {
+    textarea.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        formEl.requestSubmit();
+      }
+    });
+    textarea.addEventListener("input", () => autoGrow(textarea));
+  }
+
   async function handleGoalSubmit(e) {
     if (e) e.preventDefault();
     if (isDemoRunning || isGoalSubmitting) return;
 
     const text = goalInput.value.trim();
-
     if (!text) {
-      clearTimeout(shakeTimer);
-      goalForm.classList.remove("shake");
-      void goalForm.offsetWidth;
-      goalForm.classList.add("shake");
-      shakeTimer = setTimeout(() => goalForm.classList.remove("shake"), 420);
-      showBanner("ENTER A GOAL TO ROUTE", 1800);
+      shakeAndWarn(goalForm);
       return;
     }
 
     isGoalSubmitting = true;
     clearTimeout(routingTimer);
-    applyIntentRouting();
     const matched = matchNodes(text);
-    matched.forEach((id) => firePulse(id, 800));
-    goalInput.blur();
-
-    demoOverlay.hidden = false;
-    await showLine("GOAL ACCEPTED", 1200);
-    await showLine("ROUTE ESTABLISHED", 1400);
-    demoOverlay.hidden = true;
+    enterActiveMode(text, matched);
     isGoalSubmitting = false;
   }
 
   goalForm.addEventListener("submit", handleGoalSubmit);
+  wireEnterSubmit(goalInput, goalForm);
+
+  /* ============================================================
+     ACTIVE CORTEX — dynamic workspace
+     ============================================================ */
+
+  const STAGES = ["INTENT", "ROUTE", "WORK", "REVIEW", "NEXT"];
+
+  const state = {
+    mode: "TITLE", // TITLE | ROUTING | ACTIVE | EDITING
+    goal: "",
+    route: [],
+    workspace: "work", // work | route | evidence | history
+    stage: 0,
+    history: [],
+  };
+
+  const CAPABILITY_BLURB = {
+    create:   "Generates new material from the objective.",
+    design:   "Shapes structure, layout, and visual form.",
+    discover: "Surfaces options and unexplored directions.",
+    learn:    "Builds understanding of the subject.",
+    explain:  "Translates the concept into plain terms.",
+    analyze:  "Breaks the problem into its parts.",
+    execute:  "Moves from decision into action.",
+  };
+
+  const workspaceLayer = document.getElementById("workspace-layer");
+  const uiLayer = document.querySelector(".ui-layer");
+  const awRouteLabel = document.getElementById("aw-route-label");
+  const awGoalSummary = document.getElementById("aw-goal-summary");
+  const awGoalText = document.getElementById("aw-goal-text");
+  const btnEditIntent = document.getElementById("btn-edit-intent");
+  const awEditForm = document.getElementById("aw-edit-form");
+  const awEditInput = document.getElementById("aw-edit-input");
+  const btnEditCancel = document.getElementById("btn-edit-cancel");
+  const execStrip = document.getElementById("exec-strip");
+  const wwTabs = Array.from(document.querySelectorAll(".ww-tab"));
+  const panelWork = document.getElementById("panel-work");
+  const panelRoute = document.getElementById("panel-route");
+  const panelEvidence = document.getElementById("panel-evidence");
+  const panelHistory = document.getElementById("panel-history");
+  const activeControls = document.getElementById("active-controls");
+  const btnBack = document.getElementById("btn-back");
+  const btnRefine = document.getElementById("btn-refine");
+  const btnNext = document.getElementById("btn-next");
+
+  const panels = { work: panelWork, route: panelRoute, evidence: panelEvidence, history: panelHistory };
+
+  function routeKey(route) {
+    return route.slice().sort().join("+");
+  }
+
+  const ROUTE_TEMPLATES = {
+    "create+design+discover": (goal) => ({
+      blocks: [
+        { label: "INTERPRETED OBJECTIVE", text: goal },
+        { label: "CONCEPT DIRECTIONS", list: [
+          "A constellation-first layout that keeps routing visible at all times.",
+          "A card-based modular layout for scannable workspace content.",
+          "A minimal single-column layout optimized for one-hand use.",
+        ] },
+        { label: "DESIGN OPTIONS", list: [
+          "Option A — compact routing header, full-height workspace.",
+          "Option B — tabbed workspace with expandable detail panels.",
+          "Option C — timeline-style stage progression.",
+        ] },
+        { label: "EXPANDED DETAIL", expand: true, list: [
+          "Motion budget: keep all transitions under ~900ms to stay responsive on-device.",
+          "Color budget: one hot accent reserved for the active route only.",
+        ] },
+      ],
+      next: "Select a design option to refine, or expand for detail.",
+    }),
+    "analyze+explain+learn": (goal) => ({
+      blocks: [
+        { label: "WHAT ARE WE LEARNING?", text: goal },
+        { label: "CURRENT MENTAL MODEL", text: "A baseline understanding assembled from the stated goal — treat this as a starting model, not a conclusion." },
+        { label: "EXPLANATION", text: "Demo explanation: the system breaks the goal into a concept, a mechanism, and a worked example." },
+        { label: "EXAMPLE", text: "Demo example: applying the same reasoning to a smaller, concrete case." },
+        { label: "DEEPER QUESTION", text: "What part of this still feels uncertain?" },
+      ],
+      next: "Continue learning to go one level deeper.",
+    }),
+    "analyze+discover+execute": (goal) => ({
+      blocks: [
+        { label: "PROBLEM STATEMENT", text: goal },
+        { label: "OBSERVATIONS", list: [
+          "The objective has a clear actor and a clear outcome.",
+          "No blocking constraints were stated.",
+        ] },
+        { label: "ASSUMPTIONS", list: [
+          "The goal reflects the actual priority.",
+          "Existing routing logic remains the source of truth.",
+        ] },
+        { label: "CANDIDATE ACTIONS", list: [
+          "Break the goal into two smaller executable steps.",
+          "Route directly to execution.",
+          "Gather more evidence before acting.",
+        ] },
+      ],
+      next: "Selected next action: break the goal into two executable steps.",
+    }),
+  };
+
+  function buildGenericTemplate(goal, route) {
+    const labels = route.map((id) => registry[id].def.label);
+    return {
+      blocks: [
+        { label: "OBJECTIVE", text: goal },
+        { label: "ACTIVE CAPABILITIES", list: labels.length ? labels : ["No capability matched — try different wording."] },
+        { label: "WORKING NOTES", list: labels.length
+          ? labels.map((l) => `Apply ${l} to advance the objective. (demo content)`)
+          : ["Demo content unavailable without a matched capability."] },
+      ],
+      next: "Demo next action: continue refining with the active capabilities.",
+    };
+  }
+
+  function getWorkspaceContent(goal, route) {
+    const builder = ROUTE_TEMPLATES[routeKey(route)];
+    return builder ? builder(goal) : buildGenericTemplate(goal, route);
+  }
+
+  function renderWorkBlock(block) {
+    const wrap = document.createElement("div");
+    wrap.className = "ww-block" + (block.expand ? " ww-expand-extra" : "");
+    const h = document.createElement("h3");
+    h.textContent = block.label;
+    wrap.appendChild(h);
+    if (block.text) {
+      const p = document.createElement("p");
+      p.textContent = block.text;
+      wrap.appendChild(p);
+    }
+    if (block.list) {
+      const ul = document.createElement("ul");
+      block.list.forEach((item) => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        ul.appendChild(li);
+      });
+      wrap.appendChild(ul);
+    }
+    return wrap;
+  }
+
+  function updateContextualControls() {
+    if (routeKey(state.route) === "create+design+discover") {
+      btnRefine.textContent = "EXPAND";
+      btnNext.textContent = "EXECUTE";
+    } else {
+      btnRefine.textContent = "REFINE";
+      btnNext.textContent = "NEXT";
+    }
+  }
+
+  function renderExecStrip() {
+    execStrip.innerHTML = "";
+    STAGES.forEach((label, i) => {
+      const step = document.createElement("span");
+      step.className = "exec-step" + (i === state.stage ? " exec-step-current" : i < state.stage ? " exec-step-done" : "");
+      step.textContent = label;
+      execStrip.appendChild(step);
+      if (i < STAGES.length - 1) {
+        const sep = document.createElement("span");
+        sep.className = "exec-sep";
+        sep.textContent = "›";
+        execStrip.appendChild(sep);
+      }
+    });
+  }
+
+  function renderHistory() {
+    panelHistory.innerHTML = "";
+    if (!state.history.length) {
+      const p = document.createElement("p");
+      p.className = "ww-empty";
+      p.textContent = "No previous goals this session.";
+      panelHistory.appendChild(p);
+      return;
+    }
+    state.history.slice().reverse().forEach((entry) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "ww-history-item";
+      const g = document.createElement("span");
+      g.className = "ww-history-goal";
+      g.textContent = entry.goal;
+      const r = document.createElement("span");
+      r.className = "ww-history-route";
+      r.textContent = entry.route.map((id) => registry[id].def.label).join("  ·  ") || "NO ROUTE MATCHED";
+      item.appendChild(g);
+      item.appendChild(r);
+      item.addEventListener("click", () => updateActiveRoute(entry.goal));
+      panelHistory.appendChild(item);
+    });
+  }
+
+  function renderWorkspace() {
+    const content = getWorkspaceContent(state.goal, state.route);
+
+    panelWork.innerHTML = "";
+    panelWork.classList.remove("ww-expanded");
+    const demoTag = document.createElement("p");
+    demoTag.className = "ww-demo-tag";
+    demoTag.textContent = "DEMO CONTENT";
+    panelWork.appendChild(demoTag);
+    content.blocks.forEach((b) => panelWork.appendChild(renderWorkBlock(b)));
+    const nextP = document.createElement("p");
+    nextP.className = "ww-next-action";
+    nextP.textContent = content.next;
+    panelWork.appendChild(nextP);
+
+    panelRoute.innerHTML = "";
+    if (!state.route.length) {
+      const p = document.createElement("p");
+      p.className = "ww-empty";
+      p.textContent = "No capability matched this goal.";
+      panelRoute.appendChild(p);
+    } else {
+      state.route.forEach((id) => {
+        const row = document.createElement("div");
+        row.className = "ww-route-row";
+        const name = document.createElement("span");
+        name.className = "ww-route-name";
+        name.textContent = registry[id].def.label;
+        const desc = document.createElement("span");
+        desc.className = "ww-route-desc";
+        desc.textContent = CAPABILITY_BLURB[id] || "";
+        row.appendChild(name);
+        row.appendChild(desc);
+        panelRoute.appendChild(row);
+      });
+    }
+
+    panelEvidence.innerHTML = "";
+    const evTag = document.createElement("p");
+    evTag.className = "ww-demo-tag";
+    evTag.textContent = "DEMONSTRATION STATE";
+    panelEvidence.appendChild(evTag);
+    STATE_ITEMS.forEach((item) => {
+      const row = document.createElement("div");
+      row.className = "ww-evidence-row";
+      const label = document.createElement("span");
+      label.textContent = item.label;
+      const bar = document.createElement("div");
+      bar.className = "ww-evidence-bar";
+      const fill = document.createElement("div");
+      fill.className = "ww-evidence-fill";
+      fill.style.width = Math.round(item.value * 100) + "%";
+      bar.appendChild(fill);
+      row.appendChild(label);
+      row.appendChild(bar);
+      panelEvidence.appendChild(row);
+    });
+
+    renderHistory();
+    renderExecStrip();
+    updateContextualControls();
+
+    awRouteLabel.textContent = state.route.length
+      ? state.route.map((id) => registry[id].def.label).join("  ·  ")
+      : "NO CAPABILITY MATCHED";
+    awGoalText.textContent = state.goal;
+  }
+
+  function setWorkspaceTab(name) {
+    state.workspace = name;
+    wwTabs.forEach((t) => {
+      const active = t.dataset.panel === name;
+      t.classList.toggle("ww-tab-active", active);
+      t.setAttribute("aria-current", active ? "true" : "false");
+    });
+    Object.entries(panels).forEach(([key, el]) => { el.hidden = key !== name; });
+  }
+
+  wwTabs.forEach((t) => t.addEventListener("click", () => setWorkspaceTab(t.dataset.panel)));
+
+  function exitEditingSubpanel() {
+    awEditForm.hidden = true;
+    awGoalSummary.hidden = false;
+  }
+
+  let morphTimer = null;
+
+  function energizeRoute(matched, pulseDuration) {
+    clearAllActive();
+    setRoutingActive(matched.length > 0);
+    matched.forEach((id) => {
+      setNodeActive(id, true);
+      firePulse(id, pulseDuration);
+    });
+  }
+
+  function enterActiveMode(goalText, matched) {
+    state.mode = "ACTIVE";
+    state.goal = goalText;
+    state.route = matched;
+    state.stage = 2; // WORK
+    state.history.push({ goal: goalText, route: matched.slice() });
+
+    energizeRoute(matched, 800);
+    renderWorkspace();
+    setWorkspaceTab("work");
+
+    stage.dataset.mode = "active";
+    coreGroup.classList.add("core--intense");
+    workspaceLayer.hidden = false;
+    requestAnimationFrame(() => workspaceLayer.classList.add("show"));
+
+    clearTimeout(morphTimer);
+    morphTimer = setTimeout(() => {
+      uiLayer.hidden = true;
+      coreGroup.classList.remove("core--intense");
+    }, reducedMotion ? 60 : 780);
+  }
+
+  function updateActiveRoute(goalText) {
+    const text = goalText.trim();
+    if (!text) return false;
+    const matched = matchNodes(text);
+
+    state.goal = text;
+    state.route = matched;
+    state.stage = 2;
+    state.history.push({ goal: text, route: matched.slice() });
+
+    energizeRoute(matched, 700);
+    renderWorkspace();
+    setWorkspaceTab("work");
+    state.mode = "ACTIVE";
+    exitEditingSubpanel();
+    return true;
+  }
+
+  function exitActiveMode() {
+    state.mode = "TITLE";
+    exitEditingSubpanel();
+    goalInput.value = state.goal;
+    autoGrow(goalInput);
+    clearTimeout(routingTimer);
+    applyIntentRouting();
+    uiLayer.hidden = false;
+    requestAnimationFrame(() => {
+      stage.dataset.mode = "title";
+    });
+    workspaceLayer.classList.remove("show");
+    clearTimeout(morphTimer);
+    morphTimer = setTimeout(() => {
+      workspaceLayer.hidden = true;
+    }, reducedMotion ? 60 : 550);
+  }
+
+  function openEditIntent() {
+    state.mode = "EDITING";
+    stage.dataset.mode = "editing";
+    awEditInput.value = state.goal;
+    awGoalSummary.hidden = true;
+    awEditForm.hidden = false;
+    autoGrow(awEditInput);
+    awEditInput.focus({ preventScroll: true });
+  }
+
+  btnEditIntent.addEventListener("click", openEditIntent);
+  btnEditCancel.addEventListener("click", () => {
+    state.mode = "ACTIVE";
+    stage.dataset.mode = "active";
+    exitEditingSubpanel();
+  });
+
+  awEditForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const text = awEditInput.value.trim();
+    if (!text) {
+      shakeAndWarn(awEditForm);
+      return;
+    }
+    updateActiveRoute(text);
+  });
+  wireEnterSubmit(awEditInput, awEditForm);
+
+  btnBack.addEventListener("click", () => {
+    if (isDemoRunning) return;
+    exitActiveMode();
+  });
+
+  btnRefine.addEventListener("click", () => {
+    if (routeKey(state.route) === "create+design+discover") {
+      const expanded = panelWork.classList.toggle("ww-expanded");
+      showBanner(expanded ? "SHOWING EXPANDED DETAIL" : "DETAIL COLLAPSED", 1600);
+    } else {
+      setWorkspaceTab("work");
+      showBanner("REFINING WORKING DIRECTIONS", 1600);
+    }
+  });
+
+  btnNext.addEventListener("click", () => {
+    if (routeKey(state.route) === "create+design+discover") {
+      state.stage = STAGES.length - 1;
+      renderExecStrip();
+      showBanner("EXECUTION QUEUED — DEMO", 1800);
+    } else {
+      state.stage = Math.min(state.stage + 1, STAGES.length - 1);
+      renderExecStrip();
+      showBanner(STAGES[state.stage] + " STAGE", 1400);
+    }
+  });
 })();

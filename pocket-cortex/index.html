@@ -34,7 +34,7 @@
   </div>
 
   <!-- SCREEN 2 — COGNITIVE CORE -->
-  <div class="stage" id="stage" aria-hidden="true">
+  <div class="stage" id="stage" data-mode="title" aria-hidden="true">
 
     <!-- LAYER 1: deep environment -->
     <div class="layer bg-layer" id="bg-layer">
@@ -103,8 +103,8 @@
       <section class="core-question">
         <p class="intent-tag">INTENT ROUTING</p>
         <h1 class="question-text">WHAT ARE WE TRYING TO ACCOMPLISH?</h1>
-        <form class="goal-field" id="goal-form">
-          <input id="goal-input" type="text" placeholder="Describe a goal..." autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="go" />
+        <form class="goal-field shake-target" id="goal-form">
+          <textarea id="goal-input" class="goal-input-field" rows="1" placeholder="Describe a goal..." autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="go"></textarea>
           <button type="submit" class="goal-submit" id="goal-submit" aria-label="Route goal">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path d="M4 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
@@ -129,6 +129,51 @@
       </nav>
 
       <p class="inline-banner" id="inline-banner" aria-live="polite"></p>
+    </div>
+
+    <!-- ACTIVE CORTEX — dynamic workspace, entered after goal submission -->
+    <div class="layer workspace-layer" id="workspace-layer" hidden aria-hidden="true">
+      <div class="workspace-frame">
+        <header class="aw-header">
+          <p class="aw-eyebrow">ACTIVE CORTEX</p>
+          <h2 class="aw-route" id="aw-route-label">—</h2>
+
+          <div class="aw-goal-summary" id="aw-goal-summary">
+            <p class="aw-goal-text" id="aw-goal-text"></p>
+            <button type="button" class="aw-edit-btn" id="btn-edit-intent">EDIT INTENT</button>
+          </div>
+
+          <form class="goal-field shake-target aw-edit-panel" id="aw-edit-form" hidden>
+            <textarea id="aw-edit-input" class="goal-input-field" rows="2" placeholder="Describe a goal..." autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="go"></textarea>
+            <div class="aw-edit-actions">
+              <button type="button" class="aw-edit-cancel" id="btn-edit-cancel">CANCEL</button>
+              <button type="submit" class="aw-edit-submit" id="btn-edit-submit">RE-ROUTE</button>
+            </div>
+          </form>
+        </header>
+
+        <div class="exec-strip" id="exec-strip" aria-label="Execution stage"></div>
+
+        <nav class="ww-tabs" id="ww-tabs" aria-label="Workspace panels">
+          <button type="button" class="ww-tab" data-panel="work">WORK</button>
+          <button type="button" class="ww-tab" data-panel="route">ROUTE</button>
+          <button type="button" class="ww-tab" data-panel="evidence">EVIDENCE</button>
+          <button type="button" class="ww-tab" data-panel="history">HISTORY</button>
+        </nav>
+
+        <div class="ww-panels" id="ww-panels">
+          <section class="ww-panel" data-panel="work" id="panel-work"></section>
+          <section class="ww-panel" data-panel="route" id="panel-route" hidden></section>
+          <section class="ww-panel" data-panel="evidence" id="panel-evidence" hidden></section>
+          <section class="ww-panel" data-panel="history" id="panel-history" hidden></section>
+        </div>
+      </div>
+
+      <nav class="controls active-controls" id="active-controls">
+        <button type="button" class="ctrl ctrl-back" id="btn-back">BACK</button>
+        <button type="button" class="ctrl ctrl-refine" id="btn-refine">REFINE</button>
+        <button type="button" class="ctrl ctrl-next" id="btn-next">NEXT</button>
+      </nav>
     </div>
 
     <!-- Demonstration overlay text -->
