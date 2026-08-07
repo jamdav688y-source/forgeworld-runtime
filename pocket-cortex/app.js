@@ -379,7 +379,7 @@
   });
 
   async function runDemo() {
-    if (isDemoRunning) return;
+    if (isDemoRunning || isGoalSubmitting) return;
     isDemoRunning = true;
     demoInterrupted = false;
     btnDemo.textContent = "RUNNING…";
@@ -450,4 +450,44 @@
   }
 
   btnDemo.addEventListener("click", runDemo);
+
+  /* ============================================================
+     GOAL SUBMIT — ROUTE
+     ============================================================ */
+
+  const goalForm = document.getElementById("goal-form");
+  let isGoalSubmitting = false;
+  let shakeTimer = null;
+
+  async function handleGoalSubmit(e) {
+    if (e) e.preventDefault();
+    if (isDemoRunning || isGoalSubmitting) return;
+
+    const text = goalInput.value.trim();
+
+    if (!text) {
+      clearTimeout(shakeTimer);
+      goalForm.classList.remove("shake");
+      void goalForm.offsetWidth;
+      goalForm.classList.add("shake");
+      shakeTimer = setTimeout(() => goalForm.classList.remove("shake"), 420);
+      showBanner("ENTER A GOAL TO ROUTE", 1800);
+      return;
+    }
+
+    isGoalSubmitting = true;
+    clearTimeout(routingTimer);
+    applyIntentRouting();
+    const matched = matchNodes(text);
+    matched.forEach((id) => firePulse(id, 800));
+    goalInput.blur();
+
+    demoOverlay.hidden = false;
+    await showLine("GOAL ACCEPTED", 1200);
+    await showLine("ROUTE ESTABLISHED", 1400);
+    demoOverlay.hidden = true;
+    isGoalSubmitting = false;
+  }
+
+  goalForm.addEventListener("submit", handleGoalSubmit);
 })();

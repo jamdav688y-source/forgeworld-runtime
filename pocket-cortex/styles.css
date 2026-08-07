@@ -561,7 +561,7 @@ button {
   border-radius: 10px;
   color: var(--text-hi);
   font-size: 1rem;
-  padding: 13px 16px;
+  padding: 13px 52px 13px 16px;
   outline: none;
   backdrop-filter: blur(6px);
   transition: border-color 0.4s ease, box-shadow 0.4s ease;
@@ -572,6 +572,45 @@ button {
 #goal-input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(87, 217, 201, 0.15), 0 0 18px rgba(87, 217, 201, 0.12);
+}
+
+.goal-submit {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: none;
+  color: var(--void);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 12px rgba(87, 217, 201, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+  flex-shrink: 0;
+}
+
+.goal-submit svg { width: 18px; height: 18px; }
+
+.goal-submit:active { transform: translateY(-50%) scale(0.92); }
+
+.goal-field.shake {
+  animation: goalShake 0.4s ease;
+}
+
+@keyframes goalShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-3px); }
+}
+
+.goal-field.shake #goal-input {
+  border-color: var(--warm);
 }
 
 .goal-field-line {

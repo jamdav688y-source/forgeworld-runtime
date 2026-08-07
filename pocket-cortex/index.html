@@ -103,10 +103,15 @@
       <section class="core-question">
         <p class="intent-tag">INTENT ROUTING</p>
         <h1 class="question-text">WHAT ARE WE TRYING TO ACCOMPLISH?</h1>
-        <div class="goal-field">
-          <input id="goal-input" type="text" placeholder="Describe a goal..." autocomplete="off" autocapitalize="none" spellcheck="false" />
+        <form class="goal-field" id="goal-form">
+          <input id="goal-input" type="text" placeholder="Describe a goal..." autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="go" />
+          <button type="submit" class="goal-submit" id="goal-submit" aria-label="Route goal">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M4 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
           <span class="goal-field-line"></span>
-        </div>
+        </form>
         <p class="intent-readout" id="intent-readout" aria-live="polite">&nbsp;</p>
       </section>
 
