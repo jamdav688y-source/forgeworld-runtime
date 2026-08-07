@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>FORGEWORLD // POCKET CORTEX</title>
+<meta name="theme-color" content="#05070c" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- SCREEN 1 — AWAKENING -->
+  <div id="awakening" class="awakening" aria-hidden="true">
+    <div class="awakening-field">
+      <span class="awakening-seed"></span>
+      <svg class="awakening-rings" viewBox="0 0 400 400" aria-hidden="true">
+        <circle class="aw-ring aw-ring-a" cx="200" cy="200" r="40" />
+        <circle class="aw-ring aw-ring-b" cx="200" cy="200" r="90" />
+        <circle class="aw-ring aw-ring-c" cx="200" cy="200" r="150" />
+      </svg>
+    </div>
+    <div class="awakening-text">
+      <h1 class="aw-line aw-forgeworld">FORGEWORLD</h1>
+      <h2 class="aw-line aw-pocket">POCKET CORTEX</h2>
+      <p class="aw-line aw-init">COGNITIVE INTERFACE INITIALIZING<span class="aw-dots"><span>.</span><span>.</span><span>.</span></span></p>
+    </div>
+  </div>
+
+  <!-- SCREEN 2 — COGNITIVE CORE -->
+  <div class="stage" id="stage" aria-hidden="true">
+
+    <!-- LAYER 1: deep environment -->
+    <div class="layer bg-layer" id="bg-layer">
+      <div class="bg-glow bg-glow-a"></div>
+      <div class="bg-glow bg-glow-b"></div>
+      <div class="bg-grid"></div>
+      <div class="bg-particles" id="bg-particles"></div>
+    </div>
+
+    <!-- LAYER 2: cognition-field rings -->
+    <div class="layer rings-layer" aria-hidden="true">
+      <svg viewBox="0 0 600 600" class="field-rings">
+        <circle cx="300" cy="260" r="130" class="field-ring field-ring-1" />
+        <circle cx="300" cy="260" r="210" class="field-ring field-ring-2" />
+        <circle cx="300" cy="260" r="280" class="field-ring field-ring-3" />
+      </svg>
+    </div>
+
+    <!-- LAYER 3: cognitive constellation -->
+    <div class="layer constellation-layer">
+      <svg id="constellation" viewBox="0 0 300 300" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="var(--core-hot)" stop-opacity="0.95" />
+            <stop offset="45%" stop-color="var(--core-mid)" stop-opacity="0.55" />
+            <stop offset="100%" stop-color="var(--core-mid)" stop-opacity="0" />
+          </radialGradient>
+          <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="2.4" />
+          </filter>
+        </defs>
+
+        <!-- connections + nodes injected by app.js -->
+        <g id="links-group"></g>
+        <g id="secondary-nodes"></g>
+
+        <!-- central core -->
+        <g id="core-group" transform="translate(150,150)">
+          <circle class="core-field" r="70" fill="url(#coreGlow)" />
+          <g class="core-ring core-ring-outer">
+            <circle r="46" />
+          </g>
+          <g class="core-ring core-ring-inner">
+            <circle r="34" />
+          </g>
+          <circle class="core-nucleus" r="15" />
+          <text class="core-label" y="4" text-anchor="middle">YOU</text>
+        </g>
+
+        <g id="nodes-group"></g>
+        <g id="pulse-group"></g>
+      </svg>
+    </div>
+
+    <!-- LAYER 4: foreground UI -->
+    <div class="layer ui-layer">
+
+      <header class="status-bar">
+        <span class="status-title">FORGEWORLD // POCKET CORTEX</span>
+        <span class="status-sub">LOCAL COGNITIVE SHELL</span>
+        <span class="status-ready"><i class="ready-dot"></i>SYSTEM: READY</span>
+      </header>
+
+      <div class="constellation-spacer" aria-hidden="true"></div>
+
+      <section class="core-question">
+        <p class="intent-tag">INTENT ROUTING</p>
+        <h1 class="question-text">WHAT ARE WE TRYING TO ACCOMPLISH?</h1>
+        <div class="goal-field">
+          <input id="goal-input" type="text" placeholder="Describe a goal..." autocomplete="off" autocapitalize="none" spellcheck="false" />
+          <span class="goal-field-line"></span>
+        </div>
+        <p class="intent-readout" id="intent-readout" aria-live="polite">&nbsp;</p>
+      </section>
+
+      <section class="state-strip" aria-label="Demonstration state">
+        <div class="state-strip-items" id="state-strip-items"></div>
+        <p class="state-strip-caption">DEMONSTRATION STATE</p>
+      </section>
+
+      <nav class="controls">
+        <button type="button" class="ctrl ctrl-explore" id="btn-explore">EXPLORE</button>
+        <button type="button" class="ctrl ctrl-mission" id="btn-mission">MISSION</button>
+        <button type="button" class="ctrl ctrl-demonstrate" id="btn-demonstrate">DEMONSTRATE</button>
+      </nav>
+
+      <p class="inline-banner" id="inline-banner" aria-live="polite"></p>
+    </div>
+
+    <!-- Demonstration overlay text -->
+    <div class="demo-overlay" id="demo-overlay" hidden>
+      <p class="demo-line" id="demo-line"></p>
+      <p class="demo-hint">tap anywhere to interrupt</p>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
