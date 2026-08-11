@@ -19,7 +19,7 @@ echo "======================================="
 ;;
 
 capture)
-mkdir -p "$ROOT/inbox"
+mkdir -p "$ROOT"
 echo "TYPE: idea / bug / task / linkedin / observation / opportunity"
 read -r TYPE
 echo "DETAIL:"
@@ -32,7 +32,7 @@ echo "TYPE: $TYPE"
 echo "DETAIL: $DETAIL"
 echo "STATUS: queued"
 echo "---"
-} >> "$ROOT/inbox/capture.md"
+} >> "$ROOT/CAPTURE.md"
 echo "Captured."
 ;;
 
@@ -82,7 +82,7 @@ review)
 echo "========== FORGEWORLD REVIEW =========="
 echo
 echo "CAPTURES:"
-tail -40 "$ROOT/inbox/capture.md" 2>/dev/null || echo "No captures yet."
+tail -40 "$ROOT/CAPTURE.md" 2>/dev/null || echo "No captures yet."
 echo
 echo "EVENTS:"
 tail -40 "$ROOT/events/events.log" 2>/dev/null || echo "No events yet."
@@ -103,7 +103,7 @@ echo "Local sync complete."
 archive)
 STAMP=$(date +%Y%m%d-%H%M%S)
 mkdir -p "$ROOT/archive/$STAMP"
-cp -r "$ROOT/inbox" "$ROOT/archive/$STAMP/" 2>/dev/null || true
+cp "$ROOT/CAPTURE.md" "$ROOT/archive/$STAMP/" 2>/dev/null || true
 cp -r "$ROOT/events" "$ROOT/archive/$STAMP/" 2>/dev/null || true
 cp -r "$ROOT/npcs" "$ROOT/archive/$STAMP/" 2>/dev/null || true
 cp -r "$ROOT/quests" "$ROOT/archive/$STAMP/" 2>/dev/null || true
