@@ -134,6 +134,15 @@ shift
 python3 "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../capability_negotiation/negotiate.py" "$@"
 ;;
 
+reconcile)
+shift
+# NOTE: defaults to $HOME/forgeworld-runtime (the git repo clone), NOT
+# $ROOT ($HOME/forgeworld, the deployed runtime instance) -- reconcile is
+# about comparing the git checkout against known branches, a different
+# target than the rest of this dispatcher's $ROOT-scoped commands.
+python3 "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/forge_reconcile.py" "$@"
+;;
+
 clean)
 pkg clean
 rm -rf "$ROOT/logs"/*.tmp 2>/dev/null || true
@@ -156,6 +165,7 @@ echo "forge doctrine"
 echo "forge route --objective '...' --tags a,b,c"
 echo "forge discover"
 echo "forge negotiate --mission <id> [--live-connectors a,b,c] [--resume]"
+echo "forge reconcile [--root DIR] [--out DIR] [--no-fetch] [--force]"
 echo "forge clean"
 ;;
 
