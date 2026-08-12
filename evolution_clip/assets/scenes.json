@@ -1,0 +1,159 @@
+{
+  "canvas": {"width": 1080, "height": 1920},
+  "palette": {
+    "bg_top": "#0a0a0f",
+    "bg_bottom": "#050507",
+    "gold": "#c9a227",
+    "gold_bright": "#e6c25c",
+    "white": "#f3efe4",
+    "dim": "#8a8579",
+    "grid_line": "#c9a22722"
+  },
+  "crossfade_sec": 0.3,
+  "scenes": [
+    {
+      "id": "00_narrative_open",
+      "kind": "narrative",
+      "duration": 2.8,
+      "text": "What looked like disconnected experiments was actually becoming infrastructure.",
+      "source_files": [],
+      "provenance_note": "Opening narrative line from creative brief, not a repo file."
+    },
+    {
+      "id": "01_fragmented_experiments",
+      "kind": "fragments",
+      "duration": 2.3,
+      "label": "FRAGMENTED EXPERIMENTS",
+      "fragments": [
+        "rpg/player.json",
+        "npc/npc_memory.txt",
+        "factions/faction_memory.log",
+        "quests/active_quests.md",
+        "world/world_state.json",
+        "reputation/reputation.log",
+        "memory/memory.log",
+        "events/events.log"
+      ],
+      "source_files": [
+        "rpg/player.json",
+        "npc/npc_memory.txt",
+        "factions/faction_memory.log",
+        "quests/active_quests.md",
+        "world/world_state.json",
+        "reputation/reputation.log",
+        "memory/memory.log",
+        "events/events.log"
+      ]
+    },
+    {
+      "id": "02_evidence",
+      "kind": "evidence",
+      "duration": 2.5,
+      "label": "EVIDENCE",
+      "quote": "Every event must generate evidence.",
+      "citation": "CORE LAW 1 — governance/CONSTITUTION_v1.txt",
+      "trail": ["events/events.log", "memory/memory.log", "consequences/consequences.log"],
+      "source_files": [
+        "governance/CONSTITUTION_v1.txt",
+        "events/events.log",
+        "memory/memory.log",
+        "consequences/consequences.log"
+      ]
+    },
+    {
+      "id": "03_governance",
+      "kind": "chain",
+      "duration": 2.5,
+      "label": "GOVERNANCE",
+      "chain": ["EVENT", "EVIDENCE", "MEMORY", "REPUTATION", "RELATIONSHIP", "FACTION", "GOVERNANCE", "CONSEQUENCE", "WORLD STATE", "FUTURE STATE"],
+      "citation": "governance/CONSTITUTION_v1.txt · CONSTITUTION_v3.txt · EVOLUTION_DIRECTIVE_v1.txt",
+      "source_files": [
+        "governance/CONSTITUTION_v1.txt",
+        "governance/CONSTITUTION_v3.txt",
+        "governance/EVOLUTION_DIRECTIVE_v1.txt"
+      ]
+    },
+    {
+      "id": "04_orchestration",
+      "kind": "orchestration",
+      "duration": 2.5,
+      "label": "ORCHESTRATION",
+      "quote": "Routes a mission to a capability, not a brand.",
+      "detail_left": "CONFIDENCE\nreachability\ntask-fit\noutput quality\nhistorical evidence",
+      "detail_right": "COST\ndollar\nlatency\ntokens\nattention\ncomplexity",
+      "citation": "router/mission_router.py",
+      "source_files": ["router/mission_router.py", "router/decisions.jsonl"]
+    },
+    {
+      "id": "05_capability",
+      "kind": "capability_grid",
+      "duration": 2.5,
+      "label": "CAPABILITY",
+      "nodes": ["claude_code", "chatgpt", "local_llm", "desktop_runtime", "python", "git", "github", "zapier", "gmail", "google_drive", "airtable"],
+      "citation": "capabilities/registry.json · discover.py",
+      "source_files": ["capabilities/registry.json", "capabilities/discover.py"]
+    },
+    {
+      "id": "06_compounding",
+      "kind": "evidence",
+      "duration": 2.6,
+      "label": "COMPOUNDING INTELLIGENCE",
+      "quote": "The mobile knowledge-ingestion and institutional-memory layer of ForgeWorld.",
+      "citation": "forgeworld-mobile-research/README.md",
+      "trail": ["capture", "OCR", "classify", "index", "search", "export"],
+      "source_files": [
+        "forgeworld-mobile-research/README.md",
+        "forgeworld-mobile-research/ARCHITECTURE.md"
+      ]
+    },
+    {
+      "id": "07_word_capture",
+      "kind": "word_beat",
+      "duration": 1.0,
+      "word": "CAPTURE",
+      "sub": "scripts/forge-capture.sh",
+      "source_files": ["scripts/forge-capture.sh"]
+    },
+    {
+      "id": "08_word_understand",
+      "kind": "word_beat",
+      "duration": 1.0,
+      "word": "UNDERSTAND",
+      "sub": "forgeworld-mobile-research/ocr.py + summarizer.py",
+      "source_files": ["forgeworld-mobile-research/ocr.py", "forgeworld-mobile-research/summarizer.py"]
+    },
+    {
+      "id": "09_word_orchestrate",
+      "kind": "word_beat",
+      "duration": 1.1,
+      "word": "ORCHESTRATE",
+      "sub": "router/mission_router.py",
+      "source_files": ["router/mission_router.py"]
+    },
+    {
+      "id": "10_word_validate",
+      "kind": "word_beat",
+      "duration": 1.0,
+      "word": "VALIDATE",
+      "sub": "diagnostics/constitution_v3_check.sh",
+      "source_files": ["diagnostics/constitution_v3_check.sh", "forgeworld-mobile-research/VALIDATION_REPORT.md"]
+    },
+    {
+      "id": "11_word_compound",
+      "kind": "word_beat",
+      "duration": 1.1,
+      "word": "COMPOUND",
+      "sub": "world_state.json — phase: Convergence",
+      "source_files": ["world_state.json", "STATUS.md"]
+    },
+    {
+      "id": "12_closing",
+      "kind": "closing",
+      "duration": 3.6,
+      "title": "FORGEWORLD",
+      "subtitle": "Governed Workflow Intelligence",
+      "line": "The work wasn't disconnected. It was compounding.",
+      "source_files": ["README.md", "STATUS.md"]
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "scenes": [
+    {
+      "id": "00_narrative_open",
+      "kind": "narrative",
+      "duration": 2.8,
+      "frame": "evolution_clip/frames/00_narrative_open.png",
+      "source_files": []
+    },
+    {
+      "id": "01_fragmented_experiments",
+      "kind": "fragments",
+      "duration": 2.3,
+      "frame": "evolution_clip/frames/01_fragmented_experiments.png",
+      "source_files": [
+        "rpg/player.json",
+        "npc/npc_memory.txt",
+        "factions/faction_memory.log",
+        "quests/active_quests.md",
+        "world/world_state.json",
+        "reputation/reputation.log",
+        "memory/memory.log",
+        "events/events.log"
+      ]
+    },
+    {
+      "id": "02_evidence",
+      "kind": "evidence",
+      "duration": 2.5,
+      "frame": "evolution_clip/frames/02_evidence.png",
+      "source_files": [
+        "governance/CONSTITUTION_v1.txt",
+        "events/events.log",
+        "memory/memory.log",
+        "consequences/consequences.log"
+      ]
+    },
+    {
+      "id": "03_governance",
+      "kind": "chain",
+      "duration": 2.5,
+      "frame": "evolution_clip/frames/03_governance.png",
+      "source_files": [
+        "governance/CONSTITUTION_v1.txt",
+        "governance/CONSTITUTION_v3.txt",
+        "governance/EVOLUTION_DIRECTIVE_v1.txt"
+      ]
+    },
+    {
+      "id": "04_orchestration",
+      "kind": "orchestration",
+      "duration": 2.5,
+      "frame": "evolution_clip/frames/04_orchestration.png",
+      "source_files": [
+        "router/mission_router.py",
+        "router/decisions.jsonl"
+      ]
+    },
+    {
+      "id": "05_capability",
+      "kind": "capability_grid",
+      "duration": 2.5,
+      "frame": "evolution_clip/frames/05_capability.png",
+      "source_files": [
+        "capabilities/registry.json",
+        "capabilities/discover.py"
+      ]
+    },
+    {
+      "id": "06_compounding",
+      "kind": "evidence",
+      "duration": 2.6,
+      "frame": "evolution_clip/frames/06_compounding.png",
+      "source_files": [
+        "forgeworld-mobile-research/README.md",
+        "forgeworld-mobile-research/ARCHITECTURE.md"
+      ]
+    },
+    {
+      "id": "07_word_capture",
+      "kind": "word_beat",
+      "duration": 1.0,
+      "frame": "evolution_clip/frames/07_word_capture.png",
+      "source_files": [
+        "scripts/forge-capture.sh"
+      ]
+    },
+    {
+      "id": "08_word_understand",
+      "kind": "word_beat",
+      "duration": 1.0,
+      "frame": "evolution_clip/frames/08_word_understand.png",
+      "source_files": [
+        "forgeworld-mobile-research/ocr.py",
+        "forgeworld-mobile-research/summarizer.py"
+      ]
+    },
+    {
+      "id": "09_word_orchestrate",
+      "kind": "word_beat",
+      "duration": 1.1,
+      "frame": "evolution_clip/frames/09_word_orchestrate.png",
+      "source_files": [
+        "router/mission_router.py"
+      ]
+    },
+    {
+      "id": "10_word_validate",
+      "kind": "word_beat",
+      "duration": 1.0,
+      "frame": "evolution_clip/frames/10_word_validate.png",
+      "source_files": [
+        "diagnostics/constitution_v3_check.sh",
+        "forgeworld-mobile-research/VALIDATION_REPORT.md"
+      ]
+    },
+    {
+      "id": "11_word_compound",
+      "kind": "word_beat",
+      "duration": 1.1,
+      "frame": "evolution_clip/frames/11_word_compound.png",
+      "source_files": [
+        "world_state.json",
+        "STATUS.md"
+      ]
+    },
+    {
+      "id": "12_closing",
+      "kind": "closing",
+      "duration": 3.6,
+      "frame": "evolution_clip/frames/12_closing.png",
+      "source_files": [
+        "README.md",
+        "STATUS.md"
+      ]
+    }
+  ],
+  "crossfade_sec": 0.3
+}

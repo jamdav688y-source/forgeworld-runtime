@@ -1,0 +1,421 @@
+{
+  "generated_at_utc": "2026-08-12T19:12:12.652381+00:00",
+  "repo": {
+    "commit": "809544940050ea6567b22d87badf4c959a6582fa",
+    "branch": "claude/forgeworld-evolution-clip-s9f5ys",
+    "working_tree_dirty": true
+  },
+  "toolchain": {
+    "python": "3.11.15",
+    "pillow": "12.3.0",
+    "ffmpeg": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+    "platform": "Linux-6.18.5-fc-v20-x86_64-with-glibc2.39"
+  },
+  "canvas": {
+    "width": 1080,
+    "height": 1920
+  },
+  "crossfade_sec": 0.3,
+  "total_scripted_duration_sec": 26.5,
+  "scene_count": 13,
+  "unique_source_file_count": 26,
+  "scenes": [
+    {
+      "id": "00_narrative_open",
+      "kind": "narrative",
+      "duration_sec": 2.8,
+      "generated_frame": {
+        "path": "evolution_clip/frames/00_narrative_open.png",
+        "sha256": "3100e1a0ad8f6bc32efd05c05085466baaca301ea29628c43b5dde91507bcc06",
+        "bytes": 52095
+      },
+      "provenance_note": "Opening narrative line from creative brief, not a repo file.",
+      "source_files": []
+    },
+    {
+      "id": "01_fragmented_experiments",
+      "kind": "fragments",
+      "duration_sec": 2.3,
+      "generated_frame": {
+        "path": "evolution_clip/frames/01_fragmented_experiments.png",
+        "sha256": "16c613703e28bda099f469c42cb66b4af34635f6f36d385cf7e7fbdf970561fb",
+        "bytes": 73456
+      },
+      "provenance_note": null,
+      "source_files": [
+        {
+          "path": "rpg/player.json",
+          "exists": true,
+          "sha256": "0e50ec9a2db921918909ad1d383597e1ef88fa1f39634b8bb911de6329729d2f",
+          "git_blob_sha1": "d28e89d2088b657e2651d1cd5fc466948f22a461",
+          "bytes": 396
+        },
+        {
+          "path": "npc/npc_memory.txt",
+          "exists": true,
+          "sha256": "18c663d3d580300a1330019c07be59b00555df6381504d3e56782a5cde849cb9",
+          "git_blob_sha1": "8d203119fa95c66ced57f1297ef41c10eee03cd5",
+          "bytes": 384
+        },
+        {
+          "path": "factions/faction_memory.log",
+          "exists": true,
+          "sha256": "a778a135bc4dcf9a890709295b5052abd2ae7a889533de2fc846e78ae6f5985c",
+          "git_blob_sha1": "6d60c45bc8686a391d01f0c5a5cb40f11e9bf220",
+          "bytes": 144
+        },
+        {
+          "path": "quests/active_quests.md",
+          "exists": true,
+          "sha256": "7635273cd60f731774797f02e2770e7401f8d5cb5ddfa44537857c1834939631",
+          "git_blob_sha1": "4cef91e7ae37f3368c7a8ee140fd291570423acf",
+          "bytes": 246
+        },
+        {
+          "path": "world/world_state.json",
+          "exists": true,
+          "sha256": "6e024b5a82bacf295991e8a11c97162c5d20e1bd24b25b493cf02d4385676307",
+          "git_blob_sha1": "5b84342a6104d196519ef8c5f587bccf44675626",
+          "bytes": 290
+        },
+        {
+          "path": "reputation/reputation.log",
+          "exists": true,
+          "sha256": "881e2a129e7e34d1b385434a2c039753e43e425158f462044d2e47fa91ef96bf",
+          "git_blob_sha1": "6169da4c22a0d95cfe3bf425dd6e287043344779",
+          "bytes": 126
+        },
+        {
+          "path": "memory/memory.log",
+          "exists": true,
+          "sha256": "434369b48d3f6ec4d2c9ed4db825a5d6516c1963ce534bef70c579c95612fc9f",
+          "git_blob_sha1": "2f01e9da1374dbccd2c10c9687cf151b53e34c9f",
+          "bytes": 222
+        },
+        {
+          "path": "events/events.log",
+          "exists": true,
+          "sha256": "4d1b760ca883e16e41b9c56db0328c366671cde7b5a05f5cd27d80111097777b",
+          "git_blob_sha1": "4dc64a6735744b716c867764f45890323e9a9431",
+          "bytes": 109
+        }
+      ]
+    },
+    {
+      "id": "02_evidence",
+      "kind": "evidence",
+      "duration_sec": 2.5,
+      "generated_frame": {
+        "path": "evolution_clip/frames/02_evidence.png",
+        "sha256": "6808d48a454b59aaf4dd17276c8dc746fc5cf86f598e5e9086dd61a5d34594b3",
+        "bytes": 52053
+      },
+      "provenance_note": null,
+      "source_files": [
+        {
+          "path": "governance/CONSTITUTION_v1.txt",
+          "exists": true,
+          "sha256": "3e8780074273b6c1d7e89994c90f5bba7c1dae05666723b64981f211d4ae78c3",
+          "git_blob_sha1": "0c251a1340cc0e42a3fa8b986c86bf4de9a3e343",
+          "bytes": 1466
+        },
+        {
+          "path": "events/events.log",
+          "exists": true,
+          "sha256": "4d1b760ca883e16e41b9c56db0328c366671cde7b5a05f5cd27d80111097777b",
+          "git_blob_sha1": "4dc64a6735744b716c867764f45890323e9a9431",
+          "bytes": 109
+        },
+        {
+          "path": "memory/memory.log",
+          "exists": true,
+          "sha256": "434369b48d3f6ec4d2c9ed4db825a5d6516c1963ce534bef70c579c95612fc9f",
+          "git_blob_sha1": "2f01e9da1374dbccd2c10c9687cf151b53e34c9f",
+          "bytes": 222
+        },
+        {
+          "path": "consequences/consequences.log",
+          "exists": true,
+          "sha256": "4e368c8e24aaa34357a2ab6693f68321462c50a78c2af53882cdeff0855ecd45",
+          "git_blob_sha1": "19cbc698ea70703deb7b62a6b96631f112f5e212",
+          "bytes": 270
+        }
+      ]
+    },
+    {
+      "id": "03_governance",
+      "kind": "chain",
+      "duration_sec": 2.5,
+      "generated_frame": {
+        "path": "evolution_clip/frames/03_governance.png",
+        "sha256": "c33536b3208af4e4b0a7c87a3e959cf607501e874b009f8814b0c9946cf0d5d7",
+        "bytes": 60862
+      },
+      "provenance_note": null,
+      "source_files": [
+        {
+          "path": "governance/CONSTITUTION_v1.txt",
+          "exists": true,
+          "sha256": "3e8780074273b6c1d7e89994c90f5bba7c1dae05666723b64981f211d4ae78c3",
+          "git_blob_sha1": "0c251a1340cc0e42a3fa8b986c86bf4de9a3e343",
+          "bytes": 1466
+        },
+        {
+          "path": "governance/CONSTITUTION_v3.txt",
+          "exists": true,
+          "sha256": "51386250ed8db2e19c424bf26cc3e729539e77b858d56e38ceaacf14fb335e41",
+          "git_blob_sha1": "df9d7d023c32aa65b7798c4d20ac239c8668fefd",
+          "bytes": 3217
+        },
+        {
+          "path": "governance/EVOLUTION_DIRECTIVE_v1.txt",
+          "exists": true,
+          "sha256": "0dc3e3ba9162667b89259d16ee515c91259f13733fdc3c261e3cb74bbcd51794",
+          "git_blob_sha1": "b0462a9c2b67171246b6e4af5e06b83b17d13ee7",
+          "bytes": 2109
+        }
+      ]
+    },
+    {
+      "id": "04_orchestration",
+      "kind": "orchestration",
+      "duration_sec": 2.5,
+      "generated_frame": {
+        "path": "evolution_clip/frames/04_orchestration.png",
+        "sha256": "8a1ae351baf2b72ba7bde513dfb36c2be18a200f4e27579e6ae9cb740a59cd49",
+        "bytes": 62138
+      },
+      "provenance_note": null,
+      "source_files": [
+        {
+          "path": "router/mission_router.py",
+          "exists": true,
+          "sha256": "07a1f314167a9f9c904712e2ae8b58ef0e8526921764e98367366f442b5e129d",
+          "git_blob_sha1": "39acda8f4ad0766486d64e2b3c43e654ce49d8a5",
+          "bytes": 7668
+        },
+        {
+          "path": "router/decisions.jsonl",
+          "exists": true,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "git_blob_sha1": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+          "bytes": 0
+        }
+      ]
+    },
+    {
+      "id": "05_capability",
+      "kind": "capability_grid",
+      "duration_sec": 2.5,
+      "generated_frame": {
+        "path": "evolution_clip/frames/05_capability.png",
+        "sha256": "ed656a2486f997514912b39cfa9e0c467eca81905b79b416af2e5fe9f034eca6",
+        "bytes": 51350
+      },
+      "provenance_note": null,
+      "source_files": [
+        {
+          "path": "capabilities/registry.json",
+          "exists": true,
+          "sha256": "c0b2973c91508c7b10d7f5e78e9c8fa0b9bc26d0a6b333dadbb72cbe281098ad",
+          "git_blob_sha1": "08dbc589dd9323b7f43cba14173a3186fa90f2ad",
+          "bytes": 3630
+        },
+        {
+          "path": "capabilities/discover.py",
+          "exists": true,
+          "sha256": "1d15188c5097b44f6fe67214a58b6b4ab78c091655ff2aa43a5bbb96b93700ad",
+          "git_blob_sha1": "85ffbf6046d99dcd9a65e4307a104c9ca40d6e46",
+          "bytes": 2534
+        }
+      ]
+    },
+    {
+      "id": "06_compounding",
+      "kind": "evidence",
+      "duration_sec": 2.6,
+      "generated_frame": {
+        "path": "evolution_clip/frames/06_compounding.png",
+        "sha256": "06d144dfbf25fb782781cdf17746cb18301856a778ef85c7d9e7d03102c34f26",
+        "bytes": 78206
+      },
+      "provenance_note": null,
+      "source_files": [
+        {
+          "path": "forgeworld-mobile-research/README.md",
+          "exists": true,
+          "sha256": "0a2ebe11f018f844eb8d8273b541884f4ecc4201416c206755635921db150c26",
+          "git_blob_sha1": "40bdc65432f3bc532d5f8fe3d7242adecb14a5bb",
+          "bytes": 2887
+        },
+        {
+          "path": "forgeworld-mobile-research/ARCHITECTURE.md",
+          "exists": true,
+          "sha256": "f9e1c6a7058b686928d613949af6e9e883cb8879197cf8363cdca8feb59f9194",
+          "git_blob_sha1": "bb8a8664ca5b479067ec347cc1495845d678bd09",
+          "bytes": 4915
+        }
+      ]
+    },
+    {
+      "id": "07_word_capture",
+      "kind": "word_beat",
+      "duration_sec": 1.0,
+      "generated_frame": {
+        "path": "evolution_clip/frames/07_word_capture.png",
+        "sha256": "ee980ea765264dfaa0524b7790cbcd3570c59fa6a81dbccbb49880cf1b705891",
+        "bytes": 24905
+      },
+      "provenance_note": null,
+      "source_files": [
+        {
+          "path": "scripts/forge-capture.sh",
+          "exists": true,
+          "sha256": "e7894b7693755b827a318739fe0dfd2d58143971e45fd9cd323dff01f1280135",
+          "git_blob_sha1": "1bf63616383d6e1a3e846f6c03580f6c00d26eda",
+          "bytes": 368
+        }
+      ]
+    },
+    {
+      "id": "08_word_understand",
+      "kind": "word_beat",
+      "duration_sec": 1.0,
+      "generated_frame": {
+        "path": "evolution_clip/frames/08_word_understand.png",
+        "sha256": "2d2144835cb8a849969f928b52da4819dd4e9be98c8348954b9ab8025763f4cb",
+        "bytes": 30269
+      },
+      "provenance_note": null,
+      "source_files": [
+        {
+          "path": "forgeworld-mobile-research/ocr.py",
+          "exists": true,
+          "sha256": "1a582d4d7219137da9f8c1d42d15a4cc929ce458cee1a25faddefb493b61e967",
+          "git_blob_sha1": "bf07643e5fa28d9cd3da6edcfdf0a0fd3a0eb04e",
+          "bytes": 6636
+        },
+        {
+          "path": "forgeworld-mobile-research/summarizer.py",
+          "exists": true,
+          "sha256": "d8daf276a1e9a41def1754eb4df51e300d88f9480326175e4e0c1d4a094ea4d6",
+          "git_blob_sha1": "465f5bed9da70e95ab95bb1482729bbc2d19740e",
+          "bytes": 2760
+        }
+      ]
+    },
+    {
+      "id": "09_word_orchestrate",
+      "kind": "word_beat",
+      "duration_sec": 1.1,
+      "generated_frame": {
+        "path": "evolution_clip/frames/09_word_orchestrate.png",
+        "sha256": "a73252fa693e9464bf1d9405d96714179936d496ac0a86854b35eb6d865af634",
+        "bytes": 28028
+      },
+      "provenance_note": null,
+      "source_files": [
+        {
+          "path": "router/mission_router.py",
+          "exists": true,
+          "sha256": "07a1f314167a9f9c904712e2ae8b58ef0e8526921764e98367366f442b5e129d",
+          "git_blob_sha1": "39acda8f4ad0766486d64e2b3c43e654ce49d8a5",
+          "bytes": 7668
+        }
+      ]
+    },
+    {
+      "id": "10_word_validate",
+      "kind": "word_beat",
+      "duration_sec": 1.0,
+      "generated_frame": {
+        "path": "evolution_clip/frames/10_word_validate.png",
+        "sha256": "8ef2596bc3a7024dfd6cb3837791921faeeeafab77e30c70a003fd55048305d2",
+        "bytes": 24120
+      },
+      "provenance_note": null,
+      "source_files": [
+        {
+          "path": "diagnostics/constitution_v3_check.sh",
+          "exists": true,
+          "sha256": "3ebaebc7fb6d6b2005d5da2a662c0a277d1d3a634273326e49d222e76b326841",
+          "git_blob_sha1": "b0416a5cf5eae2c0d20516da95e86192edbd96c9",
+          "bytes": 734
+        },
+        {
+          "path": "forgeworld-mobile-research/VALIDATION_REPORT.md",
+          "exists": true,
+          "sha256": "231ff884c494c7fef72610c2c098fa68d20db42e60bc463abbeb57d18e9bb23f",
+          "git_blob_sha1": "0f2e45ef07efe8a7e4a3108fd0359480cd6a2445",
+          "bytes": 5206
+        }
+      ]
+    },
+    {
+      "id": "11_word_compound",
+      "kind": "word_beat",
+      "duration_sec": 1.1,
+      "generated_frame": {
+        "path": "evolution_clip/frames/11_word_compound.png",
+        "sha256": "951a4ce2252b6f33ba2ae9ce43b2aa712a85b369057128d7724b2ad1da75623e",
+        "bytes": 30293
+      },
+      "provenance_note": null,
+      "source_files": [
+        {
+          "path": "world_state.json",
+          "exists": true,
+          "sha256": "824626c1d266e329cbb9cf4ff31845922e719d5334ab01450fdbf29f9a4de9cf",
+          "git_blob_sha1": "cd0b487047bc5e788b590b497ecd1e8d043e82cc",
+          "bytes": 408
+        },
+        {
+          "path": "STATUS.md",
+          "exists": true,
+          "sha256": "1af960fb4891a768f53eb1bee2dd79c1190f7de4b80dab8ad74b9220cab7f97e",
+          "git_blob_sha1": "c225b8cd86d03e3ec6dd90081b0a2ccad4636bb3",
+          "bytes": 365
+        }
+      ]
+    },
+    {
+      "id": "12_closing",
+      "kind": "closing",
+      "duration_sec": 3.6,
+      "generated_frame": {
+        "path": "evolution_clip/frames/12_closing.png",
+        "sha256": "784fca31c55ed4d737de27ff64bec166f8617690627c5e16cebc11182dab6b04",
+        "bytes": 45698
+      },
+      "provenance_note": null,
+      "source_files": [
+        {
+          "path": "README.md",
+          "exists": true,
+          "sha256": "fe96d444c13eb9ff1269bfdc2cee1900d4b3bda35d2957dc065dded2e880be79",
+          "git_blob_sha1": "a144ad137599fa905760bd3d4e7b70d0d34b8949",
+          "bytes": 249
+        },
+        {
+          "path": "STATUS.md",
+          "exists": true,
+          "sha256": "1af960fb4891a768f53eb1bee2dd79c1190f7de4b80dab8ad74b9220cab7f97e",
+          "git_blob_sha1": "c225b8cd86d03e3ec6dd90081b0a2ccad4636bb3",
+          "bytes": 365
+        }
+      ]
+    }
+  ],
+  "outputs": {
+    "preview.mp4": {
+      "path": "evolution_clip/output/preview.mp4",
+      "sha256": "45981e732dc561aca4d541192c833789b011c1d249ed4b455b7a07559049e14e",
+      "bytes": 675579
+    },
+    "final.mp4": {
+      "path": "evolution_clip/output/final.mp4",
+      "sha256": "5e5c58cbb4cf8966365bcc2ffd86736e6dffb5fae7de1db51cad2c9d7ae753b8",
+      "bytes": 1062670
+    }
+  }
+}
