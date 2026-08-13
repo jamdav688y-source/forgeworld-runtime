@@ -1,0 +1,73 @@
+{
+  "mission_id": "VALIDATION-001",
+  "pipeline": "CAPTURE -> EXTRACT -> STRUCTURE -> GOVERN -> ROUTE -> TRACK",
+  "steps": [
+    {
+      "step": "CAPTURE",
+      "source_file_exists": true,
+      "declared_sha256": "4259ef3500ba7ec11442c28ef6c9eb0a412f1a24f00edf5c923197235a5fdfe9",
+      "recomputed_sha256": "4259ef3500ba7ec11442c28ef6c9eb0a412f1a24f00edf5c923197235a5fdfe9",
+      "hash_match": true,
+      "verdict": "PASS",
+      "duration_s": 0.0005
+    },
+    {
+      "step": "EXTRACT",
+      "requirement_verdict": "PASS",
+      "commitment_verdict": "PASS",
+      "verdict": "PASS",
+      "duration_s": 0.0002
+    },
+    {
+      "step": "STRUCTURE",
+      "verdict": "PASS",
+      "mission_id": "VALIDATION-001",
+      "duration_s": 0.0001
+    },
+    {
+      "step": "GOVERN",
+      "checks": [
+        {
+          "check": "requirement has classification field",
+          "pass": true
+        },
+        {
+          "check": "commitment has classification field",
+          "pass": true
+        },
+        {
+          "check": "commitment references requirement",
+          "pass": true
+        },
+        {
+          "check": "mission references commitment",
+          "pass": true
+        },
+        {
+          "check": "requirement references source",
+          "pass": true
+        }
+      ],
+      "verdict": "PASS",
+      "duration_s": 0.0
+    },
+    {
+      "step": "ROUTE",
+      "status": "routed",
+      "selected_capability": "claude_code",
+      "decisions_log": "router/decisions.jsonl",
+      "verdict": "PASS",
+      "duration_s": 0.0186
+    },
+    {
+      "step": "TRACK",
+      "history_log": "capabilities/history.jsonl",
+      "success_score": 1.0,
+      "verdict": "PASS",
+      "duration_s": 0.0001
+    }
+  ],
+  "trace_result_summary": "PASS",
+  "total_duration_s": 0.0201,
+  "run_at_utc": "2026-08-13T00:25:24Z"
+}

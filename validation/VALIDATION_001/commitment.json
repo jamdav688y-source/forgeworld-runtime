@@ -1,0 +1,13 @@
+{
+  "commitment_id": "COM-VALIDATION-001",
+  "commitment_type": "extracted_commitment",
+  "statement": "Return with what actually held up, failed, and changed once real-world evidence accumulates.",
+  "statement_classification": "SOURCE_FACT",
+  "statement_classification_note": "L2's speaker (James Davis) made this commitment in their own words; the supporting_substring is verbatim. The statement above is a close paraphrase of that verbatim substring, not an inference about unstated intent.",
+  "extracted_from_line_id": "L2",
+  "supporting_substring": "I'll share what actually held up, what failed, and what changed because of the evidence",
+  "supporting_substring_verbatim_match": true,
+  "source_ref": "validation/VALIDATION_001/source_record.json#L2",
+  "requirement_ref": "validation/VALIDATION_001/requirement.json#REQ-VALIDATION-001",
+  "extraction_verdict": "PASS"
+}

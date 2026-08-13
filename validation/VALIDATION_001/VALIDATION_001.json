@@ -1,0 +1,237 @@
+{
+  "mission_id": "VALIDATION-001",
+  "generated_at_utc": "2026-08-13T00:32:30Z",
+  "validation_question": "Can ForgeWorld convert an ordinary external exchange into a traceable, governed action without losing the connection to its originating evidence?",
+  "source": {
+    "artifact": {
+      "filename": "lorenzo_asnaghi_linkedin_exchange.png",
+      "relative_path": "validation/VALIDATION_001/source/lorenzo_asnaghi_linkedin_exchange.png",
+      "sha256": "4259ef3500ba7ec11442c28ef6c9eb0a412f1a24f00edf5c923197235a5fdfe9",
+      "file_size_bytes": 330067,
+      "pixel_dimensions": "1080x2388",
+      "format": "PNG",
+      "received_via": "user-uploaded chat attachment, this session",
+      "received_at_utc": "2026-08-13T00:20:45Z",
+      "note": "Timestamp is the upload file's own creation time on disk (stat 'Birth'), not an assertion about when the LinkedIn conversation occurred."
+    },
+    "channel": {
+      "platform": "LinkedIn",
+      "surface": "LinkedIn mobile messaging (DM) UI",
+      "evidence_for_platform": "Visible 'in' badge icons on both participant avatars; 'Book an appointment' link characteristic of LinkedIn messaging header; phone status bar showing 8:14, 5G+, 85% battery at capture time."
+    }
+  },
+  "requirement": {
+    "requirement_id": "REQ-VALIDATION-001",
+    "requirement_type": "external_validation_signal",
+    "statement": "Show what happens when ForgeWorld encounters more real-world feedback and data.",
+    "statement_classification": "FORGEWORLD_INTERPRETATION",
+    "statement_classification_note": "Neither L1 nor L3 names ForgeWorld. The substrings are SOURCE FACT (Lorenzo Asnaghi's verbatim words); naming the subject as 'ForgeWorld' is an interpretation supplied by the operator running this validation, not something stated in the source.",
+    "extracted_from_line_id": "L1",
+    "supporting_substring": "how it develops as you get more real-world feedback and data behind it",
+    "supporting_substring_verbatim_match": true,
+    "corroborating_from_line_id": "L3",
+    "corroborating_substring": "what you learn once there's more real-world data behind it",
+    "corroborating_substring_verbatim_match": true,
+    "source_ref": "validation/VALIDATION_001/source_record.json#L1",
+    "extraction_verdict": "PASS"
+  },
+  "commitment": {
+    "commitment_id": "COM-VALIDATION-001",
+    "commitment_type": "extracted_commitment",
+    "statement": "Return with what actually held up, failed, and changed once real-world evidence accumulates.",
+    "statement_classification": "SOURCE_FACT",
+    "statement_classification_note": "L2's speaker (James Davis) made this commitment in their own words; the supporting_substring is verbatim. The statement above is a close paraphrase of that verbatim substring, not an inference about unstated intent.",
+    "extracted_from_line_id": "L2",
+    "supporting_substring": "I'll share what actually held up, what failed, and what changed because of the evidence",
+    "supporting_substring_verbatim_match": true,
+    "source_ref": "validation/VALIDATION_001/source_record.json#L2",
+    "requirement_ref": "validation/VALIDATION_001/requirement.json#REQ-VALIDATION-001",
+    "extraction_verdict": "PASS"
+  },
+  "mission": {
+    "mission_id": "VALIDATION-001",
+    "objective": "Test whether a real communication can become a traceable operational commitment.",
+    "commitment_ref": "validation/VALIDATION_001/commitment.json#COM-VALIDATION-001",
+    "generated_by": "run_pipeline.py:step_structure (deterministic template fill, no free generation)",
+    "generated_at_utc": "2026-08-13T00:25:24Z"
+  },
+  "backward_trace": {
+    "trace_question": "Why does this mission exist?",
+    "trace_direction": "backward",
+    "chain": [
+      "VALIDATION-001",
+      "COM-VALIDATION-001",
+      "REQ-VALIDATION-001",
+      "source_record#L1",
+      "lorenzo_asnaghi_linkedin_exchange.png"
+    ],
+    "hops": [
+      {
+        "hop": "MISSION -> COMMITMENT",
+        "from": "VALIDATION-001",
+        "to": "COM-VALIDATION-001",
+        "resolved": true
+      },
+      {
+        "hop": "COMMITMENT -> REQUIREMENT",
+        "from": "COM-VALIDATION-001",
+        "to": "REQ-VALIDATION-001",
+        "resolved": true
+      },
+      {
+        "hop": "REQUIREMENT -> ORIGINAL EXCHANGE (line)",
+        "from": "REQ-VALIDATION-001",
+        "to": "source_record#L1",
+        "resolved": true
+      },
+      {
+        "hop": "ORIGINAL EXCHANGE -> SOURCE FILE (sha256 re-verify)",
+        "from": "source_record.json",
+        "to": "lorenzo_asnaghi_linkedin_exchange.png",
+        "resolved": true,
+        "declared_sha256": "4259ef3500ba7ec11442c28ef6c9eb0a412f1a24f00edf5c923197235a5fdfe9",
+        "recomputed_sha256": "4259ef3500ba7ec11442c28ef6c9eb0a412f1a24f00edf5c923197235a5fdfe9"
+      }
+    ],
+    "overall_verdict": "PASS",
+    "generated_at_utc": "2026-08-13T00:25:24Z"
+  },
+  "pipeline_log": {
+    "mission_id": "VALIDATION-001",
+    "pipeline": "CAPTURE -> EXTRACT -> STRUCTURE -> GOVERN -> ROUTE -> TRACK",
+    "steps": [
+      {
+        "step": "CAPTURE",
+        "source_file_exists": true,
+        "declared_sha256": "4259ef3500ba7ec11442c28ef6c9eb0a412f1a24f00edf5c923197235a5fdfe9",
+        "recomputed_sha256": "4259ef3500ba7ec11442c28ef6c9eb0a412f1a24f00edf5c923197235a5fdfe9",
+        "hash_match": true,
+        "verdict": "PASS",
+        "duration_s": 0.0005
+      },
+      {
+        "step": "EXTRACT",
+        "requirement_verdict": "PASS",
+        "commitment_verdict": "PASS",
+        "verdict": "PASS",
+        "duration_s": 0.0002
+      },
+      {
+        "step": "STRUCTURE",
+        "verdict": "PASS",
+        "mission_id": "VALIDATION-001",
+        "duration_s": 0.0001
+      },
+      {
+        "step": "GOVERN",
+        "checks": [
+          {
+            "check": "requirement has classification field",
+            "pass": true
+          },
+          {
+            "check": "commitment has classification field",
+            "pass": true
+          },
+          {
+            "check": "commitment references requirement",
+            "pass": true
+          },
+          {
+            "check": "mission references commitment",
+            "pass": true
+          },
+          {
+            "check": "requirement references source",
+            "pass": true
+          }
+        ],
+        "verdict": "PASS",
+        "duration_s": 0.0
+      },
+      {
+        "step": "ROUTE",
+        "status": "routed",
+        "selected_capability": "claude_code",
+        "decisions_log": "router/decisions.jsonl",
+        "verdict": "PASS",
+        "duration_s": 0.0186
+      },
+      {
+        "step": "TRACK",
+        "history_log": "capabilities/history.jsonl",
+        "success_score": 1.0,
+        "verdict": "PASS",
+        "duration_s": 0.0001
+      }
+    ],
+    "trace_result_summary": "PASS",
+    "total_duration_s": 0.0201,
+    "run_at_utc": "2026-08-13T00:25:24Z"
+  },
+  "metrics_summary": [
+    {
+      "metric": "source preserved",
+      "verdict": "PASS",
+      "evidence": "pipeline_log.json#steps[CAPTURE].hash_match"
+    },
+    {
+      "metric": "source hash verified",
+      "verdict": "PASS",
+      "evidence": "trace_result.json#hops[3]"
+    },
+    {
+      "metric": "requirement extracted",
+      "verdict": "PASS",
+      "evidence": "requirement.json#extraction_verdict"
+    },
+    {
+      "metric": "commitment extracted",
+      "verdict": "PASS",
+      "evidence": "commitment.json#extraction_verdict"
+    },
+    {
+      "metric": "mission generated",
+      "verdict": "PASS",
+      "evidence": "pipeline_log.json#steps[STRUCTURE]"
+    },
+    {
+      "metric": "governance separation check",
+      "verdict": "PASS",
+      "evidence": "governance_result.json"
+    },
+    {
+      "metric": "mission routed to reachable capability",
+      "verdict": "PASS",
+      "evidence": "route_decision.json"
+    },
+    {
+      "metric": "outcome recorded to capability history",
+      "verdict": "PASS",
+      "evidence": "track_result.json"
+    },
+    {
+      "metric": "backward provenance trace successful",
+      "verdict": "PASS",
+      "evidence": "trace_result.json#overall_verdict"
+    },
+    {
+      "metric": "retrieval successful",
+      "verdict": "NOT TESTED",
+      "evidence": "No independent retrieval/query mechanism was built or exercised in this run."
+    },
+    {
+      "metric": "processing time measured",
+      "verdict": "PASS",
+      "value_seconds": 0.0201,
+      "evidence": "pipeline_log.json#total_duration_s"
+    }
+  ],
+  "manifest_artifact_count": 16,
+  "deliverables": {
+    "video": "validation/VALIDATION_001/VALIDATION_001.mp4",
+    "metrics": "validation/VALIDATION_001/VALIDATION_001_METRICS.json",
+    "manifest": "validation/VALIDATION_001/VALIDATION_001_MANIFEST.md",
+    "report": "validation/VALIDATION_001/VALIDATION_001_REPORT.md"
+  }
+}

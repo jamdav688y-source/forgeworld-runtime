@@ -1,0 +1,69 @@
+{
+  "mission_id": "VALIDATION-001",
+  "generated_at_utc": "2026-08-13T00:32:30Z",
+  "metrics": [
+    {
+      "metric": "source preserved",
+      "verdict": "PASS",
+      "evidence": "pipeline_log.json#steps[CAPTURE].hash_match"
+    },
+    {
+      "metric": "source hash verified",
+      "verdict": "PASS",
+      "evidence": "trace_result.json#hops[3]"
+    },
+    {
+      "metric": "requirement extracted",
+      "verdict": "PASS",
+      "evidence": "requirement.json#extraction_verdict"
+    },
+    {
+      "metric": "commitment extracted",
+      "verdict": "PASS",
+      "evidence": "commitment.json#extraction_verdict"
+    },
+    {
+      "metric": "mission generated",
+      "verdict": "PASS",
+      "evidence": "pipeline_log.json#steps[STRUCTURE]"
+    },
+    {
+      "metric": "governance separation check",
+      "verdict": "PASS",
+      "evidence": "governance_result.json"
+    },
+    {
+      "metric": "mission routed to reachable capability",
+      "verdict": "PASS",
+      "evidence": "route_decision.json"
+    },
+    {
+      "metric": "outcome recorded to capability history",
+      "verdict": "PASS",
+      "evidence": "track_result.json"
+    },
+    {
+      "metric": "backward provenance trace successful",
+      "verdict": "PASS",
+      "evidence": "trace_result.json#overall_verdict"
+    },
+    {
+      "metric": "retrieval successful",
+      "verdict": "NOT TESTED",
+      "evidence": "No independent retrieval/query mechanism was built or exercised in this run."
+    },
+    {
+      "metric": "processing time measured",
+      "verdict": "PASS",
+      "value_seconds": 0.0201,
+      "evidence": "pipeline_log.json#total_duration_s"
+    }
+  ],
+  "verdict_scale": [
+    "PASS",
+    "PARTIAL",
+    "FAIL",
+    "NOT TESTED"
+  ],
+  "rule": "A metric is PASS only if a mechanical check in run_pipeline.py or trace.py actually verified it against recorded evidence this run. Nothing here is asserted from memory or intent."
+}

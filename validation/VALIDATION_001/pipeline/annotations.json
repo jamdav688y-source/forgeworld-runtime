@@ -1,0 +1,19 @@
+{
+  "_purpose": "Human-authored mapping from source transcript lines to a requirement and a commitment. This file is the one place where interpretation enters the pipeline: an operator (in this run, the Claude agent conducting VALIDATION-001) chose which substrings count as 'the requirement' and 'the commitment'. Everything downstream of this file is mechanical verification against the source_record transcript, not further interpretation.",
+  "requirement": {
+    "extracted_from_line_id": "L1",
+    "supporting_substring": "how it develops as you get more real-world feedback and data behind it",
+    "corroborating_line_id": "L3",
+    "corroborating_substring": "what you learn once there's more real-world data behind it",
+    "statement": "Show what happens when ForgeWorld encounters more real-world feedback and data.",
+    "statement_classification": "FORGEWORLD_INTERPRETATION",
+    "statement_classification_note": "Neither L1 nor L3 names ForgeWorld. The substrings are SOURCE FACT (Lorenzo Asnaghi's verbatim words); naming the subject as 'ForgeWorld' is an interpretation supplied by the operator running this validation, not something stated in the source."
+  },
+  "commitment": {
+    "extracted_from_line_id": "L2",
+    "supporting_substring": "I'll share what actually held up, what failed, and what changed because of the evidence",
+    "statement": "Return with what actually held up, failed, and changed once real-world evidence accumulates.",
+    "statement_classification": "SOURCE_FACT",
+    "statement_classification_note": "L2's speaker (James Davis) made this commitment in their own words; the supporting_substring is verbatim. The statement above is a close paraphrase of that verbatim substring, not an inference about unstated intent."
+  }
+}

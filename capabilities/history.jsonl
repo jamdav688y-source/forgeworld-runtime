@@ -1,0 +1,1 @@
+{"capability_id": "claude_code", "mission_class": "documentation+file_editing+research", "success_score": 1.0, "notes": "VALIDATION-001 backward-trace pipeline; success_score reflects whether the full mission->commitment->requirement->source trace resolved and the source hash re-verified.", "recorded_at": "2026-08-13T00:25:24Z"}

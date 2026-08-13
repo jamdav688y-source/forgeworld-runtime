@@ -1,0 +1,27 @@
+{
+  "step": "GOVERN",
+  "checks": [
+    {
+      "check": "requirement has classification field",
+      "pass": true
+    },
+    {
+      "check": "commitment has classification field",
+      "pass": true
+    },
+    {
+      "check": "commitment references requirement",
+      "pass": true
+    },
+    {
+      "check": "mission references commitment",
+      "pass": true
+    },
+    {
+      "check": "requirement references source",
+      "pass": true
+    }
+  ],
+  "verdict": "PASS",
+  "duration_s": 0.0
+}

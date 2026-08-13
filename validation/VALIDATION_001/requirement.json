@@ -1,0 +1,15 @@
+{
+  "requirement_id": "REQ-VALIDATION-001",
+  "requirement_type": "external_validation_signal",
+  "statement": "Show what happens when ForgeWorld encounters more real-world feedback and data.",
+  "statement_classification": "FORGEWORLD_INTERPRETATION",
+  "statement_classification_note": "Neither L1 nor L3 names ForgeWorld. The substrings are SOURCE FACT (Lorenzo Asnaghi's verbatim words); naming the subject as 'ForgeWorld' is an interpretation supplied by the operator running this validation, not something stated in the source.",
+  "extracted_from_line_id": "L1",
+  "supporting_substring": "how it develops as you get more real-world feedback and data behind it",
+  "supporting_substring_verbatim_match": true,
+  "corroborating_from_line_id": "L3",
+  "corroborating_substring": "what you learn once there's more real-world data behind it",
+  "corroborating_substring_verbatim_match": true,
+  "source_ref": "validation/VALIDATION_001/source_record.json#L1",
+  "extraction_verdict": "PASS"
+}

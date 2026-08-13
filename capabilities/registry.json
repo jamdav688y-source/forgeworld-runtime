@@ -88,6 +88,19 @@
       "check": {"type": "manual"},
       "tags": ["structured_data", "database", "record_management", "reporting"],
       "cost": {"dollar": 0.1, "latency": 0.2, "tokens": 0.0, "attention": 0.4, "complexity": 0.3}
+    },
+    {
+      "id": "evolution_clip_renderer",
+      "kind": "renderer",
+      "provider": "local",
+      "check": {"type": "manual"},
+      "check_note": "Reachability is not auto-probed: it depends on Pillow and ffmpeg being installed on top of python3, and discover.py has no compound check type yet. Verify with 'python3 -c \"import PIL\"' and 'ffmpeg -version' before routing a mission here.",
+      "tags": ["cinematic_asset_generation", "video_rendering", "vertical_video", "provenance_video", "evidence_package"],
+      "cost": {"dollar": 0.0, "latency": 0.3, "tokens": 0.0, "attention": 0.3, "complexity": 0.3},
+      "entrypoint": "evolution_clip/render.py",
+      "usage": "python3 evolution_clip/render.py <scenes.json> <out_dir> --mp4 <output.mp4> --fps 24",
+      "input_contract": "A JSON array of scene objects (see validation/VALIDATION_001/scenes.json for a worked example and validation/VALIDATION_001/pipeline/build_scenes.py for the pattern of building scenes.json from evidence files rather than hand-typing it). Each scene needs 'id', 'type' (one of: title, source, extraction, governance, mission, execution, trace, metrics, limitations, closing), and 'duration_s'; see evolution_clip/render.py:SCENE_RENDERERS for the exact fields each type consumes.",
+      "provenance": "Registered by VALIDATION-001 (2026-08-13). Before writing this, the full git history/branches/remotes of this repo were searched for a prior 'evolution_clip/' implementation; none existed. This is a from-scratch, smallest-equivalent implementation: scenes.json -> Pillow static frame per scene -> ffmpeg crossfade assembly. Registering it here so a future session finds it via capability discovery instead of re-searching history and re-building it."
     }
   ]
 }

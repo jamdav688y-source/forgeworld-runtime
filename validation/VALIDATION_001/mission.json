@@ -1,0 +1,7 @@
+{
+  "mission_id": "VALIDATION-001",
+  "objective": "Test whether a real communication can become a traceable operational commitment.",
+  "commitment_ref": "validation/VALIDATION_001/commitment.json#COM-VALIDATION-001",
+  "generated_by": "run_pipeline.py:step_structure (deterministic template fill, no free generation)",
+  "generated_at_utc": "2026-08-13T00:25:24Z"
+}

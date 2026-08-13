@@ -1,0 +1,41 @@
+{
+  "trace_question": "Why does this mission exist?",
+  "trace_direction": "backward",
+  "chain": [
+    "VALIDATION-001",
+    "COM-VALIDATION-001",
+    "REQ-VALIDATION-001",
+    "source_record#L1",
+    "lorenzo_asnaghi_linkedin_exchange.png"
+  ],
+  "hops": [
+    {
+      "hop": "MISSION -> COMMITMENT",
+      "from": "VALIDATION-001",
+      "to": "COM-VALIDATION-001",
+      "resolved": true
+    },
+    {
+      "hop": "COMMITMENT -> REQUIREMENT",
+      "from": "COM-VALIDATION-001",
+      "to": "REQ-VALIDATION-001",
+      "resolved": true
+    },
+    {
+      "hop": "REQUIREMENT -> ORIGINAL EXCHANGE (line)",
+      "from": "REQ-VALIDATION-001",
+      "to": "source_record#L1",
+      "resolved": true
+    },
+    {
+      "hop": "ORIGINAL EXCHANGE -> SOURCE FILE (sha256 re-verify)",
+      "from": "source_record.json",
+      "to": "lorenzo_asnaghi_linkedin_exchange.png",
+      "resolved": true,
+      "declared_sha256": "4259ef3500ba7ec11442c28ef6c9eb0a412f1a24f00edf5c923197235a5fdfe9",
+      "recomputed_sha256": "4259ef3500ba7ec11442c28ef6c9eb0a412f1a24f00edf5c923197235a5fdfe9"
+    }
+  ],
+  "overall_verdict": "PASS",
+  "generated_at_utc": "2026-08-13T00:25:24Z"
+}

@@ -1,0 +1,71 @@
+{
+  "record_type": "source_record",
+  "record_id": "SRC-VALIDATION-001",
+  "artifact": {
+    "filename": "lorenzo_asnaghi_linkedin_exchange.png",
+    "relative_path": "validation/VALIDATION_001/source/lorenzo_asnaghi_linkedin_exchange.png",
+    "sha256": "4259ef3500ba7ec11442c28ef6c9eb0a412f1a24f00edf5c923197235a5fdfe9",
+    "file_size_bytes": 330067,
+    "pixel_dimensions": "1080x2388",
+    "format": "PNG",
+    "received_via": "user-uploaded chat attachment, this session",
+    "received_at_utc": "2026-08-13T00:20:45Z",
+    "note": "Timestamp is the upload file's own creation time on disk (stat 'Birth'), not an assertion about when the LinkedIn conversation occurred."
+  },
+  "channel": {
+    "platform": "LinkedIn",
+    "surface": "LinkedIn mobile messaging (DM) UI",
+    "evidence_for_platform": "Visible 'in' badge icons on both participant avatars; 'Book an appointment' link characteristic of LinkedIn messaging header; phone status bar showing 8:14, 5G+, 85% battery at capture time."
+  },
+  "participants_as_displayed": [
+    "Lorenzo Asnaghi",
+    "James Davis"
+  ],
+  "transcript_as_visible": [
+    {
+      "line_id": "L0",
+      "speaker": "James Davis",
+      "day_label_visible": null,
+      "time_visible": null,
+      "text": "...their own workflows. The interesting part has been discovering that evidence, governance, and visualization all reinforce each other. Once teams can actually see where reasoning, execution, or decision quality breaks down—and understand why through traceable evidence—the conversation shifts from opinion to measurable improvement. We're still validating that approach in practice, but that's the direction we're committed to. I'll definitely keep you posted as we gather more real-world results. I'd value your perspective as the platform matures.",
+      "reactions_visible": ["❤️ x1"],
+      "note": "Message begins mid-sentence ('...their own workflows.') — the screenshot is scrolled and does not show the start of this message. Only the visible portion is recorded; the cut-off portion is NOT reconstructed or guessed."
+    },
+    {
+      "line_id": "L1",
+      "speaker": "Lorenzo Asnaghi",
+      "day_label_visible": "TUESDAY",
+      "time_visible": "6:30 AM",
+      "text": "Really interesting direction. Curious to see how it develops as you get more real-world feedback and data behind it. Keep me posted! 😊",
+      "reactions_visible": []
+    },
+    {
+      "line_id": "L2",
+      "speaker": "James Davis",
+      "day_label_visible": "TUESDAY",
+      "time_visible": "9:59 AM",
+      "text": "Absolutely. That's really the threshold I'm focused on now—moving from architectural coherence to measurable evidence in real workflows. As those results accumulate, I'll share what actually held up, what failed, and what changed because of the evidence. I think that's where this gets much more interesting.",
+      "reactions_visible": []
+    },
+    {
+      "line_id": "L3",
+      "speaker": "Lorenzo Asnaghi",
+      "day_label_visible": "TODAY",
+      "time_visible": "6:59 AM",
+      "text": "That's where it gets interesting for sure. Curious to see what you learn once there's more real-world data behind it. 🤝",
+      "reactions_visible": []
+    }
+  ],
+  "explicitly_not_visible_in_source": [
+    "No absolute calendar date appears anywhere in the screenshot — only relative day labels ('TUESDAY', 'TODAY') and clock times.",
+    "The word 'ForgeWorld' does not appear anywhere in the visible text.",
+    "The full text of message L0 is not visible — it is truncated by scroll position at the top of the screenshot.",
+    "No sender/recipient handle, company name, or job title is visible for either participant beyond the display names shown."
+  ],
+  "provenance_chain": {
+    "step": "source_record",
+    "derived_from": "validation/VALIDATION_001/source/lorenzo_asnaghi_linkedin_exchange.png",
+    "derivation_method": "manual visual transcription by the operating agent (Claude), verbatim where legible; not OCR, not automated extraction",
+    "integrity_note": "This file is a TRANSCRIPTION, not the evidence itself. The evidence of record is the PNG and its sha256 above. Any dispute about wording should defer to the PNG."
+  }
+}
