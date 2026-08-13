@@ -31,6 +31,15 @@ BUILD → REVIEW → TEST → PRIVACY AUDIT → INTEGRATION → RETEST → RELEA
 No privacy requirement failed. No critical functional test failed after
 fixes. Release is not blocked.
 
+**Update 2026-08-13 (launch recovery):** a local-server launch failure
+(`/index.html` 404 because the server's document root was one directory
+too high) was diagnosed and fixed, and a self-locating launcher
+(`start-next-right-move.sh`) was added so it can't recur regardless of
+invocation directory. This was an operational/launch issue, not an
+application defect — no functional or privacy regression was found. Full
+detail, including the honest breakdown of what could vs. couldn't be
+verified from this non-physical runtime, is in `docs/LAUNCH_RECOVERY.md`.
+
 ## Final validation checklist
 
 | Item | Status |

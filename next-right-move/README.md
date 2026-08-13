@@ -51,6 +51,7 @@ next-right-move/
 ├── assets/               generated icons (192px, 512px)
 ├── docs/                  specs, privacy model/audit, test report
 ├── tests/                 adversarial test script (Playwright)
+├── start-next-right-move.sh   self-locating launcher (see below)
 └── RELEASE_REPORT.md
 ```
 
@@ -77,6 +78,23 @@ http://localhost:8080/index.html
 ```
 
 Stop the server with `Ctrl+C` in Termux when you're done.
+
+### Or: use the launcher (recommended)
+
+`start-next-right-move.sh` finds its own project folder on disk, so it
+works no matter what directory you happen to be `cd`'d into when you run
+it — this avoids the classic mistake of starting the server one directory
+too high, which makes `/index.html` 404 even though the file exists just
+fine one level down.
+
+```bash
+cd next-right-move
+./start-next-right-move.sh
+```
+
+If port 8080 is already in use (e.g. a server from an earlier session is
+still running), it prints the PID that owns it instead of silently
+starting a second, conflicting server.
 
 ### Opening it on your phone (local demo)
 
