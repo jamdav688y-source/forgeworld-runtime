@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Next Right Move</title>
+<meta name="description" content="A private, offline tool for separating what happened from what you're telling yourself, so you can find your next right move.">
+<meta name="theme-color" content="#3a4a42">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./assets/icon-192.png">
+<link rel="apple-touch-icon" href="./assets/icon-192.png">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="app-header">
+  <span class="wordmark">Next Right Move</span>
+  <button id="clear-session-btn" class="ghost-btn" type="button" aria-haspopup="dialog">Clear session</button>
+</header>
+
+<main id="main">
+
+  <!-- INTRO -->
+  <section class="screen" data-screen="intro" aria-labelledby="intro-title">
+    <h1 id="intro-title">What's happening right now?</h1>
+    <p class="lede">
+      This is a private space to think, not a program that judges you.
+      It will walk you through a few short questions, one at a time.
+    </p>
+    <ul class="reassure-list">
+      <li>Nothing you type leaves this device.</li>
+      <li>No account, no login, no tracking.</li>
+      <li>You can skip any question, or stop at any time.</li>
+    </ul>
+    <button class="primary-btn" data-action="start" type="button">Start</button>
+    <p class="disclaimer">
+      This tool is not therapy, medical treatment, diagnosis, a sobriety score,
+      or a crisis system. It only helps you organize your own thinking.
+      If you are in immediate danger, contact local emergency services or a
+      crisis line for your area.
+    </p>
+  </section>
+
+  <!-- STEP: FACT -->
+  <section class="screen" data-screen="fact" aria-labelledby="fact-title">
+    <p class="step-indicator">Step 1 of 7</p>
+    <h1 id="fact-title">What happened?</h1>
+    <p class="hint">Stick to what a camera would have recorded. No interpretation yet.</p>
+    <textarea id="input-fact" rows="6" placeholder="For example: I picked up my phone and called someone I said I wouldn't call." maxlength="2000"></textarea>
+    <p class="char-note" id="fact-charnote"></p>
+  </section>
+
+  <!-- STEP: STORY -->
+  <section class="screen" data-screen="story" aria-labelledby="story-title">
+    <p class="step-indicator">Step 2 of 7</p>
+    <h1 id="story-title">What am I thinking or feeling?</h1>
+    <p class="hint">This is your interpretation — the meaning you're adding to what happened.</p>
+    <textarea id="input-story" rows="6" placeholder="For example: I always mess this up. Nothing I do matters." maxlength="2000"></textarea>
+  </section>
+
+  <!-- STEP: URGE -->
+  <section class="screen" data-screen="urge" aria-labelledby="urge-title">
+    <p class="step-indicator">Step 3 of 7</p>
+    <h1 id="urge-title">What am I tempted to do?</h1>
+    <p class="hint">Name the pull, even if you don't plan to act on it.</p>
+    <textarea id="input-urge" rows="6" placeholder="For example: Part of me wants to just disappear for the night." maxlength="2000"></textarea>
+  </section>
+
+  <!-- STEP: KNOWLEDGE -->
+  <section class="screen" data-screen="knowledge" aria-labelledby="knowledge-title">
+    <p class="step-indicator">Step 4 of 7</p>
+    <h1 id="knowledge-title">What do I actually know?</h1>
+    <p class="hint">Set the story aside. What's actually true and known right now?</p>
+    <textarea id="input-knowledge" rows="6" placeholder="For example: I have a safe place to go. It's 9pm. I already ate today." maxlength="2000"></textarea>
+  </section>
+
+  <!-- STEP: OPTIONS -->
+  <section class="screen" data-screen="options" aria-labelledby="options-title">
+    <p class="step-indicator">Step 5 of 7</p>
+    <h1 id="options-title">What options do I have?</h1>
+    <p class="hint">List as many as you want. Add one at a time. These are only possibilities.</p>
+
+    <div class="option-add-row">
+      <input id="option-input" type="text" placeholder="Add an option" maxlength="200">
+      <button id="option-add-btn" class="secondary-btn" type="button">Add</button>
+    </div>
+
+    <ul id="option-list" class="option-list" aria-live="polite"></ul>
+
+    <details class="examples">
+      <summary>Need a starting point? (optional examples)</summary>
+      <ul class="example-list" id="example-options">
+        <li><button type="button" class="example-btn">Call somebody</button></li>
+        <li><button type="button" class="example-btn">Leave the situation</button></li>
+        <li><button type="button" class="example-btn">Wait before deciding</button></li>
+        <li><button type="button" class="example-btn">Eat something</button></li>
+        <li><button type="button" class="example-btn">Go somewhere safer</button></li>
+        <li><button type="button" class="example-btn">Write down what actually happened</button></li>
+        <li><button type="button" class="example-btn">Attend a meeting</button></li>
+        <li><button type="button" class="example-btn">Do nothing irreversible right now</button></li>
+      </ul>
+      <p class="example-disclaimer">These are suggestions only, not medical or clinical advice.</p>
+    </details>
+  </section>
+
+  <!-- STEP: COST / EASIER TOMORROW -->
+  <section class="screen" data-screen="cost" aria-labelledby="cost-title">
+    <p class="step-indicator">Step 6 of 7</p>
+    <h1 id="cost-title">Which option makes tomorrow easier?</h1>
+    <p class="hint">Pick the option from your list that leaves tomorrow-you in the best position. You can also just write freely.</p>
+    <div id="cost-option-picker" class="option-picker" aria-live="polite"></div>
+    <textarea id="input-cost" rows="4" placeholder="Why does this one make tomorrow easier? (optional)" maxlength="2000"></textarea>
+  </section>
+
+  <!-- STEP: NEXT MOVE -->
+  <section class="screen" data-screen="nextmove" aria-labelledby="nextmove-title">
+    <p class="step-indicator">Step 7 of 7</p>
+    <h1 id="nextmove-title">What is my next right move?</h1>
+    <p class="hint">Small and doable counts. It doesn't have to solve everything.</p>
+    <textarea id="input-nextmove" rows="5" placeholder="For example: Text my sister and tell her where I am." maxlength="2000"></textarea>
+  </section>
+
+  <!-- SUMMARY -->
+  <section class="screen" data-screen="summary" aria-labelledby="summary-title">
+    <h1 id="summary-title">Here's what you separated out</h1>
+    <div id="summary-content" class="summary-content"></div>
+
+    <div class="summary-actions">
+      <button id="run-it-again-btn" class="secondary-btn" type="button">Run it again (friend view)</button>
+      <button id="export-btn" class="secondary-btn" type="button">Export as text</button>
+      <button id="restart-btn" class="primary-btn" type="button">Start a new session</button>
+    </div>
+  </section>
+
+  <!-- RUN IT AGAIN / FRIEND PERSPECTIVE -->
+  <section class="screen" data-screen="friend" aria-labelledby="friend-title">
+    <h1 id="friend-title">What would you tell a friend?</h1>
+    <p class="hint">Imagine a friend you care about was in exactly this situation — same facts, same options.</p>
+    <textarea id="input-friend" rows="6" placeholder="What would you say to them?" maxlength="2000"></textarea>
+    <button id="friend-compare-btn" class="primary-btn" type="button">Compare</button>
+  </section>
+
+  <!-- COMPARISON -->
+  <section class="screen" data-screen="compare" aria-labelledby="compare-title">
+    <h1 id="compare-title">Two voices</h1>
+    <p class="hint">No judgment here. Just noticing.</p>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <h2>What I'm telling myself</h2>
+        <p id="compare-self"></p>
+      </div>
+      <div class="compare-card">
+        <h2>What I'd tell a friend</h2>
+        <p id="compare-friend"></p>
+      </div>
+    </div>
+    <button id="back-to-summary-btn" class="secondary-btn" type="button">Back to summary</button>
+  </section>
+
+</main>
+
+<nav class="step-nav" id="step-nav" aria-label="Step navigation">
+  <button id="nav-back" class="ghost-btn" type="button">Back</button>
+  <button id="nav-skip" class="ghost-btn" type="button">Skip</button>
+  <button id="nav-next" class="primary-btn" type="button">Next</button>
+</nav>
+
+<div id="clear-dialog-backdrop" class="dialog-backdrop" hidden>
+  <div class="dialog" role="alertdialog" aria-labelledby="clear-dialog-title" aria-describedby="clear-dialog-desc">
+    <h2 id="clear-dialog-title">Clear this session?</h2>
+    <p id="clear-dialog-desc">This permanently deletes everything you've entered on this device. It cannot be undone.</p>
+    <div class="dialog-actions">
+      <button id="clear-cancel-btn" class="ghost-btn" type="button">Cancel</button>
+      <button id="clear-confirm-btn" class="danger-btn" type="button">Clear session</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="./app.js"></script>
+</body>
+</html>
