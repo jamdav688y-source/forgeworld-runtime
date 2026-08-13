@@ -40,6 +40,14 @@ application defect — no functional or privacy regression was found. Full
 detail, including the honest breakdown of what could vs. couldn't be
 verified from this non-physical runtime, is in `docs/LAUNCH_RECOVERY.md`.
 
+**Update 2026-08-13 (physical-device validation closed):** the operator
+ran the recommended manual smoke test on an actual Android device and
+reported PASS on all six checked items (rendering, complete workflow,
+keyboard/navigation interaction, Run It Again, Clear Session, refresh
+behavior). Recorded as operator-supplied evidence in
+`docs/LAUNCH_RECOVERY.md`. This closes the only open scope caveat in this
+report. **Release status: CLASSROOM_READY, unconditional.**
+
 ## Final validation checklist
 
 | Item | Status |
@@ -62,17 +70,23 @@ verified from this non-physical runtime, is in `docs/LAUNCH_RECOVERY.md`.
 | App contains a non-clinical disclaimer | ✅ (intro screen, and README) |
 | No unrelated project files were modified | ✅ (see below) |
 
-## Scope note: real-device testing
+## Scope note: real-device testing — CLOSED 2026-08-13
 
 This build environment has no attached Android device or emulator.
 Functional and layout testing used Chromium (desktop) with a 360×740
 mobile viewport as the closest available proxy, plus manual review against
 `docs/UX_SPEC.md`. The HTML/CSS/JS used are all broadly-supported web
 platform features (`sessionStorage`, Service Worker, `<details>`, CSS
-custom properties, flexbox) with no browser-specific APIs, so real-device
-behavior is expected to match, but has not been physically confirmed on a
-Termux/Android device by this build process. Recommend a quick manual
-smoke test on an actual phone before wide classroom use.
+custom properties, flexbox) with no browser-specific APIs.
+
+**This caveat is now closed.** The operator ran the manual smoke test
+recommended above on an actual Android device and reported: rendering,
+complete workflow, keyboard/navigation interaction, Run It Again, Clear
+Session, and refresh/reload behavior all PASS. Recorded verbatim, with
+full attribution and the automated-vs-operator-attested breakdown, in
+`docs/LAUNCH_RECOVERY.md` ("Operator-supplied physical-device
+validation"). No functional or privacy regression was found on-device, so
+no downgrade of the release classification applies.
 
 ## Confirmation: no unrelated work touched
 
@@ -87,10 +101,11 @@ Repository-relative paths and SHA-256 checksums of every shipped file, for
 integrity verification after transfer to a phone or a static host:
 
 ```
-04bedcb26c11f0371599278cc5751cfe8ab8069c77ebc8a6560286cb8213f67f  README.md
+c44bbcc2800ea531dd75e875efb28c61da4fc8fa67c7f5141012b738d6aaf002  README.md
 df09e44922323cf904e992540edffafc88b3419556e0164bbfe771e1d33f3f94  app.js
 43d29673603c49c5049c1d805b6a51e432754af3064b583c08dc9605bd23e676  assets/icon-192.png
 1436784b3644a6572cc432ec1fb1b901bdc6af7e15b8935b746bbccfdeec47c9  assets/icon-512.png
+27c0933405ad56fb0583273ab35ab249538b20b63adca5401042b106d175c394  docs/LAUNCH_RECOVERY.md
 7483a980e40dd27765f8ca38a245cd37c46d6692cb95464df851ab2da9f18f71  docs/PRIVACY_AUDIT.md
 6dfc2a63c977813f3403efec0b10d1ed24c433f405e4f14f783c7ad452ac5bd7  docs/PRIVACY_MODEL.md
 374c4861621b7b24271e16e04ef8c9f724367492f754e49a293278807ac10438  docs/PRODUCT_SPEC.md
@@ -99,6 +114,7 @@ b7294a96c267ccb9430ee8f250575d7f5d986666878fea407833676bd5957d37  docs/UX_SPEC.m
 c141701cad8f3d1b6172dea7d18c68f0bfcb5a4aa3921f002bcc96fb26468e97  index.html
 a55717fdc0e806d496637b0fd600566d973946a35f6815b34da157ba3f074351  manifest.json
 d971a82d2fa6ff60865d5b763fac7891abae6433c51de3d18a43a28b20214529  service-worker.js
+e24ff3dd217bb6be9fdadab8efc6b8901bfcce4cc57959a0bb96be918d8150e9  start-next-right-move.sh
 e1d2c46cc55eb508b58d277a16466b528d11d1985254904ce1788f4375b8591b  styles.css
 028111f6e29377abdf8380adddd62cd800626b42437d7cc230548c05977301aa  tests/adversarial.js
 ```
@@ -110,9 +126,16 @@ xargs sha256sum` from inside `next-right-move/`.)
 
 ```bash
 cd next-right-move
-python -m http.server 8080
-# then open http://localhost:8080/index.html on the SAME phone
+./start-next-right-move.sh
+# then open http://localhost:8080/ on the SAME phone
 ```
+
+(`start-next-right-move.sh` resolves its own project directory, so it
+works regardless of the shell's current directory — this is the fix for
+the launch failure recorded in `docs/LAUNCH_RECOVERY.md`. The manual
+`python -m http.server 8080 --directory next-right-move` form documented
+earlier in this file still works too, provided the `--directory` flag is
+used.)
 
 ## How to make it a shareable classroom URL
 
@@ -125,7 +148,11 @@ resulting URL. Full instructions in `README.md`.
 
 **CLASSROOM_READY**
 
-No privacy blocks. No open functional defects. One scope caveat: verified
-on desktop Chromium at mobile viewport sizes rather than a physical
-Android device — recommend one manual phone smoke test before first
-classroom use, per the scope note above.
+No privacy blocks. No open functional defects. The prior scope caveat
+(desktop-only testing, no physical device) is closed as of 2026-08-13 —
+operator-supplied physical-device evidence confirmed rendering, complete
+workflow, keyboard/navigation, Run It Again, Clear Session, and refresh
+behavior all PASS on an actual Android device. See
+`docs/LAUNCH_RECOVERY.md` for the full evidence record. This
+classification is unconditional as of the validated baseline commit —
+see the `NRM-v0.1-CLASSROOM` tag.

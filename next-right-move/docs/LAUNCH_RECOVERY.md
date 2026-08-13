@@ -138,19 +138,47 @@ Playwright suite re-run against the corrected server — 23/23 pass):**
 15. No console-blocking JavaScript errors (Playwright run completed without
     uncaught page errors halting any scenario) — PASS
 
-**Cannot verify from this runtime — genuinely require the user's physical
+**Could not verify from this runtime — required the user's physical
 phone, not fabricated here:**
 
 4. Buttons respond to *touch* specifically (as opposed to a simulated
-   click event) — **NOT TESTED, requires physical touchscreen**
-5. On-screen keyboard does not permanently obscure navigation — **NOT
-   TESTED, requires a physical device's real IME, which this sandbox has
-   no analog for**
+   click event)
+5. On-screen keyboard does not permanently obscure navigation
 
-These two remain open manual checks. They were open in the original
-`RELEASE_REPORT.md` scope note as well; nothing in this recovery pass
-closes them, because nothing in this environment changed the ability to
-test them.
+These two were open manual checks after the automated pass in this
+sandbox. They are now closed by operator-supplied evidence — see
+"Operator-supplied physical-device validation" below.
+
+## Operator-supplied physical-device validation
+
+**Source:** reported directly by the user/operator from the actual
+Android device, not independently reproduced by automation in this
+sandbox (this sandbox has no touchscreen or real IME to test with — see
+the correction at the top of this document). Recorded here verbatim as
+attested, per the operator's explicit instruction to treat it as
+operator-supplied evidence.
+
+**Date:** 2026-08-13
+
+| Check | Result | Source |
+|---|---|---|
+| Application rendered correctly | PASS | operator, physical device |
+| Complete workflow | PASS | operator, physical device |
+| Keyboard/navigation interaction (item 5 above) | PASS | operator, physical device |
+| Run It Again | PASS | operator, physical device |
+| Clear Session removed entered data | PASS | operator, physical device |
+| Refresh/reload behavior | PASS | operator, physical device |
+
+Touch responsiveness (item 4 above) is covered by "Application rendered
+correctly" / "Complete workflow" being reported as PASS on a physical
+touchscreen device — traversing the full workflow on a phone is not
+possible without touch input working.
+
+Combined with the 13/15 items independently verified from this sandbox
+(all server, application-logic, and privacy checks), **all 15 Phase-5
+items are now accounted for**: 13 by direct automated verification in
+this session, 2 by operator attestation on the physical device none of
+this session's tooling can reach.
 
 ## Phase 6 — Launcher
 
@@ -205,23 +233,26 @@ canonical project path, and ship a self-locating launcher script so this
 class of mistake can't recur regardless of invocation directory.
 
 Physical Android validation:
-PARTIAL — every check performable from this cloud sandbox passed (13 of
-15 Phase-5 items, all server/app-logic/privacy checks). The 2 remaining
-items (real touchscreen input, real on-screen-keyboard obscuring
-behavior) require the user's actual phone and were not fabricated here.
+PASS — 13 of 15 Phase-5 items independently verified from this sandbox
+(all server/app-logic/privacy checks); the remaining 2 items (real
+touchscreen input, real on-screen-keyboard obscuring behavior) closed by
+operator-supplied evidence from the actual physical device (see
+"Operator-supplied physical-device validation" above), reported
+2026-08-13: rendering, complete workflow, keyboard/navigation
+interaction, Run It Again, Clear Session, and refresh behavior all PASS.
 
 Remaining blockers:
-None functional or privacy-related. One standing scope item, unchanged
-from the original RELEASE_REPORT.md: a manual pass on physical Android
-hardware for touch/keyboard behavior specifically.
+NONE. Both previously-open manual-only items are now closed by
+operator-attested physical-device evidence.
 ```
 
 ## Release status after this recovery
 
-Unchanged from the prior release: **CLASSROOM_READY**, with the same
-single scope caveat as before (now narrowed to exactly two physical-input
-checks rather than "no device tested at all"). The 404 was a launch/ops
-issue, not an application defect — no privacy or functional regression
-was found, so no downgrade is warranted per this mission's own downgrade
-condition ("if physical-device validation exposes a critical functional
-or privacy defect"), which did not occur.
+**CLASSROOM_READY — physical-device validation now PASS, no open scope
+caveat.** The 404 was a launch/ops issue, not an application defect — no
+privacy or functional regression was found at any point, so no downgrade
+was warranted per this mission's own downgrade condition ("if
+physical-device validation exposes a critical functional or privacy
+defect"), which did not occur. With the operator's physical-device
+attestation recorded above, the single remaining scope caveat from the
+original `RELEASE_REPORT.md` (no physical device tested) is closed.
