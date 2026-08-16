@@ -1,0 +1,145 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://forgeworld.local/schemas/moltbook-response-intake.v1.schema.json",
+  "title": "MoltbookResponseIntakeRecord",
+  "description": "One record per response received to the Moltbook first-contact post (see MOLTBOOK_FIRST_CONTACT/POST.md and FOLLOWUP_PROTOCOL.md). Every response is logged as one of these, honestly, including noise and hostile responses -- classification is not a filter for what gets kept, only for how it's read. NOTE ON ENFORCEMENT: JSON Schema validation alone cannot enforce the cross-field rule that attribution.may_attribute_publicly may only be true when consent.consent_given is 'explicit_yes' -- that rule is documented on both fields below, but whatever intake tooling writes these records is responsible for actually enforcing it before publication; schema validity does not by itself guarantee consent was respected.",
+  "type": "object",
+  "required": ["response_id", "category", "classification_confidence", "provenance", "content", "attribution", "consent", "selection", "schema_version"],
+  "additionalProperties": false,
+  "properties": {
+    "response_id": {
+      "type": "string",
+      "pattern": "^RESP-.+$",
+      "description": "Unique identifier for this intake record, independent of any platform-native id."
+    },
+
+    "category": {
+      "type": "string",
+      "enum": ["critique", "counterexample", "teaching_method", "governance_concern", "collaboration_offer", "adversarial_test", "noise"],
+      "description": "Primary classification. See FOLLOWUP_PROTOCOL.md section 1 for definitions. A response that could plausibly fit more than one category still gets exactly one primary category here; use secondary_category for the runner-up, not a forced merge."
+    },
+    "secondary_category": {
+      "type": ["string", "null"],
+      "enum": ["critique", "counterexample", "teaching_method", "governance_concern", "collaboration_offer", "adversarial_test", "noise", null],
+      "description": "Optional runner-up classification when a response genuinely straddles two categories."
+    },
+
+    "classification_confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "How confident the classifier (human or agent) is in `category`. Values below 0.6 should be treated as needing a second look before factoring into selection (FOLLOWUP_PROTOCOL.md section 2) -- this is uncertainty about OUR reading of the response, not about the response's own validity."
+    },
+    "content_uncertainty": {
+      "type": "object",
+      "description": "Uncertainty about the response's own content or provenance, kept separate from classification_confidence (which is about our interpretation, not the source).",
+      "additionalProperties": false,
+      "properties": {
+        "provenance_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Confidence that the provenance fields below (handle, platform, timestamp) are accurate -- e.g. lower if hand-transcribed from a screenshot than if pulled via API."
+        },
+        "notes": {"type": "string"}
+      }
+    },
+
+    "provenance": {
+      "type": "object",
+      "required": ["platform", "venue", "responder_handle", "captured_at", "capture_method"],
+      "additionalProperties": false,
+      "description": "Where this response came from, preserved even if the response is later anonymized for publication -- anonymization affects what's SHOWN, never what's RECORDED internally.",
+      "properties": {
+        "platform": {"type": "string", "const": "moltbook"},
+        "venue": {"type": "string", "description": "e.g. 'm/agents'. Should always be m/agents for responses to the initial post per the no-cross-posting boundary."},
+        "url": {"type": ["string", "null"], "format": "uri"},
+        "responder_handle": {"type": "string", "description": "Public handle/display name as it appeared on the platform, verbatim."},
+        "responder_platform_id": {"type": ["string", "null"], "description": "Platform-internal stable id, if available, distinct from the (changeable) display handle."},
+        "captured_at": {"type": "string", "format": "date-time"},
+        "capture_method": {
+          "type": "string",
+          "enum": ["api", "manual_transcription", "screenshot_transcription", "export"],
+          "description": "How this record was captured. Affects content_uncertainty.provenance_confidence."
+        },
+        "in_reply_to": {"type": ["string", "null"], "description": "response_id or platform id of the record this is a reply to, if this is part of a thread rather than a top-level response."}
+      }
+    },
+
+    "content": {
+      "type": "object",
+      "required": ["raw_text"],
+      "additionalProperties": false,
+      "properties": {
+        "raw_text": {"type": "string", "description": "Verbatim text of the response as posted. Never paraphrased at capture time -- paraphrasing, if any, happens only downstream in a follow-up report and is a separate field there."},
+        "media_refs": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "References/links to any non-text media attached to the response (images, code, video). Not fetched or embedded here -- referenced only."
+        }
+      }
+    },
+
+    "attribution": {
+      "type": "object",
+      "required": ["may_attribute_publicly"],
+      "additionalProperties": false,
+      "description": "Whether and how this responder may be credited if their response is used in a follow-up report (FOLLOWUP_PROTOCOL.md section 4). Governed entirely by `consent` below -- this object records the RESULT of applying the consent rule, not an independent judgment call.",
+      "properties": {
+        "may_attribute_publicly": {
+          "type": "boolean",
+          "description": "True only if consent.consent_given is 'explicit_yes'. Defaults to false otherwise -- silence, ambiguity, or absence of a response to a consent ask is never treated as yes."
+        },
+        "display_name_if_attributed": {
+          "type": ["string", "null"],
+          "description": "Exact form of attribution to use, if may_attribute_publicly is true (may differ from responder_handle, e.g. a preferred name given explicitly)."
+        },
+        "anonymized_label": {
+          "type": ["string", "null"],
+          "description": "Non-identifying label to use instead, when may_attribute_publicly is false but the response is still referenced (e.g. 'a Moltbook responder')."
+        }
+      }
+    },
+
+    "consent": {
+      "type": "object",
+      "required": ["consent_given", "consent_scope"],
+      "additionalProperties": false,
+      "description": "The actual consent state this record was given, as the source of truth for `attribution` above.",
+      "properties": {
+        "consent_given": {
+          "type": "string",
+          "enum": ["explicit_yes", "explicit_no", "unclear", "not_asked"],
+          "description": "'unclear' and 'not_asked' MUST both resolve to attribution.may_attribute_publicly = false. Only 'explicit_yes' may resolve to true."
+        },
+        "consent_scope": {
+          "type": "array",
+          "items": {"type": "string", "enum": ["quote_verbatim", "paraphrase", "link_only", "anonymize_only", "internal_use_only"]},
+          "description": "What the responder agreed to, if anything. 'internal_use_only' means the response may inform ForgeWorld's thinking but must never appear, even anonymized, in a public follow-up."
+        },
+        "consent_notes": {"type": "string"}
+      }
+    },
+
+    "selection": {
+      "type": "object",
+      "required": ["eligible_for_selection", "selected"],
+      "additionalProperties": false,
+      "description": "Tracks this response's status against FOLLOWUP_PROTOCOL.md section 2's selection process. Proposing eligibility/selection is something an agent may do; setting selected=true as final requires James's confirmation per FOLLOWUP_PROTOCOL.md section 5, recorded in selection_notes.",
+      "properties": {
+        "eligible_for_selection": {
+          "type": "boolean",
+          "description": "Whether this response is specific and falsifiable enough to be a candidate for the one selected challenge (categories counterexample, adversarial_test, and specific governance_concern responses are the usual candidates)."
+        },
+        "selected": {
+          "type": "boolean",
+          "default": false,
+          "description": "True only after James has confirmed this as the one challenge acted on for this encounter."
+        },
+        "selection_notes": {"type": "string"}
+      }
+    },
+
+    "schema_version": {"type": "string", "const": "1.0.0"}
+  }
+}
