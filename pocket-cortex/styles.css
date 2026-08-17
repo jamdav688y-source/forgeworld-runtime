@@ -539,6 +539,29 @@ button {
   width: fit-content;
 }
 
+.offline-banner[hidden] { display: none; }
+
+.offline-banner {
+  pointer-events: none;
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(217, 168, 106, 0.4);
+  background: rgba(217, 168, 106, 0.1);
+  color: var(--warm);
+  font-size: 0.62rem;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.offline-banner.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .ready-dot {
   width: 5px;
   height: 5px;
@@ -900,6 +923,38 @@ button {
 
 .exec-strip::-webkit-scrollbar { display: none; }
 
+.next-move-banner[hidden] { display: none; }
+
+.next-move-banner {
+  flex-shrink: 0;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(87, 217, 201, 0.35);
+  background: rgba(87, 217, 201, 0.08);
+}
+
+.nmb-tag {
+  display: block;
+  font-size: 0.5rem;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.nmb-text {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-hi);
+}
+
+.nmb-basis {
+  margin: 4px 0 0;
+  font-size: 0.6rem;
+  color: var(--text-dim);
+}
+
 .exec-step {
   font-size: 0.5rem;
   letter-spacing: 0.06em;
@@ -1084,6 +1139,146 @@ button {
   font-size: 0.74rem;
   color: var(--text-dim);
 }
+
+.ww-evidence-basis {
+  margin: -6px 0 10px;
+  font-size: 0.58rem;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+.ww-route-rationale {
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-dim);
+  font-size: 0.7rem;
+  line-height: 1.5;
+  color: var(--text-mid);
+}
+
+.ww-feedback {
+  margin: 16px 0;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-dim);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ww-feedback p {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--text-mid);
+}
+
+.ww-feedback-btn {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(87, 217, 201, 0.1);
+  color: var(--accent);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.ww-feedback-btn:disabled { opacity: 0.5; }
+
+.ww-feedback-no {
+  background: rgba(217, 168, 106, 0.08);
+  color: var(--warm);
+}
+
+.ww-evidence-log,
+.ww-gate-row + .ww-evidence-log {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-dim);
+}
+
+.ww-evidence-log h3 {
+  margin: 0 0 8px;
+  font-size: 0.56rem;
+  letter-spacing: 0.14em;
+  color: var(--accent-2);
+}
+
+.ww-evidence-log-row {
+  margin: 0 0 6px;
+  font-size: 0.66rem;
+  line-height: 1.5;
+  color: var(--text-mid);
+  word-break: break-word;
+}
+
+.ww-gate-row {
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line-dim);
+}
+
+.ww-gate-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.ww-gate-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--core-hot);
+  margin-right: 2px;
+}
+
+.ww-gate-badge {
+  font-size: 0.48rem;
+  letter-spacing: 0.06em;
+  padding: 3px 6px;
+  border-radius: 5px;
+  border: 1px solid var(--line-dim);
+  color: var(--text-dim);
+}
+
+.ww-gate-badge-ok {
+  color: var(--accent);
+  border-color: rgba(87, 217, 201, 0.4);
+  background: rgba(87, 217, 201, 0.08);
+}
+
+.ww-gate-badge-warn {
+  color: var(--warm);
+  border-color: rgba(217, 168, 106, 0.4);
+  background: rgba(217, 168, 106, 0.08);
+}
+
+.ww-gate-badge-bad {
+  color: #e88a8a;
+  border-color: rgba(232, 138, 138, 0.4);
+  background: rgba(232, 138, 138, 0.08);
+}
+
+.ww-gate-reason {
+  margin: 0 0 8px;
+  font-size: 0.66rem;
+  line-height: 1.5;
+  color: var(--text-mid);
+}
+
+.ww-gate-run {
+  padding: 8px 14px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: rgba(15, 24, 38, 0.5);
+  color: var(--accent);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.ww-gate-run:disabled { opacity: 0.5; }
 
 .active-controls {
   flex-shrink: 0;

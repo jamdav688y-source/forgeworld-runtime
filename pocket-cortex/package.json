@@ -1,0 +1,14 @@
+{
+  "name": "pocket-cortex",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "FORGEWORLD Pocket Cortex — governed mobile command deck. Zero npm dependencies by design: node:sqlite + node:http + node:test only, so deployment to Termux never needs an `npm install` step.",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test tests/"
+  }
+}

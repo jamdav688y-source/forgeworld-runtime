@@ -1,3 +1,9 @@
 capabilities/state.json
 __pycache__/
 *.pyc
+pocket-cortex/data/*.db
+pocket-cortex/data/*.db-journal
+pocket-cortex/data/*.db-wal
+pocket-cortex/data/*.db-shm
+pocket-cortex/data/reconcile-output/
+node_modules/

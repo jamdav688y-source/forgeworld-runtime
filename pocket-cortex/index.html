@@ -98,6 +98,10 @@
         <span class="status-ready"><i class="ready-dot"></i>SYSTEM: READY</span>
       </header>
 
+      <p class="offline-banner" id="offline-banner" role="status" aria-live="assertive" hidden>
+        POCKET CORTEX SERVER UNREACHABLE — retrying in background. Your existing mission data is unaffected; new actions will resume once it reconnects.
+      </p>
+
       <div class="constellation-spacer" aria-hidden="true"></div>
 
       <section class="core-question">
@@ -115,9 +119,9 @@
         <p class="intent-readout" id="intent-readout" aria-live="polite">&nbsp;</p>
       </section>
 
-      <section class="state-strip" aria-label="Demonstration state">
+      <section class="state-strip" aria-label="Measured mission indicators">
         <div class="state-strip-items" id="state-strip-items"></div>
-        <p class="state-strip-caption">DEMONSTRATION STATE</p>
+        <p class="state-strip-caption">KNOWLEDGE · EVIDENCE · CREATIVITY · EXECUTION · CLARITY — measured, not assumed. Empty until a mission exists.</p>
       </section>
 
       <div class="bottom-spacer" aria-hidden="true"></div>
@@ -154,10 +158,13 @@
 
         <div class="exec-strip" id="exec-strip" aria-label="Execution stage"></div>
 
+        <div class="next-move-banner" id="next-move-banner" aria-live="polite" hidden></div>
+
         <nav class="ww-tabs" id="ww-tabs" aria-label="Workspace panels">
           <button type="button" class="ww-tab" data-panel="work">WORK</button>
           <button type="button" class="ww-tab" data-panel="route">ROUTE</button>
           <button type="button" class="ww-tab" data-panel="evidence">EVIDENCE</button>
+          <button type="button" class="ww-tab" data-panel="execute">EXECUTE</button>
           <button type="button" class="ww-tab" data-panel="history">HISTORY</button>
         </nav>
 
@@ -165,6 +172,7 @@
           <section class="ww-panel" data-panel="work" id="panel-work"></section>
           <section class="ww-panel" data-panel="route" id="panel-route" hidden></section>
           <section class="ww-panel" data-panel="evidence" id="panel-evidence" hidden></section>
+          <section class="ww-panel" data-panel="execute" id="panel-execute" hidden></section>
           <section class="ww-panel" data-panel="history" id="panel-history" hidden></section>
         </div>
       </div>

@@ -10,6 +10,77 @@
   }
 
   /* ============================================================
+     API CLIENT — every network call funnels through here so
+     offline/failure handling lives in exactly one place.
+     ============================================================ */
+
+  const API_BASE = "/api";
+  let serverReachable = true;
+  let offlineRetryTimer = null;
+
+  const offlineBanner = document.getElementById("offline-banner");
+
+  function setServerReachable(reachable) {
+    if (reachable === serverReachable) return;
+    serverReachable = reachable;
+    offlineBanner.hidden = reachable;
+    offlineBanner.classList.toggle("show", !reachable);
+    if (!reachable) {
+      scheduleReachabilityRetry();
+    } else {
+      clearTimeout(offlineRetryTimer);
+    }
+  }
+
+  function scheduleReachabilityRetry() {
+    clearTimeout(offlineRetryTimer);
+    offlineRetryTimer = setTimeout(async () => {
+      try {
+        const res = await fetch(`${API_BASE}/health`, { cache: "no-store" });
+        if (res.ok) {
+          setServerReachable(true);
+          return;
+        }
+      } catch {
+        /* still unreachable */
+      }
+      scheduleReachabilityRetry();
+    }, 6000);
+  }
+
+  window.addEventListener("online", () => {
+    if (!serverReachable) scheduleReachabilityRetry();
+  });
+
+  /**
+   * Every API call goes through here. Returns { ok, status, data } and
+   * NEVER throws -- a network failure or a non-2xx response both come
+   * back as ok:false with as much detail as is available, so callers can
+   * always show an honest failure state instead of crashing or silently
+   * pretending nothing happened.
+   */
+  async function apiFetch(path, options = {}) {
+    let res;
+    try {
+      res = await fetch(`${API_BASE}${path}`, {
+        headers: { "Content-Type": "application/json" },
+        ...options,
+      });
+    } catch (err) {
+      setServerReachable(false);
+      return { ok: false, status: 0, data: null, networkError: true, error: String(err) };
+    }
+    setServerReachable(true);
+    let data = null;
+    try {
+      data = await res.json();
+    } catch {
+      /* empty or non-JSON body */
+    }
+    return { ok: res.ok, status: res.status, data, networkError: false };
+  }
+
+  /* ============================================================
      SCREEN 1 — AWAKENING
      ============================================================ */
 
@@ -44,6 +115,16 @@
     design:   ["design", "image", "visual", "layout", "art", "style", "aesthetic", "mockup", "picture"],
     execute:  ["execute", "run", "do it", "solve", "perform", "automate", "ship", "deploy", "finish"],
   };
+
+  // NOTE: this client-side copy exists ONLY for instant as-you-type visual
+  // feedback on the constellation -- recomputing routing over a network
+  // round-trip on every keystroke would feel laggy and burn battery/data
+  // for no benefit on a phone. The routing decision that actually gets
+  // PERSISTED (and the rationale shown in the ROUTE panel) always comes
+  // from the server (pocket-cortex/lib/routing.js), which is the single
+  // source of truth. If the two ever disagree, the server wins -- see
+  // handleGoalSubmit(), which replaces this client guess with the server
+  // response as soon as it arrives.
 
   function toXY(angleDeg, radius) {
     const rad = (angleDeg * Math.PI) / 180;
@@ -151,12 +232,15 @@
     requestAnimationFrame(step);
   }
 
-  /* ambient signal pulses */
+  /* ambient signal pulses -- paused while the app is backgrounded, so a
+     phone tab sitting behind the lock screen isn't burning CPU/battery
+     animating a constellation nobody can see. */
   let ambientTimer = null;
   function scheduleAmbientPulse() {
-    if (reducedMotion) return;
+    if (reducedMotion || document.hidden) return;
     const delay = 4200 + Math.random() * 3200;
     ambientTimer = setTimeout(() => {
+      if (document.hidden) return;
       if (state.mode === "ACTIVE" || state.mode === "EDITING") {
         if (state.route.length) {
           const id = state.route[Math.floor(Math.random() * state.route.length)];
@@ -174,10 +258,17 @@
       scheduleAmbientPulse();
     }, delay);
   }
-  scheduleAmbientPulse();
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      clearTimeout(ambientTimer);
+    } else {
+      scheduleAmbientPulse();
+    }
+  });
 
   /* ============================================================
-     INTENT ROUTING
+     INTENT ROUTING (client-side preview only -- see note above)
      ============================================================ */
 
   const goalInput = document.getElementById("goal-input");
@@ -215,14 +306,14 @@
     clearAllActive();
     if (!text) {
       setRoutingActive(false);
-      intentReadout.textContent = " ";
+      intentReadout.textContent = " ";
       return;
     }
     const matched = matchNodes(text);
 
     if (!matched.length) {
       setRoutingActive(false);
-      intentReadout.textContent = " ";
+      intentReadout.textContent = " ";
       return;
     }
     setRoutingActive(true);
@@ -240,24 +331,23 @@
   });
 
   /* ============================================================
-     STATE STRIP (demonstration values)
+     STATE STRIP — truthful indicators
+     Before any mission exists, there is nothing to measure, so the
+     strip shows neutral placeholders rather than invented numbers.
      ============================================================ */
 
-  const STATE_ITEMS = [
-    { label: "KNOWLEDGE",  value: 0.72 },
-    { label: "EVIDENCE",   value: 0.58 },
-    { label: "CREATIVITY", value: 0.84 },
-    { label: "EXECUTION",  value: 0.66 },
-    { label: "CLARITY",    value: 0.91 },
-  ];
+  const INDICATOR_ORDER = ["knowledge", "evidence", "creativity", "execution", "clarity"];
 
   const stateWrap = document.getElementById("state-strip-items");
   const R = 13;
   const CIRC = 2 * Math.PI * R;
 
-  STATE_ITEMS.forEach((item) => {
+  const indicatorEls = {};
+
+  INDICATOR_ORDER.forEach((key) => {
     const wrap = document.createElement("div");
     wrap.className = "state-item";
+    wrap.setAttribute("tabindex", "0");
     const svg = document.createElementNS(svgNS, "svg");
     svg.setAttribute("viewBox", "0 0 30 30");
     const bg = el("circle", { class: "state-arc-bg", cx: 15, cy: 15, r: R });
@@ -270,17 +360,27 @@
     svg.appendChild(fg);
     const label = document.createElement("span");
     label.className = "state-item-label";
-    label.textContent = item.label;
+    label.textContent = key.toUpperCase();
     wrap.appendChild(svg);
     wrap.appendChild(label);
+    wrap.title = "No mission yet — nothing to measure.";
     stateWrap.appendChild(wrap);
-
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        fg.setAttribute("stroke-dashoffset", (CIRC * (1 - item.value)).toFixed(2));
-      }, 400);
-    });
+    indicatorEls[key] = { wrap, fg };
   });
+
+  function renderIndicators(indicators) {
+    INDICATOR_ORDER.forEach((key) => {
+      const { fg, wrap } = indicatorEls[key];
+      const ind = indicators && indicators[key];
+      const value = ind ? ind.value : 0;
+      requestAnimationFrame(() => {
+        fg.setAttribute("stroke-dashoffset", (CIRC * (1 - value)).toFixed(2));
+      });
+      wrap.title = ind ? `${Math.round(value * 100)}% — ${ind.basis}` : "No mission yet — nothing to measure.";
+    });
+  }
+
+  renderIndicators(null);
 
   /* ============================================================
      CONTROLS: EXPLORE / MISSION / DEMONSTRATE
@@ -317,6 +417,11 @@
 
   /* ============================================================
      DEMONSTRATE MODE
+     Privacy-safe by construction: everything below is scripted,
+     canned text. This function never calls apiFetch/fetch, never
+     creates a real mission, and never reads or writes anything the
+     server persists. Nothing typed or shown during a demo touches
+     pocket-cortex/data/pocket-cortex.db.
      ============================================================ */
 
   const demoOverlay = document.getElementById("demo-overlay");
@@ -379,7 +484,7 @@
     cleanupDemo();
   }
 
-  stage.addEventListener("pointerdown", (e) => {
+  stage.addEventListener("pointerdown", () => {
     if (isDemoRunning) interruptDemo();
   });
   document.addEventListener("keydown", (e) => {
@@ -416,7 +521,6 @@
     await wait(700);
     if (demoInterrupted) return;
 
-    // subtle convergence
     target.forEach((id) => {
       const rec = registry[id];
       rec.groupEl.classList.add("node-converge");
@@ -451,6 +555,8 @@
 
     await showLine("HUMAN INTENT  +  MACHINE CAPABILITY  +  CONTROLLED EXECUTION", 2200);
     if (demoInterrupted) return;
+    await showLine("NOTHING IN THIS DEMONSTRATION WAS SAVED", 2000);
+    if (demoInterrupted) return;
     await showLine("FORGEWORLD", 1800);
     if (demoInterrupted) return;
 
@@ -460,7 +566,7 @@
   btnDemo.addEventListener("click", runDemo);
 
   /* ============================================================
-     GOAL SUBMIT — ROUTE
+     GOAL SUBMIT — ROUTE (persistent, server-backed)
      ============================================================ */
 
   const goalForm = document.getElementById("goal-form");
@@ -503,8 +609,24 @@
 
     isGoalSubmitting = true;
     clearTimeout(routingTimer);
-    const matched = matchNodes(text);
-    enterActiveMode(text, matched);
+
+    // Instant local preview while the persistence round-trip is in flight.
+    const localGuess = matchNodes(text);
+    energizeRoute(localGuess, 800);
+
+    const result = await apiFetch("/missions", { method: "POST", body: JSON.stringify({ goalText: text }) });
+
+    if (!result.ok) {
+      isGoalSubmitting = false;
+      if (result.networkError || result.status === 0) {
+        showBanner("POCKET CORTEX SERVER UNREACHABLE — TRY AGAIN", 3200);
+      } else {
+        showBanner("COULD NOT CREATE MISSION — TRY AGAIN", 2800);
+      }
+      return;
+    }
+
+    enterActiveMode(result.data);
     isGoalSubmitting = false;
   }
 
@@ -512,18 +634,19 @@
   wireEnterSubmit(goalInput, goalForm);
 
   /* ============================================================
-     ACTIVE CORTEX — dynamic workspace
+     ACTIVE CORTEX — dynamic workspace, server-backed
      ============================================================ */
 
   const STAGES = ["INTENT", "ROUTE", "WORK", "REVIEW", "NEXT"];
 
   const state = {
     mode: "TITLE", // TITLE | ROUTING | ACTIVE | EDITING
+    missionId: null,
     goal: "",
     route: [],
-    workspace: "work", // work | route | evidence | history
+    workspace: "work", // work | route | evidence | execute | history
     stage: 0,
-    history: [],
+    snapshot: null, // last full mission snapshot from the server
   };
 
   const CAPABILITY_BLURB = {
@@ -546,17 +669,18 @@
   const awEditInput = document.getElementById("aw-edit-input");
   const btnEditCancel = document.getElementById("btn-edit-cancel");
   const execStrip = document.getElementById("exec-strip");
+  const nextMoveBanner = document.getElementById("next-move-banner");
   const wwTabs = Array.from(document.querySelectorAll(".ww-tab"));
   const panelWork = document.getElementById("panel-work");
   const panelRoute = document.getElementById("panel-route");
   const panelEvidence = document.getElementById("panel-evidence");
+  const panelExecute = document.getElementById("panel-execute");
   const panelHistory = document.getElementById("panel-history");
-  const activeControls = document.getElementById("active-controls");
   const btnBack = document.getElementById("btn-back");
   const btnRefine = document.getElementById("btn-refine");
   const btnNext = document.getElementById("btn-next");
 
-  const panels = { work: panelWork, route: panelRoute, evidence: panelEvidence, history: panelHistory };
+  const panels = { work: panelWork, route: panelRoute, evidence: panelEvidence, execute: panelExecute, history: panelHistory };
 
   function routeKey(route) {
     return route.slice().sort().join("+");
@@ -587,8 +711,8 @@
       blocks: [
         { label: "WHAT ARE WE LEARNING?", text: goal },
         { label: "CURRENT MENTAL MODEL", text: "A baseline understanding assembled from the stated goal — treat this as a starting model, not a conclusion." },
-        { label: "EXPLANATION", text: "Demo explanation: the system breaks the goal into a concept, a mechanism, and a worked example." },
-        { label: "EXAMPLE", text: "Demo example: applying the same reasoning to a smaller, concrete case." },
+        { label: "EXPLANATION", text: "Illustrative explanation: the system breaks the goal into a concept, a mechanism, and a worked example." },
+        { label: "EXAMPLE", text: "Illustrative example: applying the same reasoning to a smaller, concrete case." },
         { label: "DEEPER QUESTION", text: "What part of this still feels uncertain?" },
       ],
       next: "Continue learning to go one level deeper.",
@@ -621,10 +745,10 @@
         { label: "OBJECTIVE", text: goal },
         { label: "ACTIVE CAPABILITIES", list: labels.length ? labels : ["No capability matched — try different wording."] },
         { label: "WORKING NOTES", list: labels.length
-          ? labels.map((l) => `Apply ${l} to advance the objective. (demo content)`)
-          : ["Demo content unavailable without a matched capability."] },
+          ? labels.map((l) => `Apply ${l} to advance the objective. (illustrative — not machine-generated content)`)
+          : ["No illustrative content available without a matched capability."] },
       ],
-      next: "Demo next action: continue refining with the active capabilities.",
+      next: "Continue refining with the active capabilities.",
     };
   }
 
@@ -682,40 +806,292 @@
     });
   }
 
-  function renderHistory() {
+  function renderNextMoveBanner(nextMove) {
+    if (!nextMove) {
+      nextMoveBanner.hidden = true;
+      return;
+    }
+    nextMoveBanner.hidden = false;
+    nextMoveBanner.innerHTML = "";
+    const tag = document.createElement("span");
+    tag.className = "nmb-tag";
+    tag.textContent = "NEXT RIGHT MOVE";
+    const text = document.createElement("p");
+    text.className = "nmb-text";
+    text.textContent = nextMove.text;
+    const basis = document.createElement("p");
+    basis.className = "nmb-basis";
+    basis.textContent = nextMove.basis;
+    nextMoveBanner.appendChild(tag);
+    nextMoveBanner.appendChild(text);
+    nextMoveBanner.appendChild(basis);
+  }
+
+  async function renderHistory() {
     panelHistory.innerHTML = "";
-    if (!state.history.length) {
+    const loading = document.createElement("p");
+    loading.className = "ww-empty";
+    loading.textContent = "Loading mission history…";
+    panelHistory.appendChild(loading);
+
+    const result = await apiFetch("/missions");
+    panelHistory.innerHTML = "";
+
+    if (!result.ok) {
       const p = document.createElement("p");
       p.className = "ww-empty";
-      p.textContent = "No previous goals this session.";
+      p.textContent = result.networkError
+        ? "Pocket Cortex server unreachable — execution memory cannot be read right now."
+        : "Could not load mission history.";
       panelHistory.appendChild(p);
       return;
     }
-    state.history.slice().reverse().forEach((entry) => {
+
+    const missions = result.data.missions || [];
+    if (!missions.length) {
+      const p = document.createElement("p");
+      p.className = "ww-empty";
+      p.textContent = "No missions recorded yet.";
+      panelHistory.appendChild(p);
+      return;
+    }
+
+    missions.forEach((m) => {
       const item = document.createElement("button");
       item.type = "button";
       item.className = "ww-history-item";
       const g = document.createElement("span");
       g.className = "ww-history-goal";
-      g.textContent = entry.goal;
+      g.textContent = m.goal_text;
       const r = document.createElement("span");
       r.className = "ww-history-route";
-      r.textContent = entry.route.map((id) => registry[id].def.label).join("  ·  ") || "NO ROUTE MATCHED";
+      r.textContent = (m.route.map((id) => registry[id]?.def.label).filter(Boolean).join("  ·  ") || "NO ROUTE MATCHED") + `  ·  ${m.stage}`;
       item.appendChild(g);
       item.appendChild(r);
-      item.addEventListener("click", () => updateActiveRoute(entry.goal));
+      item.addEventListener("click", async () => {
+        const full = await apiFetch(`/missions/${encodeURIComponent(m.id)}`);
+        if (full.ok) enterActiveMode(full.data);
+      });
       panelHistory.appendChild(item);
     });
   }
 
-  function renderWorkspace() {
+  function renderEvidencePanel(snapshot) {
+    panelEvidence.innerHTML = "";
+
+    const indicatorTag = document.createElement("p");
+    indicatorTag.className = "ww-demo-tag";
+    indicatorTag.textContent = "MEASURED, NOT ASSUMED";
+    panelEvidence.appendChild(indicatorTag);
+
+    Object.entries(snapshot.indicators).forEach(([key, ind]) => {
+      const row = document.createElement("div");
+      row.className = "ww-evidence-row";
+      const label = document.createElement("span");
+      label.textContent = ind.label;
+      const bar = document.createElement("div");
+      bar.className = "ww-evidence-bar";
+      const fill = document.createElement("div");
+      fill.className = "ww-evidence-fill";
+      fill.style.width = Math.round(ind.value * 100) + "%";
+      bar.appendChild(fill);
+      row.appendChild(label);
+      row.appendChild(bar);
+      const basis = document.createElement("p");
+      basis.className = "ww-evidence-basis";
+      basis.textContent = ind.basis + (ind.isProxy ? " (proxy metric)" : "");
+      row.appendChild(basis);
+      panelEvidence.appendChild(row);
+    });
+
+    const feedbackWrap = document.createElement("div");
+    feedbackWrap.className = "ww-feedback";
+    const feedbackQ = document.createElement("p");
+    feedbackQ.textContent = "Does the current route actually match your intent?";
+    feedbackWrap.appendChild(feedbackQ);
+    const yesBtn = document.createElement("button");
+    yesBtn.type = "button";
+    yesBtn.className = "ww-feedback-btn";
+    yesBtn.textContent = "YES — RECORD AS OBSERVED";
+    const noBtn = document.createElement("button");
+    noBtn.type = "button";
+    noBtn.className = "ww-feedback-btn ww-feedback-no";
+    noBtn.textContent = "NO — RECORD AS OBSERVED";
+    async function submitFeedback(matched) {
+      yesBtn.disabled = true;
+      noBtn.disabled = true;
+      const result = await apiFetch(`/missions/${encodeURIComponent(state.missionId)}/evidence`, {
+        method: "POST",
+        body: JSON.stringify({
+          subject: "routing-feedback",
+          state: "OBSERVED",
+          observation: matched ? "User confirmed the routing matched their intent." : "User indicated the routing did NOT match their intent.",
+          source: "user",
+        }),
+      });
+      if (result.ok) {
+        showBanner(matched ? "RECORDED — ROUTE CONFIRMED" : "RECORDED — ROUTE FLAGGED", 2000);
+        refreshSnapshot();
+      } else {
+        showBanner("COULD NOT RECORD EVIDENCE", 2000);
+        yesBtn.disabled = false;
+        noBtn.disabled = false;
+      }
+    }
+    yesBtn.addEventListener("click", () => submitFeedback(true));
+    noBtn.addEventListener("click", () => submitFeedback(false));
+    feedbackWrap.appendChild(yesBtn);
+    feedbackWrap.appendChild(noBtn);
+    panelEvidence.appendChild(feedbackWrap);
+
+    if (snapshot.evidence.length) {
+      const log = document.createElement("div");
+      log.className = "ww-evidence-log";
+      const h = document.createElement("h3");
+      h.textContent = "EVIDENCE LOG";
+      log.appendChild(h);
+      snapshot.evidence.slice().reverse().forEach((e) => {
+        const row = document.createElement("p");
+        row.className = "ww-evidence-log-row";
+        row.textContent = `[${e.state}] ${e.observation} — ${e.source}`;
+        log.appendChild(row);
+      });
+      panelEvidence.appendChild(log);
+    }
+  }
+
+  async function renderExecutePanel(snapshot) {
+    panelExecute.innerHTML = "";
+    const loading = document.createElement("p");
+    loading.className = "ww-empty";
+    loading.textContent = "Loading capability/authority gates…";
+    panelExecute.appendChild(loading);
+
+    const result = await apiFetch("/capabilities");
+    panelExecute.innerHTML = "";
+
+    if (!result.ok) {
+      const p = document.createElement("p");
+      p.className = "ww-empty";
+      p.textContent = "Pocket Cortex server unreachable — gates cannot be read right now.";
+      panelExecute.appendChild(p);
+      return;
+    }
+
+    const tag = document.createElement("p");
+    tag.className = "ww-demo-tag";
+    tag.textContent = "CAPABILITY ≠ AUTHORITY";
+    panelExecute.appendChild(tag);
+
+    result.data.capabilities.forEach(({ name, capability, authority }) => {
+      const row = document.createElement("div");
+      row.className = "ww-gate-row";
+
+      const head = document.createElement("div");
+      head.className = "ww-gate-head";
+      const nameEl = document.createElement("span");
+      nameEl.className = "ww-gate-name";
+      nameEl.textContent = name;
+      const capBadge = document.createElement("span");
+      capBadge.className = "ww-gate-badge " + (capability.available ? "ww-gate-badge-ok" : "ww-gate-badge-bad");
+      capBadge.textContent = "CAPABILITY: " + (capability.available ? "AVAILABLE" : "UNAVAILABLE");
+      const authBadge = document.createElement("span");
+      const authOk = authority.decision === "ALLOWED" || authority.decision === "ALLOWED_LOCAL" || authority.decision === "ALLOWED_BOUNDED";
+      authBadge.className = "ww-gate-badge " + (authOk ? "ww-gate-badge-ok" : authority.decision === "REQUIRES_APPROVAL" ? "ww-gate-badge-warn" : "ww-gate-badge-bad");
+      authBadge.textContent = "AUTHORITY: " + authority.decision;
+      head.appendChild(nameEl);
+      head.appendChild(capBadge);
+      head.appendChild(authBadge);
+      row.appendChild(head);
+
+      const reason = document.createElement("p");
+      reason.className = "ww-gate-reason";
+      reason.textContent = authority.reason;
+      row.appendChild(reason);
+
+      if (authOk && capability.available) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "ww-gate-run";
+        btn.textContent = "RUN";
+        btn.addEventListener("click", async () => {
+          btn.disabled = true;
+          btn.textContent = "RUNNING…";
+          const execResult = await apiFetch(`/missions/${encodeURIComponent(state.missionId)}/execute`, {
+            method: "POST",
+            body: JSON.stringify({ capability: name }),
+          });
+          if (execResult.ok) {
+            showBanner(`${name} SUCCEEDED`, 2200);
+          } else if (execResult.status === 202) {
+            showBanner(`${name} AWAITING APPROVAL`, 2200);
+          } else {
+            showBanner(`${name} BLOCKED`, 2200);
+          }
+          refreshSnapshot();
+        });
+        row.appendChild(btn);
+      }
+
+      panelExecute.appendChild(row);
+    });
+
+    if (snapshot.execution.length) {
+      const log = document.createElement("div");
+      log.className = "ww-evidence-log";
+      const h = document.createElement("h3");
+      h.textContent = "EXECUTION MEMORY";
+      log.appendChild(h);
+      snapshot.execution.slice().reverse().forEach((e) => {
+        const row = document.createElement("p");
+        row.className = "ww-evidence-log-row";
+        row.textContent = `[${e.outcome}] ${e.capability} (${e.authorityDecision})`;
+        log.appendChild(row);
+      });
+      panelExecute.appendChild(log);
+    }
+  }
+
+  function renderRoutePanel(snapshot) {
+    panelRoute.innerHTML = "";
+    if (!state.route.length) {
+      const p = document.createElement("p");
+      p.className = "ww-empty";
+      p.textContent = "No capability matched this goal.";
+      panelRoute.appendChild(p);
+      return;
+    }
+    state.route.forEach((id) => {
+      const row = document.createElement("div");
+      row.className = "ww-route-row";
+      const name = document.createElement("span");
+      name.className = "ww-route-name";
+      name.textContent = registry[id]?.def.label || id;
+      const desc = document.createElement("span");
+      desc.className = "ww-route-desc";
+      desc.textContent = CAPABILITY_BLURB[id] || "";
+      row.appendChild(name);
+      row.appendChild(desc);
+      panelRoute.appendChild(row);
+    });
+
+    const latestRouting = snapshot.routing[snapshot.routing.length - 1];
+    if (latestRouting) {
+      const rationale = document.createElement("p");
+      rationale.className = "ww-route-rationale";
+      rationale.textContent = "ROUTING RATIONALE: " + latestRouting.rationale;
+      panelRoute.appendChild(rationale);
+    }
+  }
+
+  function renderWorkspace(snapshot) {
     const content = getWorkspaceContent(state.goal, state.route);
 
     panelWork.innerHTML = "";
     panelWork.classList.remove("ww-expanded");
     const demoTag = document.createElement("p");
     demoTag.className = "ww-demo-tag";
-    demoTag.textContent = "DEMO CONTENT";
+    demoTag.textContent = "ILLUSTRATIVE CONTENT — NOT MACHINE-GENERATED";
     panelWork.appendChild(demoTag);
     content.blocks.forEach((b) => panelWork.appendChild(renderWorkBlock(b)));
     const nextP = document.createElement("p");
@@ -723,57 +1099,29 @@
     nextP.textContent = content.next;
     panelWork.appendChild(nextP);
 
-    panelRoute.innerHTML = "";
-    if (!state.route.length) {
-      const p = document.createElement("p");
-      p.className = "ww-empty";
-      p.textContent = "No capability matched this goal.";
-      panelRoute.appendChild(p);
-    } else {
-      state.route.forEach((id) => {
-        const row = document.createElement("div");
-        row.className = "ww-route-row";
-        const name = document.createElement("span");
-        name.className = "ww-route-name";
-        name.textContent = registry[id].def.label;
-        const desc = document.createElement("span");
-        desc.className = "ww-route-desc";
-        desc.textContent = CAPABILITY_BLURB[id] || "";
-        row.appendChild(name);
-        row.appendChild(desc);
-        panelRoute.appendChild(row);
-      });
-    }
+    renderRoutePanel(snapshot);
+    renderEvidencePanel(snapshot);
+    renderExecutePanel(snapshot);
+    renderNextMoveBanner(snapshot.nextMove);
+    renderIndicators(snapshot.indicators);
 
-    panelEvidence.innerHTML = "";
-    const evTag = document.createElement("p");
-    evTag.className = "ww-demo-tag";
-    evTag.textContent = "DEMONSTRATION STATE";
-    panelEvidence.appendChild(evTag);
-    STATE_ITEMS.forEach((item) => {
-      const row = document.createElement("div");
-      row.className = "ww-evidence-row";
-      const label = document.createElement("span");
-      label.textContent = item.label;
-      const bar = document.createElement("div");
-      bar.className = "ww-evidence-bar";
-      const fill = document.createElement("div");
-      fill.className = "ww-evidence-fill";
-      fill.style.width = Math.round(item.value * 100) + "%";
-      bar.appendChild(fill);
-      row.appendChild(label);
-      row.appendChild(bar);
-      panelEvidence.appendChild(row);
-    });
-
-    renderHistory();
     renderExecStrip();
     updateContextualControls();
 
     awRouteLabel.textContent = state.route.length
-      ? state.route.map((id) => registry[id].def.label).join("  ·  ")
+      ? state.route.map((id) => registry[id]?.def.label || id).join("  ·  ")
       : "NO CAPABILITY MATCHED";
     awGoalText.textContent = state.goal;
+  }
+
+  async function refreshSnapshot() {
+    if (!state.missionId) return;
+    const result = await apiFetch(`/missions/${encodeURIComponent(state.missionId)}`);
+    if (result.ok) {
+      state.snapshot = result.data;
+      state.route = result.data.mission.route;
+      renderWorkspace(result.data);
+    }
   }
 
   function setWorkspaceTab(name) {
@@ -783,7 +1131,8 @@
       t.classList.toggle("ww-tab-active", active);
       t.setAttribute("aria-current", active ? "true" : "false");
     });
-    Object.entries(panels).forEach(([key, el]) => { el.hidden = key !== name; });
+    Object.entries(panels).forEach(([key, panelEl]) => { panelEl.hidden = key !== name; });
+    if (name === "history") renderHistory();
   }
 
   wwTabs.forEach((t) => t.addEventListener("click", () => setWorkspaceTab(t.dataset.panel)));
@@ -804,15 +1153,17 @@
     });
   }
 
-  function enterActiveMode(goalText, matched) {
+  function enterActiveMode(snapshot) {
     state.mode = "ACTIVE";
-    state.goal = goalText;
-    state.route = matched;
-    state.stage = 2; // WORK
-    state.history.push({ goal: goalText, route: matched.slice() });
+    state.missionId = snapshot.mission.id;
+    state.goal = snapshot.mission.goal_text;
+    state.route = snapshot.mission.route;
+    state.stage = STAGES.indexOf(snapshot.mission.stage);
+    if (state.stage < 0) state.stage = 0;
+    state.snapshot = snapshot;
 
-    energizeRoute(matched, 800);
-    renderWorkspace();
+    energizeRoute(state.route, 800);
+    renderWorkspace(snapshot);
     setWorkspaceTab("work");
 
     stage.dataset.mode = "active";
@@ -827,18 +1178,26 @@
     }, reducedMotion ? 60 : 780);
   }
 
-  function updateActiveRoute(goalText) {
+  async function updateActiveRoute(goalText) {
     const text = goalText.trim();
-    if (!text) return false;
-    const matched = matchNodes(text);
+    if (!text || !state.missionId) return false;
+
+    const result = await apiFetch(`/missions/${encodeURIComponent(state.missionId)}/reroute`, {
+      method: "POST",
+      body: JSON.stringify({ goalText: text }),
+    });
+    if (!result.ok) {
+      showBanner(result.networkError ? "POCKET CORTEX SERVER UNREACHABLE" : "COULD NOT RE-ROUTE", 2800);
+      return false;
+    }
 
     state.goal = text;
-    state.route = matched;
-    state.stage = 2;
-    state.history.push({ goal: text, route: matched.slice() });
+    state.route = result.data.mission.route;
+    state.stage = STAGES.indexOf(result.data.mission.stage);
+    state.snapshot = result.data;
 
-    energizeRoute(matched, 700);
-    renderWorkspace();
+    energizeRoute(state.route, 700);
+    renderWorkspace(result.data);
     setWorkspaceTab("work");
     state.mode = "ACTIVE";
     exitEditingSubpanel();
@@ -906,15 +1265,27 @@
     }
   });
 
-  btnNext.addEventListener("click", () => {
-    if (routeKey(state.route) === "create+design+discover") {
-      state.stage = STAGES.length - 1;
+  btnNext.addEventListener("click", async () => {
+    if (!state.missionId) return;
+    const targetStage = routeKey(state.route) === "create+design+discover"
+      ? STAGES[STAGES.length - 1]
+      : STAGES[Math.min(state.stage + 1, STAGES.length - 1)];
+    const result = await apiFetch(`/missions/${encodeURIComponent(state.missionId)}/stage`, {
+      method: "POST",
+      body: JSON.stringify({ stage: targetStage }),
+    });
+    if (result.ok) {
+      state.stage = STAGES.indexOf(targetStage);
+      state.snapshot = result.data;
       renderExecStrip();
-      showBanner("EXECUTION QUEUED — DEMO", 1800);
+      renderNextMoveBanner(result.data.nextMove);
+      showBanner(targetStage + " STAGE", 1400);
     } else {
-      state.stage = Math.min(state.stage + 1, STAGES.length - 1);
-      renderExecStrip();
-      showBanner(STAGES[state.stage] + " STAGE", 1400);
+      showBanner(result.networkError ? "POCKET CORTEX SERVER UNREACHABLE" : "COULD NOT ADVANCE STAGE", 2400);
     }
   });
+
+  // Initial reachability probe so an offline launch shows the banner
+  // immediately instead of waiting for the first user action to fail.
+  apiFetch("/health");
 })();
