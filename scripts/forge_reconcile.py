@@ -54,6 +54,10 @@ CANDIDATE_BRANCHES = [
     "origin/claude/pocket-cortex-title-screen-hvf7j8",
     "origin/claude/repository-intelligence-model-h7l8tp",
     "origin/claude/silent-wake-crpg-init-aoqr11",
+    "origin/claude/forgeworld-validation-001-4g2f77",
+    "origin/claude/forgeworld-evolution-clip-s9f5ys",
+    "origin/claude/forgeworld-authority-separation",
+    "origin/claude/pocket-cortex-command-deck",
 ]
 
 # Subpaths (relative to --root) worth inventorying in focused detail, beyond
