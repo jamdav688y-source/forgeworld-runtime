@@ -1,0 +1,69 @@
+{
+  "learning_id": "whatsapp-membrane-lessons-1",
+  "created_at": "2026-08-18T19:18:28Z",
+  "source_mission": "FORGEWORLD WhatsApp Intelligence Membrane -- implementation, pre-merge certification, and promotion-evidence packaging (PR #4)",
+  "purpose": "Reusable capability lessons extracted from this mission, for application to future governed-system work regardless of channel or business context.",
+  "scope_note": "These lessons are about process and system design discipline, not about WhatsApp or this specific repository. They are recorded under whatsapp/learning/ (not a repo-root learning/ directory) deliberately, to avoid intruding on the FORGEWORLD RPG system's own top-level namespace -- consistent with the repository-boundary finding in pre_merge_certification.md.",
+  "lessons": [
+    {
+      "lesson_id": "L-01",
+      "principle": "Recommendation != authorization",
+      "observed_in": "The pre-merge certification's terminal recommendation (MOVE_TO_CANONICAL_BUSINESS_REPOSITORY) is not itself permission to move anything. This promotion pass explicitly stopped short of creating or choosing a destination repo, even though candidate repos exist in the account.",
+      "generalization": "A system that can diagnose the right next state must not treat naming that state as license to enter it. The gap between 'the evidence points here' and 'someone with authority said go' must be preserved as a hard stop, not smoothed over for convenience."
+    },
+    {
+      "lesson_id": "L-02",
+      "principle": "Successful execution != promotion",
+      "observed_in": "60/60 tests passing, clean code, disclosed defects fixed -- and the terminal state is still BLOCKED_WITH_EVIDENCE, not READY. Implementation quality and the authority to deploy/migrate/promote are separate axes that must both be satisfied, not substitutes for each other.",
+      "generalization": "A 'green' technical result answers 'does it work' -- it never answers 'are we allowed to act on it here.' Conflating the two is how technically-correct systems end up deployed to the wrong boundary."
+    },
+    {
+      "lesson_id": "L-03",
+      "principle": "Test pass != system-wide proof",
+      "observed_in": "The CI 'offline sanity check' (defect F-06) was written, described in prose as providing 'a second independent guarantee,' and committed -- without ever being executed standalone. When finally run during this promotion pass, it failed for a reason unrelated to the property it claimed to verify (it broke Python's own ssl import, not detected any real network call).",
+      "generalization": "A claim about what a test proves is itself a claim that needs verification. Writing a check and reasoning about what it should do is not the same as running it and observing what it actually does. This applies recursively -- this very promotion pass's claims should be treated the same way by whoever reads them next."
+    },
+    {
+      "lesson_id": "L-04",
+      "principle": "Corrupted evidence must be preserved, not silently discarded",
+      "observed_in": "ledger.py's read_all() was hardened to write any line that fails json.loads() to a <name>.corrupt sidecar file rather than dropping it, even though dropping it silently would have been the simpler fix.",
+      "generalization": "When a governance/evidence system encounters damage to its own record, the safe default is to make the damage visible and recoverable, not to quietly heal over it. A system that silently discards what it can't parse is indistinguishable, from the outside, from one that is hiding something."
+    },
+    {
+      "lesson_id": "L-05",
+      "principle": "Configuration weakness should fail loudly",
+      "observed_in": "normalize.hash_phone() previously fell back to a hardcoded, publicly-visible default salt when WHATSAPP_ID_SALT was unset -- a silent success that provided zero real protection. Fixed to raise ConfigurationError instead.",
+      "generalization": "A missing security-relevant configuration value is a stop condition, not a place for a convenient default. A default that lets the system 'just work' in that situation is optimizing for the wrong thing -- it should be exactly as broken as the missing configuration actually makes it, visibly."
+    },
+    {
+      "lesson_id": "L-06",
+      "principle": "State transitions require explicit guards",
+      "observed_in": "approval.py originally allowed a decision (approve/reject/escalate) to be recorded against a draft regardless of that draft's current state -- including one already sent or already closed. Fixed with an explicit LOCKED_STATES check.",
+      "generalization": "An append-only event log is not automatically a correct state machine. Without an explicit check of 'what states can transition to what,' any caller can write a semantically invalid sequence that the log will faithfully store and no consumer will necessarily notice."
+    },
+    {
+      "lesson_id": "L-07",
+      "principle": "Evidence storage must not leak malformed or raw exception content",
+      "observed_in": "webhook_adapter.py originally stored str(e) and one full traceback in the durable execution ledger. Some exception messages (e.g. int() parse failures) embed the raw value that caused them -- which could be attacker- or customer-supplied content. Fixed to store only the exception type name.",
+      "generalization": "Error-handling code is a data path, not just a control-flow path. What you choose to log about a failure is itself a place where the very data you're trying to protect can leak, especially when the error message format is controlled by a language runtime rather than deliberately designed."
+    },
+    {
+      "lesson_id": "L-08",
+      "principle": "CI should enforce governance-critical invariants, and its own correctness needs the same scrutiny as the code it checks",
+      "observed_in": "Adding .github/workflows/whatsapp-tests.yml converted an unenforced local claim ('43/43 passing') into a check GitHub can require before merge -- but the workflow's own logic had a bug (L-03/defect F-06) that would have made it fail for the wrong reason if it had ever actually run before this pass caught it.",
+      "generalization": "Adding enforcement is necessary but not sufficient -- the enforcement mechanism itself is code, with its own failure modes, and deserves the same 'did we actually run this and look' discipline as the thing it's meant to guard."
+    },
+    {
+      "lesson_id": "L-09",
+      "principle": "A prior certification's own claims can be wrong and must be correctable in place",
+      "observed_in": "The pre-merge certification report claimed 'no repo-root-relative or absolute path baked in anywhere' outside one pattern. The migration dry-run in this same pass found that draft.py reads a sibling repo-root file (memory/memory.log), contradicting that claim. The original report was amended in place with a visible correction rather than left standing or silently rewritten.",
+      "generalization": "An evidence artifact that turns out to contain an error is itself evidence about the review process, not just about the code. The right response is a visible, dated correction -- not deletion (which erases the record that a mistake was made and caught) and not silence (which lets a wrong claim keep being trusted)."
+    },
+    {
+      "lesson_id": "L-10",
+      "principle": "Do not infer authority or destination from names, proximity, or convenience",
+      "observed_in": "The operator's GitHub account has repositories named 'governed-ai-systems' and 'governance-control-plane' -- names that invite the inference 'that's probably the canonical business repo.' This pass explicitly declined to open, read, or treat either as a candidate on that basis, reporting only that they exist and that no evidence establishes any of them as canonical.",
+      "generalization": "A plausible-sounding name is not evidence. The temptation to resolve an unresolved authority question by picking the most convenient-looking candidate is exactly the shortcut that turns 'I don't have enough information' into 'I acted on a guess and called it a finding.'"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+=== Command ===
+python3 -m unittest discover -s whatsapp/tests -p "test_*.py" -v
+
+=== Run 1 (verbose, exit_code=0) ===
+test_concurrent_ledger_appends_are_not_interleaved (test_adversarial.TestConcurrency.test_concurrent_ledger_appends_are_not_interleaved) ... ok
+test_concurrent_webhook_deliveries_for_different_messages_all_ledgered (test_adversarial.TestConcurrency.test_concurrent_webhook_deliveries_for_different_messages_all_ledgered) ... ok
+test_cannot_approve_a_draft_that_was_already_sent (test_adversarial.TestDuplicateApprovals.test_cannot_approve_a_draft_that_was_already_sent) ... ok
+test_cannot_reject_a_draft_already_marked_not_an_opportunity (test_adversarial.TestDuplicateApprovals.test_cannot_reject_a_draft_already_marked_not_an_opportunity) ... ok
+test_double_approve_before_send_is_harmless (test_adversarial.TestDuplicateApprovals.test_double_approve_before_send_is_harmless) ... ok
+test_forged_read_receipt_does_not_retroactively_authorize_anything (test_adversarial.TestForgedDeliveryStates.test_forged_read_receipt_does_not_retroactively_authorize_anything) ... ok
+test_forged_status_for_a_message_id_that_was_never_sent_is_flagged_unmatched (test_adversarial.TestForgedDeliveryStates.test_forged_status_for_a_message_id_that_was_never_sent_is_flagged_unmatched) ... ok
+test_corrupted_line_is_preserved_for_recovery_not_silently_lost (test_adversarial.TestLedgerCorruption.test_corrupted_line_is_preserved_for_recovery_not_silently_lost) ... WARNING: skipping corrupted ledger line in /tmp/tmplxjo71t1/conversation_ledger.jsonl
+ok
+test_empty_ledger_file_reads_as_empty_list (test_adversarial.TestLedgerCorruption.test_empty_ledger_file_reads_as_empty_list) ... ok
+test_one_corrupted_line_does_not_break_reading_the_rest (test_adversarial.TestLedgerCorruption.test_one_corrupted_line_does_not_break_reading_the_rest) ... WARNING: skipping corrupted ledger line in /tmp/tmpdx_djhee/conversation_ledger.jsonl
+ok
+test_partial_write_truncated_mid_line_does_not_break_prior_records (test_adversarial.TestLedgerCorruption.test_partial_write_truncated_mid_line_does_not_break_prior_records) ... WARNING: skipping corrupted ledger line in /tmp/tmp89t1fon_/conversation_ledger.jsonl
+ok
+test_send_attempted_mid_conversation_after_stop_is_blocked (test_adversarial.TestOutboundDuringEmergencyStop.test_send_attempted_mid_conversation_after_stop_is_blocked) ... ok
+test_stop_blocks_every_pending_draft_not_just_one (test_adversarial.TestOutboundDuringEmergencyStop.test_stop_blocks_every_pending_draft_not_just_one) ... ok
+test_send_to_a_different_phone_than_the_draft_was_approved_for_is_blocked (test_adversarial.TestRecipientBinding.test_send_to_a_different_phone_than_the_draft_was_approved_for_is_blocked) ... ok
+test_replaying_an_approved_send_is_idempotent_not_a_double_send (test_adversarial.TestReplay.test_replaying_an_approved_send_is_idempotent_not_a_double_send) ... ok
+test_replaying_the_same_webhook_many_times_never_duplicates (test_adversarial.TestReplay.test_replaying_the_same_webhook_many_times_never_duplicates) ... ok
+test_missing_salt_fails_loudly_not_with_a_weak_default (test_adversarial.TestSaltConfiguration.test_missing_salt_fails_loudly_not_with_a_weak_default) ... ok
+test_emergency_stop_blocks_send (test_authority.TestAuthorityMatrix.test_emergency_stop_blocks_send) ... ok
+test_matrix_matches_doc (test_authority.TestAuthorityMatrix.test_matrix_matches_doc) ... ok
+test_prohibited_action_blocked_without_grant (test_authority.TestAuthorityMatrix.test_prohibited_action_blocked_without_grant) ... ok
+test_prompt_injection_cannot_elevate_authority (test_authority.TestAuthorityMatrix.test_prompt_injection_cannot_elevate_authority) ... ok
+test_revoked_consent_blocks_send (test_authority.TestAuthorityMatrix.test_revoked_consent_blocks_send) ... ok
+test_unknown_action_raises (test_authority.TestAuthorityMatrix.test_unknown_action_raises) ... ok
+test_pricing_inquiry_classified_with_approval_requirement (test_classify.TestClassify.test_pricing_inquiry_classified_with_approval_requirement) ... ok
+test_prompt_injection_text_is_classified_as_data_not_instruction (test_classify.TestClassify.test_prompt_injection_text_is_classified_as_data_not_instruction) ... ok
+test_sensitive_data_forces_insufficient_evidence_and_high_risk (test_classify.TestClassify.test_sensitive_data_forces_insufficient_evidence_and_high_risk) ... ok
+test_status_event_short_circuits_to_delivery_status_intent (test_classify.TestClassify.test_status_event_short_circuits_to_delivery_status_intent) ... ok
+test_default_consent_for_unknown_contact (test_consent.TestConsent.test_default_consent_for_unknown_contact) ... ok
+test_non_stopword_does_not_revoke (test_consent.TestConsent.test_non_stopword_does_not_revoke) ... ok
+test_revoked_consent_is_append_only_history (test_consent.TestConsent.test_revoked_consent_is_append_only_history) ... ok
+test_stopword_detection_case_insensitive (test_consent.TestConsent.test_stopword_detection_case_insensitive) ... ok
+test_stopword_revokes_consent (test_consent.TestConsent.test_stopword_revokes_consent) ... ok
+test_draft_is_never_pre_approved (test_draft.TestDraft.test_draft_is_never_pre_approved) ... ok
+test_draft_writes_ready_for_approval_to_execution_ledger (test_draft.TestDraft.test_draft_writes_ready_for_approval_to_execution_ledger) ... ok
+test_injected_instruction_does_not_change_required_authority_tier (test_draft.TestDraft.test_injected_instruction_does_not_change_required_authority_tier) ... ok
+test_pricing_draft_avoids_stating_a_price (test_draft.TestDraft.test_pricing_draft_avoids_stating_a_price) ... ok
+test_full_pipeline_sandbox_run (test_e2e_sandbox.TestEndToEndSandbox.test_full_pipeline_sandbox_run) ... ok
+test_no_governance_regression_when_credentials_absent (test_e2e_sandbox.TestEndToEndSandbox.test_no_governance_regression_when_credentials_absent)
+Without live credentials, nothing can ever reach SAFE_AUTOMATION_EXECUTED ... ok
+test_blocked_by_authority_when_not_approved (test_outbound.TestOutbound.test_blocked_by_authority_when_not_approved) ... ok
+test_blocked_by_configuration_without_credentials (test_outbound.TestOutbound.test_blocked_by_configuration_without_credentials) ... ok
+test_blocked_by_consent_when_revoked (test_outbound.TestOutbound.test_blocked_by_consent_when_revoked) ... ok
+test_emergency_stop_blocks_send_even_when_approved_and_configured (test_outbound.TestOutbound.test_emergency_stop_blocks_send_even_when_approved_and_configured) ... ok
+test_free_form_send_succeeds_within_csw_with_credentials (test_outbound.TestOutbound.test_free_form_send_succeeds_within_csw_with_credentials) ... ok
+test_send_outside_csw_with_template_succeeds (test_outbound.TestOutbound.test_send_outside_csw_with_template_succeeds) ... ok
+test_send_outside_csw_without_template_is_blocked_by_policy (test_outbound.TestOutbound.test_send_outside_csw_without_template_is_blocked_by_policy) ... ok
+test_delivered_status_maps_to_validated_complete (test_reconcile.TestReconcile.test_delivered_status_maps_to_validated_complete) ... ok
+test_failed_status_maps_to_revision_required (test_reconcile.TestReconcile.test_failed_status_maps_to_revision_required) ... ok
+test_matched_send_record_true_when_prior_send_exists (test_reconcile.TestReconcile.test_matched_send_record_true_when_prior_send_exists) ... ok
+test_unmatched_platform_message_id_is_still_recorded (test_reconcile.TestReconcile.test_unmatched_platform_message_id_is_still_recorded) ... ok
+test_challenge_handshake_success (test_webhook_adapter.TestWebhookAdapter.test_challenge_handshake_success) ... ok
+test_challenge_handshake_wrong_token_raises (test_webhook_adapter.TestWebhookAdapter.test_challenge_handshake_wrong_token_raises) ... ok
+test_duplicate_delivery_is_deduped_not_double_ledgered (test_webhook_adapter.TestWebhookAdapter.test_duplicate_delivery_is_deduped_not_double_ledgered) ... ok
+test_forged_request_with_no_signature_header_is_blocked (test_webhook_adapter.TestWebhookAdapter.test_forged_request_with_no_signature_header_is_blocked) ... ok
+test_invalid_signature_is_blocked_by_policy (test_webhook_adapter.TestWebhookAdapter.test_invalid_signature_is_blocked_by_policy) ... ok
+test_malformed_json_payload_is_revision_required (test_webhook_adapter.TestWebhookAdapter.test_malformed_json_payload_is_revision_required) ... ok
+test_one_bad_event_does_not_block_next (test_webhook_adapter.TestWebhookAdapter.test_one_bad_event_does_not_block_next) ... ok
+test_signature_computed_with_wrong_secret_is_rejected (test_webhook_adapter.TestWebhookAdapter.test_signature_computed_with_wrong_secret_is_rejected) ... ok
+test_status_event_is_ledgered_regardless_of_arrival_order (test_webhook_adapter.TestWebhookAdapter.test_status_event_is_ledgered_regardless_of_arrival_order) ... ok
+test_unsupported_message_type_degrades_to_unknown_not_dropped (test_webhook_adapter.TestWebhookAdapter.test_unsupported_message_type_degrades_to_unknown_not_dropped) ... ok
+test_valid_webhook_is_accepted_and_ledgered (test_webhook_adapter.TestWebhookAdapter.test_valid_webhook_is_accepted_and_ledgered) ... ok
+
+----------------------------------------------------------------------
+Ran 60 tests in 0.135s
+
+OK
+
+=== Determinism: 3 consecutive clean runs, all OK, 60/60 ===
+Run 1: 60 tests, OK
+Run 2: 60 tests, OK
+Run 3: 60 tests, OK
+
+=== Offline sanity check (socket.create_connection blocked) ===
+offline_run_wasSuccessful: True
+offline_run_tests: 60
+failures: 0
+errors: 0
+(Note: an earlier draft of this check monkeypatched socket.socket itself,
+which broke ssl.py's internal class definition and produced 3 false
+import errors unrelated to any real network call. Fixed to patch
+socket.create_connection instead. See whatsapp_failure_correction_ledger.md.)

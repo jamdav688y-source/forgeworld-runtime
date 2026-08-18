@@ -29,9 +29,15 @@ jobs:
         run: |
           python3 -c "
           import socket
+          # Block only outbound connection attempts (create_connection), not
+          # the socket.socket class itself -- replacing the class breaks
+          # ssl.py's SSLSocket subclassing at import time (TypeError on
+          # class definition), which previously made this step fail for a
+          # reason unrelated to any real network call. Verified locally
+          # before landing this fix; see whatsapp/reports/whatsapp_failure_correction_ledger.md.
           def blocked(*a, **k):
-              raise RuntimeError('network access attempted during test run')
-          socket.socket = blocked
+              raise RuntimeError('network access attempted during test run: socket.create_connection blocked')
+          socket.create_connection = blocked
           import unittest
           loader = unittest.TestLoader()
           suite = loader.discover('whatsapp/tests', pattern='test_*.py')

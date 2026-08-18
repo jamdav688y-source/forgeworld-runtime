@@ -172,11 +172,17 @@ This certification does not create one, per instruction 10/11 (no live external 
    and the business-PII content now share one repo's blast radius — access control, breach scope, and
    backup/retention policy all become shared), or (b) create a new, dedicated repository for the business
    system and treat this PR's `whatsapp/` tree as the seed to migrate there.
-3. **Either way, migration is a plain directory copy, not a rewrite**: every file under `whatsapp/` reads
-   secrets only from environment variables and writes only to paths computed from
-   `Path(__file__).resolve().parent.parent` — there is no repo-root-relative or absolute path baked in
-   anywhere outside that one pattern. Copying the `whatsapp/` directory into a new repo root and running
-   `python3 -m unittest discover -s whatsapp/tests` there is sufficient to confirm portability; no code
+3. **Either way, migration is close to a plain directory copy, with one correction**: every file under
+   `whatsapp/` reads secrets only from environment variables and writes only to paths computed from
+   `Path(__file__).resolve().parent.parent`. **Amendment (found in the later promotion-evidence pass,
+   see `whatsapp_migration_dry_run.md` §3):** the claim that no path is baked in outside that pattern was
+   incomplete — `whatsapp/src/draft.py` reads the sibling repo-root file `memory/memory.log` (outside the
+   `whatsapp/` subtree) for response-drafting context. It degrades gracefully (empty context, no crash) if
+   that file is absent post-migration, but this is a real, silent behavior change that needs a conscious
+   decision at migration time, not an unnoticed one. Copying the `whatsapp/` directory into a new repo root
+   and running `python3 -m unittest discover -s whatsapp/tests` there is sufficient to confirm the tests
+   still pass; it does **not**, by itself, confirm the drafting behavior is unchanged. See the dry-run
+   document for the full, corrected dependency table before any real migration. No code
    changes are anticipated.
 4. Until that decision is made, this PR should be updated to **`KEEP_AS_NONPRODUCTION_REFERENCE_IMPLEMENTATION`**
    status if merged at all: merge only with an explicit, prominent label (e.g. rename the module's
