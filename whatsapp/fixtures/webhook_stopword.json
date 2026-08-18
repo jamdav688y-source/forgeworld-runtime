@@ -1,0 +1,27 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "0000000000000000",
+      "changes": [
+        {
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": {"display_phone_number": "15550001111", "phone_number_id": "1000000000000001"},
+            "contacts": [{"profile": {"name": "Fixture Contact"}, "wa_id": "15559995555"}],
+            "messages": [
+              {
+                "from": "15559995555",
+                "id": "wamid.FIXTURE_STOPWORD_0001",
+                "timestamp": "1765900500",
+                "type": "text",
+                "text": {"body": "STOP"}
+              }
+            ]
+          },
+          "field": "messages"
+        }
+      ]
+    }
+  ]
+}
