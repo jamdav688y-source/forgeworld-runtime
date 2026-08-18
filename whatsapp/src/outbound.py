@@ -12,7 +12,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 
-from . import authority, consent as consent_mod, ledger, modes
+from . import authority, consent as consent_mod, ledger, modes, normalize
 
 GRAPH_API_VERSION = "v21.0"  # verify against developers.facebook.com before go-live; see governance/01
 CSW_HOURS_DEFAULT = 24
@@ -83,6 +83,25 @@ def send(
     event_id = draft["event_id"]
     action = draft["action"]
     conversation_id = draft["conversation_id"]
+
+    # Idempotency: never re-send an already-delivered draft. Without this, a
+    # duplicate call (double-click, retried script, race between two callers)
+    # would message the customer twice.
+    if ledger.exists_by(ledger.EXECUTION_LEDGER, draft_id=draft_id, state="SAFE_AUTOMATION_EXECUTED"):
+        return _record_terminal(
+            draft_id, event_id, action, "VALIDATED_COMPLETE",
+            "already sent; ignoring duplicate send attempt",
+        )
+
+    # Recipient binding: the phone number a caller supplies to send to must
+    # be the same person the approved draft was written for. Without this
+    # check, nothing stops an approved draft for one contact being delivered
+    # to an arbitrary caller-supplied number.
+    if normalize.hash_phone(to_phone) != contact_id:
+        return _record_terminal(
+            draft_id, event_id, action, "BLOCKED_BY_AUTHORITY",
+            "to_phone does not match the contact_id this draft was approved for",
+        )
 
     matches = ledger.find(ledger.EXECUTION_LEDGER, draft_id=draft_id, state="APPROVED_AWAITING_SEND")
     approval_record = matches[-1] if matches else None

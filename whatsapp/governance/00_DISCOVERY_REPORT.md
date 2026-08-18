@@ -1,7 +1,7 @@
 # Discovery Report — WhatsApp Intelligence Membrane
 
 Date: 2026-08-18
-Author: Claude Code, on behalf of jamdav688y@gmail.com
+Author: Claude Code, on behalf of the repository operator
 
 ## Canonical root
 

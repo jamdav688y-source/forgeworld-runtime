@@ -18,8 +18,21 @@ KNOWN_MEDIA = {"audio", "image", "video", "document", "sticker"}
 KNOWN_OTHER = {"interactive", "location", "contacts"}
 
 
+class ConfigurationError(Exception):
+    pass
+
+
 def hash_phone(phone: str, salt: str = None) -> str:
-    salt = salt if salt is not None else os.environ.get("WHATSAPP_ID_SALT", "forgeworld-dev-salt-change-me")
+    """Pseudonymize a raw phone number. No hardcoded fallback salt: a
+    silent default would ship in this public repo's source, giving zero
+    real protection while looking configured. Missing salt is a loud
+    failure, not a quiet weak default (mission Section 17: do not guess).
+    """
+    salt = salt if salt is not None else os.environ.get("WHATSAPP_ID_SALT")
+    if not salt:
+        raise ConfigurationError(
+            "WHATSAPP_ID_SALT is not set -- refusing to derive a contact_id with no real salt"
+        )
     return hmac.new(salt.encode(), phone.encode(), hashlib.sha256).hexdigest()
 
 

@@ -38,7 +38,7 @@ class TestEndToEndSandbox(WhatsAppTestCase):
         self.assertEqual(premature["state"], "BLOCKED_BY_AUTHORITY")
 
         # 4. APPROVED (human, via CLI-backed workflow)
-        approval_record = approval.approve(d["draft_id"], actor="jamdav688y@gmail.com")
+        approval_record = approval.approve(d["draft_id"], actor="forgeworld-operator")
         self.assertEqual(approval_record["authority_state"], "approved")
 
         # 5. DELIVERED (sandboxed -- no real network call)
@@ -84,7 +84,7 @@ class TestEndToEndSandbox(WhatsAppTestCase):
 
         from whatsapp.src import consent as consent_mod
         consent_mod.record_consent(event["contact_id"], "verified", source="test", can_respond=True)
-        approval.approve(d["draft_id"], actor="jamdav688y@gmail.com")
+        approval.approve(d["draft_id"], actor="forgeworld-operator")
 
         record = outbound_mod.send(d, event["contact_id"], to_phone="15559998888", http_post=lambda *a, **k: {})
         self.assertEqual(record["state"], "BLOCKED_BY_CONFIGURATION")

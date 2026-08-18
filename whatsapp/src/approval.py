@@ -21,11 +21,22 @@ def list_pending() -> list:
     return _pending_drafts()
 
 
+LOCKED_STATES = {"SAFE_AUTOMATION_EXECUTED", "VALIDATED_COMPLETE"}
+
+
 def _decide(draft_id: str, decision_state: str, actor: str, note: str = "", **extra) -> dict:
     matches = ledger.find(ledger.EXECUTION_LEDGER, draft_id=draft_id)
     if not matches:
         raise ValueError(f"no execution ledger entry for draft_id {draft_id}")
     original = matches[-1]
+    if original["state"] in LOCKED_STATES:
+        # A draft that's already been sent or already closed out is not
+        # re-decidable -- prevents "approve" landing after "sent" or after
+        # "not an opportunity" from silently reopening it.
+        raise ValueError(
+            f"draft_id {draft_id} is already in terminal state {original['state']!r}; "
+            "no further decisions are permitted"
+        )
     record = {
         "trace_id": original.get("trace_id"),
         "draft_id": draft_id,

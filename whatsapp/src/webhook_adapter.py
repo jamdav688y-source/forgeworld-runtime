@@ -10,7 +10,6 @@ import hmac
 import json
 import os
 import time
-import traceback
 import uuid
 
 from . import ledger, normalize
@@ -85,11 +84,13 @@ def process_webhook_payload(raw_body: bytes, signature_header: str) -> dict:
     try:
         raw_items = list(normalize.iter_raw_items(payload))
     except Exception as e:
+        # Only the exception's type+message is kept -- not a full traceback
+        # or the payload itself -- so a malformed field can't leak message
+        # content into the durable, potentially-shared evidence ledger.
         record = {
             "trace_id": trace_id,
             "state": "REVISION_REQUIRED",
-            "reason": f"envelope walk failed: {e}",
-            "traceback": traceback.format_exc(limit=5),
+            "reason": f"envelope walk failed: {type(e).__name__}",
             "raw_payload_hash": raw_payload_hash,
             "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
@@ -108,12 +109,16 @@ def process_webhook_payload(raw_body: bytes, signature_header: str) -> dict:
                     raw_item, metadata, raw_payload_hash, webhook_verified, trace_id
                 )
         except Exception as e:
-            # Isolate this item's failure -- do not let it block the rest of the batch.
-            failed.append({"raw_id": raw_item.get("id"), "error": str(e)})
+            # Isolate this item's failure -- do not let it block the rest of
+            # the batch. Only the exception type is kept: some exception
+            # messages (e.g. int() parse errors) embed the raw field value,
+            # which may be attacker- or customer-supplied content that must
+            # not land in the durable evidence ledger.
+            failed.append({"raw_id": raw_item.get("id"), "error_type": type(e).__name__})
             ledger.append(ledger.EXECUTION_LEDGER, {
                 "trace_id": trace_id,
                 "state": "REVISION_REQUIRED",
-                "reason": f"normalization failed for {kind} id={raw_item.get('id')}: {e}",
+                "reason": f"normalization failed for {kind} id={raw_item.get('id')}: {type(e).__name__}",
                 "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             })
             continue
@@ -125,11 +130,11 @@ def process_webhook_payload(raw_body: bytes, signature_header: str) -> dict:
             ledger.append(ledger.CONVERSATION_LEDGER, event)
             accepted.append(event)
         except Exception as e:
-            failed.append({"event_id": event.get("event_id"), "error": str(e)})
+            failed.append({"event_id": event.get("event_id"), "error_type": type(e).__name__})
             ledger.append(ledger.EXECUTION_LEDGER, {
                 "trace_id": trace_id,
                 "state": "REVISION_REQUIRED",
-                "reason": f"ledger write failed for event {event.get('event_id')}: {e}",
+                "reason": f"ledger write failed for event {event.get('event_id')}: {type(e).__name__}",
                 "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             })
             continue  # one bad event must not block the next

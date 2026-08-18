@@ -2,11 +2,18 @@ import time
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from whatsapp.src import approval, classify, consent, draft as draft_mod, ledger, modes, outbound, schema
+from whatsapp.src import approval, classify, consent, draft as draft_mod, ledger, modes, normalize, outbound, schema
 from whatsapp.tests.base import WhatsAppTestCase
 
+TEST_PHONE = "15559998888"
 
-def _make_inbound_event(contact_id="contact-abc", conversation_id="conv-abc", occurred_at=None):
+
+def _make_inbound_event(contact_id=None, conversation_id="conv-abc", occurred_at=None):
+    # contact_id must be derived the same way normalize.py derives it from a
+    # real inbound message, so outbound.send()'s recipient-binding check
+    # (hash_phone(to_phone) == contact_id) passes for these tests, exactly as
+    # it would for a real webhook-sourced event.
+    contact_id = contact_id or normalize.hash_phone(TEST_PHONE)
     now = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     event = schema.new_event(
         event_id=str(uuid.uuid4()),

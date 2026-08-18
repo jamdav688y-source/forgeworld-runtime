@@ -10,8 +10,13 @@ credentials exist yet. `OUTBOUND` defaults to `DRAFT_ONLY` and fails closed
 (`BLOCKED_BY_CONFIGURATION`) without credentials. See `reports/claims_integrity_report.md` for exactly
 what is and isn't true about this increment.
 
+**Pre-merge certification: `MOVE_TO_CANONICAL_BUSINESS_REPOSITORY`.** This repo's own doctrine
+self-declares as a personal RPG/productivity system, not a business system of record — see
+`reports/pre_merge_certification.md` before connecting any real credentials or merging this to `main`.
+
 ## Start here
 
+- `reports/pre_merge_certification.md` — pre-merge architectural + security certification, terminal recommendation
 - `governance/00_DISCOVERY_REPORT.md` — what exists, what was built, why
 - `governance/01_PLATFORM_POLICY_EVIDENCE.md` — live-verified Meta platform rules (dated 2026-08-18,
   re-verify before go-live)
