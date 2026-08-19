@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://forgeworld.local/schemas/approval.v1.schema.json",
+  "title": "ApprovalRequest",
+  "description": "Matches governance.approval.ApprovalRequest.to_dict(). One row is written per state transition (append-only, matching the capabilities/history.jsonl and router/decisions.jsonl convention already used in this repository) -- the current state of an approval is the latest row for a given approval_id, not a single mutable record.",
+  "type": "object",
+  "required": ["approval_id", "requested_by", "capability", "target", "reason", "risk", "proposed_action", "evidence_summary", "status", "created_at"],
+  "additionalProperties": false,
+  "properties": {
+    "approval_id": {
+      "type": "string",
+      "pattern": "^APR-.+$"
+    },
+    "requested_by": {
+      "type": "string",
+      "description": "Actor that requested the approval, e.g. 'agent:claude-code-session'. Never the same actor that may decide it -- see decided_by."
+    },
+    "capability": {
+      "type": "string"
+    },
+    "target": {
+      "type": "object",
+      "description": "Same shape as an AuthorityObject's 'scope' -- what specifically this approval, if granted, would authorize."
+    },
+    "reason": {
+      "type": "string",
+      "description": "Why this approval is being requested."
+    },
+    "risk": {
+      "type": "string",
+      "enum": ["LOW", "MEDIUM", "HIGH"],
+      "description": "Caller-assessed risk tier; informs how urgently a human should review it."
+    },
+    "proposed_action": {
+      "type": "string",
+      "description": "Concrete description of the action that would be taken if approved, e.g. 'git push origin NRM-v0.1-CLASSROOM'."
+    },
+    "evidence_summary": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Snapshot of the AuthorityDecision.evidence that led here, for the human reviewer's context."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["PENDING", "APPROVED", "DENIED", "EXPIRED", "CANCELLED", "EXECUTED"],
+      "description": "See governance.types.ApprovalStatus. EXECUTED is terminal and one-shot: an approval backs exactly one execution (governance/approval.py mark_executed())."
+    },
+    "created_at": {"type": "string", "format": "date-time"},
+    "decided_by": {
+      "type": ["string", "null"],
+      "description": "Must be a human actor id -- governance/approval.py decide_approval() raises PermissionError if decider_kind != 'human'."
+    },
+    "decided_at": {"type": ["string", "null"], "format": "date-time"},
+    "decision_reason": {"type": ["string", "null"]},
+    "expires_at": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "A PENDING request past this timestamp reads as EXPIRED (lazy expiry, computed at read time)."
+    },
+    "executed_at": {"type": ["string", "null"], "format": "date-time"}
+  }
+}

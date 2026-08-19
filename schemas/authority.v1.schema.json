@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://forgeworld.local/schemas/authority.v1.schema.json",
+  "title": "AuthorityObject",
+  "description": "Matches governance.authority.AuthorityPolicy.to_authority_object(). Represents one scoped, attributable authority decision or policy grant -- never a bare boolean. Produced by governance/authority.py; documented in docs/governance/AUTHORITY_MODEL.md.",
+  "type": "object",
+  "required": ["authority_id", "actor_id", "capability", "scope", "decision", "constraints", "granted_by", "evidence_required", "reason", "schema_version"],
+  "additionalProperties": false,
+  "properties": {
+    "authority_id": {
+      "type": "string",
+      "pattern": "^AUTH-.+$",
+      "description": "Unique identifier for this specific (policy, actor) authority object."
+    },
+    "actor_id": {
+      "type": "string",
+      "description": "The actor this decision was evaluated for, e.g. 'agent:claude-code-session' or 'human:jamdav688y'."
+    },
+    "capability": {
+      "type": "string",
+      "description": "The capability being authorized, e.g. 'PUSH_TAG'. Not a claim of reachability -- see capabilities/registry.json for that, a separate concept."
+    },
+    "scope": {
+      "type": "object",
+      "description": "What this decision applies to. 'resource' and 'target' are conventional keys; capability-specific keys (e.g. 'ref_pattern' for git operations) may also appear.",
+      "properties": {
+        "resource": {"type": "string"},
+        "target": {"type": "string"},
+        "ref_pattern": {"type": "string"}
+      }
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["DENIED", "ALLOWED", "ALLOWED_LOCAL", "ALLOWED_BOUNDED", "REQUIRES_APPROVAL", "HUMAN_ONLY", "UNAVAILABLE", "UNKNOWN"],
+      "description": "See governance.types.AuthorityState. UNKNOWN must never be treated as a synonym for ALLOWED by any consumer of this schema."
+    },
+    "constraints": {
+      "type": "object",
+      "description": "Bounds that apply when decision is ALLOWED_BOUNDED. Empty for other decisions. Keys are constraint names (e.g. 'max_amount', 'force_push'); values are the permitted maximum/allow-set."
+    },
+    "granted_by": {
+      "type": "string",
+      "description": "Identifier of the policy or authority that produced this object, e.g. a policy_id from governance/policy_defaults.json."
+    },
+    "valid_from": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "valid_until": {
+      "type": ["string", "null"],
+      "format": "date-time",
+      "description": "If set and in the past, the authority is treated as expired -- evaluate_authority() returns UNKNOWN, not the stale decision."
+    },
+    "evidence_required": {
+      "type": "array",
+      "items": {"type": "string", "enum": ["UNKNOWN", "OBSERVED", "SUPPORTED", "VALIDATED", "INSTITUTIONALIZED"]},
+      "description": "Minimum evidence.EvidenceState this capability's promotion/execution should require, if any."
+    },
+    "reason": {
+      "type": "string",
+      "description": "Human-readable justification. Every AuthorityDecision must be explainable -- this field is why."
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    }
+  }
+}
