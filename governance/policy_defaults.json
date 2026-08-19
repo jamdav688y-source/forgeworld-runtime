@@ -111,6 +111,16 @@
       "constraints": {},
       "reason": "Fixture default. Same blast-radius tier as PROMOTE_RELEASE and PRODUCTION trust boundary; no autonomous path exists in this repository today, so none is created here.",
       "evidence_required": ["VALIDATED"]
+    },
+    {
+      "policy_id": "POLICY-promote-knowledge-v1",
+      "capability": "PROMOTE_KNOWLEDGE",
+      "scope": {"resource": "knowledge_vault", "target": "*"},
+      "trust_boundary": "GOVERNANCE",
+      "decision": "HUMAN_ONLY",
+      "constraints": {},
+      "reason": "Added for FORGEWORLD PERCEPTION GATEWAY PROOF 001: a CapabilityProposal (perception/src/schema.py) may never self-promote into the Knowledge Vault -- 'models may propose relationships but may not validate them' is a mission constraint, and this policy is what makes evaluate_authority() actually deny an agent-actor attempt at PROMOTE_KNOWLEDGE rather than the rule existing only in prose. Same blast-radius posture as PROMOTE_RELEASE: no autonomous path exists.",
+      "evidence_required": ["SUPPORTED"]
     }
   ]
 }

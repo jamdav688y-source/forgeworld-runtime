@@ -4,3 +4,5 @@ __pycache__/
 whatsapp/.env
 whatsapp/.env.*
 whatsapp/ledgers/*.jsonl
+perception/ledgers/*.jsonl
+perception/data/

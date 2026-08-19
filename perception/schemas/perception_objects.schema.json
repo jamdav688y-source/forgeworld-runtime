@@ -1,0 +1,148 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "forgeworld:perception:objects:1.0",
+  "title": "FORGEWORLD Perception Gateway — required objects",
+  "description": "Documentation/interop schema. Actual enforcement is perception/src/schema.py's hand-rolled validate_*() functions, matching whatsapp/src/schema.py's own stated reasoning: no jsonschema package is available and the repo has no dependency-management story.",
+  "$defs": {
+    "envelope": {
+      "type": "object",
+      "required": [
+        "id", "schema_version", "created_at", "source_image_id", "source_image_sha256",
+        "extraction_method", "provider", "prompt_version", "raw_response_hash",
+        "confidence", "evidence_references", "validation_status", "human_review_status",
+        "contradiction_state", "temporal_validity"
+      ],
+      "properties": {
+        "id": {"type": "string", "description": "stable ID, e.g. OBS-xxxxxxxxxxxx"},
+        "schema_version": {"type": "string", "const": "1.0"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "source_image_id": {"type": ["string", "null"]},
+        "source_image_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "extraction_method": {"type": "string"},
+        "provider": {"type": ["string", "null"], "description": "the model/provider that produced this object, or null for capture/human-authored objects"},
+        "prompt_version": {"type": ["string", "null"]},
+        "raw_response_hash": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "confidence": {"type": ["number", "null"], "minimum": 0.0, "maximum": 1.0},
+        "evidence_references": {"type": "array", "items": {"type": "string"}},
+        "validation_status": {"type": "string"},
+        "human_review_status": {"type": "string", "enum": ["not_required", "pending", "reviewed"]},
+        "contradiction_state": {"type": "string", "enum": ["none", "active", "resolved"]},
+        "temporal_validity": {
+          "type": "object",
+          "required": ["valid_from", "valid_until"],
+          "properties": {
+            "valid_from": {"type": ["string", "null"], "format": "date-time"},
+            "valid_until": {"type": ["string", "null"], "format": "date-time"}
+          }
+        }
+      }
+    },
+
+    "VisualObservation": {
+      "allOf": [{"$ref": "#/$defs/envelope"}, {
+        "type": "object",
+        "required": ["width", "height", "file_size_bytes", "mime_type", "capture_source"],
+        "properties": {
+          "validation_status": {"enum": ["unvalidated", "hash_verified"]},
+          "width": {"type": "integer"},
+          "height": {"type": "integer"},
+          "file_size_bytes": {"type": "integer"},
+          "mime_type": {"type": "string"},
+          "capture_source": {"type": "string"},
+          "device_note": {"type": "string"}
+        }
+      }]
+    },
+
+    "ExtractedSignal": {
+      "allOf": [{"$ref": "#/$defs/envelope"}, {
+        "type": "object",
+        "required": ["signal_type", "value"],
+        "properties": {
+          "validation_status": {"enum": ["unvalidated", "extracted"]},
+          "signal_type": {"enum": ["ocr_text", "visual_fingerprint", "entity"]},
+          "value": {}
+        }
+      }]
+    },
+
+    "CandidateSource": {
+      "allOf": [{"$ref": "#/$defs/envelope"}, {
+        "type": "object",
+        "required": ["url", "title", "snippet", "retrieved_at"],
+        "properties": {
+          "validation_status": {"enum": ["CANDIDATE_MATCH", "corroborated", "rejected"], "description": "MUST start as CANDIDATE_MATCH — acceptance test requirement"},
+          "url": {"type": "string"},
+          "title": {"type": "string"},
+          "snippet": {"type": "string"},
+          "retrieved_at": {"type": "string", "format": "date-time"}
+        }
+      }]
+    },
+
+    "EvidenceRelationship": {
+      "allOf": [{"$ref": "#/$defs/envelope"}, {
+        "type": "object",
+        "required": ["relationship_type", "independence_basis"],
+        "properties": {
+          "validation_status": {"enum": ["proposed", "validated", "rejected"]},
+          "relationship_type": {"enum": ["corroborates", "contradicts", "near_duplicate", "unrelated"]},
+          "independence_basis": {"type": "string"}
+        }
+      }]
+    },
+
+    "ExtractedClaim": {
+      "allOf": [{"$ref": "#/$defs/envelope"}, {
+        "type": "object",
+        "required": ["claim_text", "claim_subject", "claim_predicate"],
+        "properties": {
+          "validation_status": {"enum": ["unverified-claim", "corroborated-claim", "contradicted-claim"], "description": "reuses whatsapp/src/schema.py's EVIDENCE_CLASSES vocabulary"},
+          "claim_text": {"type": "string"},
+          "claim_subject": {"type": "string"},
+          "claim_predicate": {"type": "string"}
+        }
+      }]
+    },
+
+    "ContradictionRecord": {
+      "allOf": [{"$ref": "#/$defs/envelope"}, {
+        "type": "object",
+        "required": ["description"],
+        "properties": {
+          "validation_status": {"enum": ["unresolved", "resolved"]},
+          "contradiction_state": {"enum": ["active", "resolved"], "description": "never 'none' for this object type -- a ContradictionRecord that isn't active or resolved shouldn't exist"},
+          "description": {"type": "string"}
+        }
+      }]
+    },
+
+    "CapabilityProposal": {
+      "allOf": [{"$ref": "#/$defs/envelope"}, {
+        "type": "object",
+        "required": ["proposed_capability_text", "rationale"],
+        "properties": {
+          "validation_status": {"const": "PROPOSED", "description": "models may propose relationships but may not validate them — this field can never hold any other value in this schema"},
+          "proposed_capability_text": {"type": "string"},
+          "rationale": {"type": "string"}
+        }
+      }]
+    },
+
+    "PromotionDecision": {
+      "allOf": [{"$ref": "#/$defs/envelope"}, {
+        "type": "object",
+        "required": ["decision", "decided_by", "reason", "authority_decision", "evidence_state"],
+        "properties": {
+          "provider": {"const": null, "description": "only a human may author a PromotionDecision"},
+          "human_review_status": {"const": "reviewed"},
+          "decision": {"enum": ["PROMOTED", "REJECTED", "DEFERRED"]},
+          "decided_by": {"type": "string"},
+          "reason": {"type": "string"},
+          "authority_decision": {"type": "string", "description": "the governance.authority.AuthorityState value this decision was checked against"},
+          "evidence_state": {"type": "string", "description": "the governance.evidence.EvidenceState value this decision was checked against"}
+        }
+      }]
+    }
+  }
+}

@@ -1,0 +1,1111 @@
+{
+  "execution_ledger_record_count": 61,
+  "execution_ledger_stage_counts": {
+    "CANDIDATE_RETRIEVAL": 13,
+    "CAPABILITY_PROPOSAL": 4,
+    "CAPTURE": 5,
+    "CLAIM_EXTRACTION": 4,
+    "FINGERPRINT": 8,
+    "HASH": 10,
+    "HUMAN_PROMOTION_GATE": 4,
+    "KNOWLEDGE_VAULT": 1,
+    "OCR": 4,
+    "SOURCE_CORROBORATION": 8
+  },
+  "knowledge_vault_entries": [
+    {
+      "promotion_decision": {
+        "authority_decision": "HUMAN_ONLY",
+        "confidence": null,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:43Z",
+        "decided_by": "human:jamdav688y@gmail.com",
+        "decision": "PROMOTED",
+        "evidence_references": [
+          "PRP-909c8b39b6da"
+        ],
+        "evidence_state": "SUPPORTED",
+        "extraction_method": "human_promotion_decision",
+        "human_review_status": "reviewed",
+        "id": "PRO-7eb8c37c92ed",
+        "prompt_version": null,
+        "provider": null,
+        "raw_response_hash": null,
+        "reason": "Promotion allowed: independent authority and evidence thresholds both satisfied.",
+        "schema_version": "1.0",
+        "source_image_id": "IMG-bec6aac880d86669",
+        "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:43Z",
+          "valid_until": null
+        },
+        "validation_status": "PROMOTED"
+      },
+      "proposal": {
+        "confidence": 0.8,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:43Z",
+        "evidence_references": [
+          "CLM-9c1d7a182ab0"
+        ],
+        "extraction_method": "capability_proposal",
+        "human_review_status": "pending",
+        "id": "PRP-909c8b39b6da",
+        "prompt_version": null,
+        "proposed_capability_text": "Perception Gateway observation: WhatsApp is corroborated by independent sources (2 distinct, independent source domains: ['en.wikipedia.org', 'www.whatsapp.com'])",
+        "provider": "perception.proposal",
+        "rationale": "Derived from ExtractedClaim CLM-9c1d7a182ab0 (validation_status=corroborated-claim) via EvidenceRelationship REL-fe0776e69895 (corroborates); independence_basis=\"2 distinct, independent source domains: ['en.wikipedia.org', 'www.whatsapp.com']\".",
+        "raw_response_hash": null,
+        "schema_version": "1.0",
+        "source_image_id": "IMG-bec6aac880d86669",
+        "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:43Z",
+          "valid_until": null
+        },
+        "validation_status": "PROPOSED"
+      },
+      "written_at": "2026-08-19T08:04:43Z"
+    }
+  ],
+  "knowledge_vault_entry_count": 1,
+  "near_duplicate_relationship_1554_vs_1555": {
+    "confidence": 1.0,
+    "contradiction_state": "none",
+    "created_at": "2026-08-19T08:04:43Z",
+    "evidence_references": [
+      "SIG-4469fcb10911",
+      "SIG-1cfb0465f3c9"
+    ],
+    "extraction_method": "corroboration_analysis",
+    "human_review_status": "not_required",
+    "id": "REL-7cfb0a03977a",
+    "independence_basis": "distinct source_image_sha256 (bec6aac880d8... vs 0b843804c78b...) -- NOT declared identical; perceptual fingerprint hamming distance=0 <= threshold=8 justifies association as near-duplicate, nothing stronger",
+    "prompt_version": null,
+    "provider": "perception.corroboration.fingerprint_comparison",
+    "raw_response_hash": null,
+    "relationship_type": "near_duplicate",
+    "schema_version": "1.0",
+    "source_image_id": "IMG-bec6aac880d86669",
+    "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+    "temporal_validity": {
+      "valid_from": "2026-08-19T08:04:43Z",
+      "valid_until": null
+    },
+    "validation_status": "proposed"
+  },
+  "not_duplicate_relationship_1554_vs_different": null,
+  "obs_1555": {
+    "capture_source": "proof_run",
+    "confidence": 1.0,
+    "contradiction_state": "none",
+    "created_at": "2026-08-19T08:04:43Z",
+    "device_note": "",
+    "evidence_references": [],
+    "extraction_method": "capture",
+    "file_size_bytes": 195,
+    "height": 64,
+    "human_review_status": "not_required",
+    "id": "OBS-e82b03cd17b5",
+    "mime_type": "image/png",
+    "prompt_version": null,
+    "provider": null,
+    "raw_response_hash": null,
+    "schema_version": "1.0",
+    "source_image_id": "IMG-0b843804c78b69f9",
+    "source_image_sha256": "0b843804c78b69f94bb567e920b594a3bd6ed597e187d9ba42cfbe361de63279",
+    "temporal_validity": {
+      "valid_from": "2026-08-19T08:04:43Z",
+      "valid_until": null
+    },
+    "validation_status": "hash_verified",
+    "width": 64
+  },
+  "obs_different": {
+    "capture_source": "proof_run",
+    "confidence": 1.0,
+    "contradiction_state": "none",
+    "created_at": "2026-08-19T08:04:43Z",
+    "device_note": "",
+    "evidence_references": [],
+    "extraction_method": "capture",
+    "file_size_bytes": 188,
+    "height": 64,
+    "human_review_status": "not_required",
+    "id": "OBS-8e99aa0d4381",
+    "mime_type": "image/png",
+    "prompt_version": null,
+    "provider": null,
+    "raw_response_hash": null,
+    "schema_version": "1.0",
+    "source_image_id": "IMG-304c5014fb567574",
+    "source_image_sha256": "304c5014fb567574817eddb09f3e84ce5f7b42a2015ebc477fdfbd86b9405d05",
+    "temporal_validity": {
+      "valid_from": "2026-08-19T08:04:43Z",
+      "valid_until": null
+    },
+    "validation_status": "hash_verified",
+    "width": 64
+  },
+  "run_1477_real_bonus": {
+    "candidates": [
+      {
+        "confidence": 0.85,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:50Z",
+        "evidence_references": [
+          "SIG-3940bb8901e5"
+        ],
+        "extraction_method": "retrieval",
+        "human_review_status": "not_required",
+        "id": "CND-c3a9e8f14dd5",
+        "prompt_version": null,
+        "provider": "mock:fixture_retrieval",
+        "raw_response_hash": "a0d7194872f51938840066f3fbeb113e1f4a4718057877e311eac5fed04561cb",
+        "retrieved_at": "2026-08-19T08:04:50Z",
+        "schema_version": "1.0",
+        "snippet": "GitHub is a development platform.",
+        "source_image_id": "IMG-24c47a150a90b812",
+        "source_image_sha256": "24c47a150a90b8126d865302fda732a31ab1c466a8342eb68f29538ef2e0cfe6",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:50Z",
+          "valid_until": null
+        },
+        "title": "GitHub: Let's build from here",
+        "url": "https://github.com/about",
+        "validation_status": "CANDIDATE_MATCH"
+      },
+      {
+        "confidence": 0.4,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:50Z",
+        "evidence_references": [
+          "SIG-3940bb8901e5"
+        ],
+        "extraction_method": "retrieval",
+        "human_review_status": "not_required",
+        "id": "CND-8e955bfab2d2",
+        "prompt_version": null,
+        "provider": "mock:fixture_retrieval",
+        "raw_response_hash": "99e953a998d0e4adebc17750acdb9f82c53112747d60e300eea8ad002b7a4593",
+        "retrieved_at": "2026-08-19T08:04:50Z",
+        "schema_version": "1.0",
+        "snippet": "Some claims are disputed and debunked by the vendor.",
+        "source_image_id": "IMG-24c47a150a90b812",
+        "source_image_sha256": "24c47a150a90b8126d865302fda732a31ab1c466a8342eb68f29538ef2e0cfe6",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:50Z",
+          "valid_until": null
+        },
+        "title": "GitHub outage report",
+        "url": "https://status.example.com/github-outage",
+        "validation_status": "CANDIDATE_MATCH"
+      },
+      {
+        "confidence": 0.5,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:50Z",
+        "evidence_references": [
+          "SIG-750b4e3b5485"
+        ],
+        "extraction_method": "retrieval",
+        "human_review_status": "not_required",
+        "id": "CND-c45eb8d90828",
+        "prompt_version": null,
+        "provider": "mock:fixture_retrieval",
+        "raw_response_hash": "ae7aac871da68d4ea82e79a73ce4f090e6e6064e631087a9f67f6c35935a7cf9",
+        "retrieved_at": "2026-08-19T08:04:50Z",
+        "schema_version": "1.0",
+        "snippet": "Internal ForgeWorld project page.",
+        "source_image_id": "IMG-24c47a150a90b812",
+        "source_image_sha256": "24c47a150a90b8126d865302fda732a31ab1c466a8342eb68f29538ef2e0cfe6",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:50Z",
+          "valid_until": null
+        },
+        "title": "Pocket Cortex",
+        "url": "https://forgeworld.example/pocket-cortex",
+        "validation_status": "CANDIDATE_MATCH"
+      }
+    ],
+    "claims": [
+      {
+        "claim_predicate": "is disputed across independent sources",
+        "claim_subject": "GitHub",
+        "claim_text": "GitHub is disputed across independent sources (1 source(s) assert, 1 source(s) dispute, across 2 distinct domains: ['github.com', 'status.example.com'])",
+        "confidence": 0.8,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:50Z",
+        "evidence_references": [
+          "REL-19eea8bdd520"
+        ],
+        "extraction_method": "claim_extraction",
+        "human_review_status": "not_required",
+        "id": "CLM-bcf3d342cc58",
+        "prompt_version": null,
+        "provider": "perception.claims",
+        "raw_response_hash": null,
+        "schema_version": "1.0",
+        "source_image_id": "IMG-24c47a150a90b812",
+        "source_image_sha256": "24c47a150a90b8126d865302fda732a31ab1c466a8342eb68f29538ef2e0cfe6",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:50Z",
+          "valid_until": null
+        },
+        "validation_status": "contradicted-claim"
+      },
+      {
+        "claim_predicate": "has only single-source or non-independent support",
+        "claim_subject": "Pocket Cortex",
+        "claim_text": "Pocket Cortex has only single-source or non-independent support (only 1 distinct domain among 1 candidate(s) -- not independent)",
+        "confidence": 0.3,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:50Z",
+        "evidence_references": [
+          "REL-3fdb8c2f2997"
+        ],
+        "extraction_method": "claim_extraction",
+        "human_review_status": "not_required",
+        "id": "CLM-1f046b8dd70b",
+        "prompt_version": null,
+        "provider": "perception.claims",
+        "raw_response_hash": null,
+        "schema_version": "1.0",
+        "source_image_id": "IMG-24c47a150a90b812",
+        "source_image_sha256": "24c47a150a90b8126d865302fda732a31ab1c466a8342eb68f29538ef2e0cfe6",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:50Z",
+          "valid_until": null
+        },
+        "validation_status": "unverified-claim"
+      }
+    ],
+    "contradictions": [
+      {
+        "confidence": 1.0,
+        "contradiction_state": "active",
+        "created_at": "2026-08-19T08:04:50Z",
+        "description": "Candidates for query signal SIG-3940bb8901e5 disagree: ['https://github.com/about'] assert vs. ['https://status.example.com/github-outage'] dispute.",
+        "evidence_references": [
+          "CND-c3a9e8f14dd5",
+          "CND-8e955bfab2d2"
+        ],
+        "extraction_method": "contradiction_detection",
+        "human_review_status": "pending",
+        "id": "CTR-9c091804c99c",
+        "prompt_version": null,
+        "provider": "perception.corroboration",
+        "raw_response_hash": null,
+        "schema_version": "1.0",
+        "source_image_id": "IMG-24c47a150a90b812",
+        "source_image_sha256": "24c47a150a90b8126d865302fda732a31ab1c466a8342eb68f29538ef2e0cfe6",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:50Z",
+          "valid_until": null
+        },
+        "validation_status": "unresolved"
+      }
+    ],
+    "observation": {
+      "capture_source": "termux_manual_upload_real",
+      "confidence": 1.0,
+      "contradiction_state": "none",
+      "created_at": "2026-08-19T08:04:48Z",
+      "device_note": "bonus real Android screenshot genuinely present in this environment (not 1554/1555)",
+      "evidence_references": [],
+      "extraction_method": "capture",
+      "file_size_bytes": 399372,
+      "height": 2388,
+      "human_review_status": "not_required",
+      "id": "OBS-eb16ba7226ed",
+      "mime_type": "image/png",
+      "prompt_version": null,
+      "provider": null,
+      "raw_response_hash": null,
+      "schema_version": "1.0",
+      "source_image_id": "IMG-24c47a150a90b812",
+      "source_image_sha256": "24c47a150a90b8126d865302fda732a31ab1c466a8342eb68f29538ef2e0cfe6",
+      "temporal_validity": {
+        "valid_from": "2026-08-19T08:04:48Z",
+        "valid_until": null
+      },
+      "validation_status": "hash_verified",
+      "width": 1080
+    },
+    "promotion_decisions": [
+      {
+        "authority_decision": "NOT_CHECKED",
+        "confidence": null,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:50Z",
+        "decided_by": "human:jamdav688y@gmail.com",
+        "decision": "DEFERRED",
+        "evidence_references": [
+          "PRP-bbe661178aee"
+        ],
+        "evidence_state": "NOT_CHECKED",
+        "extraction_method": "human_promotion_decision",
+        "human_review_status": "reviewed",
+        "id": "PRO-cbafab135709",
+        "prompt_version": null,
+        "provider": null,
+        "raw_response_hash": null,
+        "reason": "Deferred: 1 linked claim(s) are contradicted-claim (unresolved contradiction) -- promotion blocked before authority/evidence were even checked.",
+        "schema_version": "1.0",
+        "source_image_id": "IMG-24c47a150a90b812",
+        "source_image_sha256": "24c47a150a90b8126d865302fda732a31ab1c466a8342eb68f29538ef2e0cfe6",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:50Z",
+          "valid_until": null
+        },
+        "validation_status": "DEFERRED"
+      },
+      {
+        "authority_decision": "HUMAN_ONLY",
+        "confidence": null,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:50Z",
+        "decided_by": "human:jamdav688y@gmail.com",
+        "decision": "DEFERRED",
+        "evidence_references": [
+          "PRP-cd157c8a1d8e"
+        ],
+        "evidence_state": "OBSERVED",
+        "extraction_method": "human_promotion_decision",
+        "human_review_status": "reviewed",
+        "id": "PRO-2ca6b8da4f4e",
+        "prompt_version": null,
+        "provider": null,
+        "raw_response_hash": null,
+        "reason": "Promotion denied: evidence=OBSERVED < required=SUPPORTED",
+        "schema_version": "1.0",
+        "source_image_id": "IMG-24c47a150a90b812",
+        "source_image_sha256": "24c47a150a90b8126d865302fda732a31ab1c466a8342eb68f29538ef2e0cfe6",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:50Z",
+          "valid_until": null
+        },
+        "validation_status": "DEFERRED"
+      }
+    ],
+    "proposals": [
+      {
+        "confidence": 0.8,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:50Z",
+        "evidence_references": [
+          "CLM-bcf3d342cc58"
+        ],
+        "extraction_method": "capability_proposal",
+        "human_review_status": "pending",
+        "id": "PRP-bbe661178aee",
+        "prompt_version": null,
+        "proposed_capability_text": "Perception Gateway observation: GitHub is disputed across independent sources (1 source(s) assert, 1 source(s) dispute, across 2 distinct domains: ['github.com', 'status.example.com'])",
+        "provider": "perception.proposal",
+        "rationale": "Derived from ExtractedClaim CLM-bcf3d342cc58 (validation_status=contradicted-claim) via EvidenceRelationship REL-19eea8bdd520 (contradicts); independence_basis=\"1 source(s) assert, 1 source(s) dispute, across 2 distinct domains: ['github.com', 'status.example.com']\".",
+        "raw_response_hash": null,
+        "schema_version": "1.0",
+        "source_image_id": "IMG-24c47a150a90b812",
+        "source_image_sha256": "24c47a150a90b8126d865302fda732a31ab1c466a8342eb68f29538ef2e0cfe6",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:50Z",
+          "valid_until": null
+        },
+        "validation_status": "PROPOSED"
+      },
+      {
+        "confidence": 0.3,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:50Z",
+        "evidence_references": [
+          "CLM-1f046b8dd70b"
+        ],
+        "extraction_method": "capability_proposal",
+        "human_review_status": "pending",
+        "id": "PRP-cd157c8a1d8e",
+        "prompt_version": null,
+        "proposed_capability_text": "Perception Gateway observation: Pocket Cortex has only single-source or non-independent support (only 1 distinct domain among 1 candidate(s) -- not independent)",
+        "provider": "perception.proposal",
+        "rationale": "Derived from ExtractedClaim CLM-1f046b8dd70b (validation_status=unverified-claim) via EvidenceRelationship REL-3fdb8c2f2997 (unrelated); independence_basis='only 1 distinct domain among 1 candidate(s) -- not independent'.",
+        "raw_response_hash": null,
+        "schema_version": "1.0",
+        "source_image_id": "IMG-24c47a150a90b812",
+        "source_image_sha256": "24c47a150a90b8126d865302fda732a31ab1c466a8342eb68f29538ef2e0cfe6",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:50Z",
+          "valid_until": null
+        },
+        "validation_status": "PROPOSED"
+      }
+    ],
+    "relationships": [
+      {
+        "confidence": 0.8,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:50Z",
+        "evidence_references": [
+          "CND-c3a9e8f14dd5",
+          "CND-8e955bfab2d2"
+        ],
+        "extraction_method": "corroboration_analysis",
+        "human_review_status": "not_required",
+        "id": "REL-19eea8bdd520",
+        "independence_basis": "1 source(s) assert, 1 source(s) dispute, across 2 distinct domains: ['github.com', 'status.example.com']",
+        "prompt_version": null,
+        "provider": "perception.corroboration",
+        "raw_response_hash": null,
+        "relationship_type": "contradicts",
+        "schema_version": "1.0",
+        "source_image_id": "IMG-24c47a150a90b812",
+        "source_image_sha256": "24c47a150a90b8126d865302fda732a31ab1c466a8342eb68f29538ef2e0cfe6",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:50Z",
+          "valid_until": null
+        },
+        "validation_status": "proposed"
+      },
+      {
+        "confidence": 0.3,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:50Z",
+        "evidence_references": [
+          "CND-c45eb8d90828"
+        ],
+        "extraction_method": "corroboration_analysis",
+        "human_review_status": "not_required",
+        "id": "REL-3fdb8c2f2997",
+        "independence_basis": "only 1 distinct domain among 1 candidate(s) -- not independent",
+        "prompt_version": null,
+        "provider": "perception.corroboration",
+        "raw_response_hash": null,
+        "relationship_type": "unrelated",
+        "schema_version": "1.0",
+        "source_image_id": "IMG-24c47a150a90b812",
+        "source_image_sha256": "24c47a150a90b8126d865302fda732a31ab1c466a8342eb68f29538ef2e0cfe6",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:50Z",
+          "valid_until": null
+        },
+        "validation_status": "proposed"
+      }
+    ],
+    "signals": {
+      "entities": [
+        {
+          "confidence": 1.0,
+          "contradiction_state": "none",
+          "created_at": "2026-08-19T08:04:50Z",
+          "evidence_references": [
+            "OBS-eb16ba7226ed",
+            "SIG-595a02c16396"
+          ],
+          "extraction_method": "keyword_match",
+          "human_review_status": "not_required",
+          "id": "SIG-3940bb8901e5",
+          "prompt_version": null,
+          "provider": null,
+          "raw_response_hash": null,
+          "schema_version": "1.0",
+          "signal_type": "entity",
+          "source_image_id": "IMG-24c47a150a90b812",
+          "source_image_sha256": "24c47a150a90b8126d865302fda732a31ab1c466a8342eb68f29538ef2e0cfe6",
+          "temporal_validity": {
+            "valid_from": "2026-08-19T08:04:50Z",
+            "valid_until": null
+          },
+          "validation_status": "extracted",
+          "value": {
+            "entity_type": "platform_name",
+            "text": "GitHub"
+          }
+        },
+        {
+          "confidence": 1.0,
+          "contradiction_state": "none",
+          "created_at": "2026-08-19T08:04:50Z",
+          "evidence_references": [
+            "OBS-eb16ba7226ed",
+            "SIG-595a02c16396"
+          ],
+          "extraction_method": "keyword_match",
+          "human_review_status": "not_required",
+          "id": "SIG-750b4e3b5485",
+          "prompt_version": null,
+          "provider": null,
+          "raw_response_hash": null,
+          "schema_version": "1.0",
+          "signal_type": "entity",
+          "source_image_id": "IMG-24c47a150a90b812",
+          "source_image_sha256": "24c47a150a90b8126d865302fda732a31ab1c466a8342eb68f29538ef2e0cfe6",
+          "temporal_validity": {
+            "valid_from": "2026-08-19T08:04:50Z",
+            "valid_until": null
+          },
+          "validation_status": "extracted",
+          "value": {
+            "entity_type": "platform_name",
+            "text": "Pocket Cortex"
+          }
+        },
+        {
+          "confidence": 1.0,
+          "contradiction_state": "none",
+          "created_at": "2026-08-19T08:04:50Z",
+          "evidence_references": [
+            "OBS-eb16ba7226ed",
+            "SIG-595a02c16396"
+          ],
+          "extraction_method": "keyword_match",
+          "human_review_status": "not_required",
+          "id": "SIG-b2905c9422f3",
+          "prompt_version": null,
+          "provider": null,
+          "raw_response_hash": null,
+          "schema_version": "1.0",
+          "signal_type": "entity",
+          "source_image_id": "IMG-24c47a150a90b812",
+          "source_image_sha256": "24c47a150a90b8126d865302fda732a31ab1c466a8342eb68f29538ef2e0cfe6",
+          "temporal_validity": {
+            "valid_from": "2026-08-19T08:04:50Z",
+            "valid_until": null
+          },
+          "validation_status": "extracted",
+          "value": {
+            "entity_type": "platform_name",
+            "text": "ForgeWorld"
+          }
+        },
+        {
+          "confidence": 0.6,
+          "contradiction_state": "none",
+          "created_at": "2026-08-19T08:04:50Z",
+          "evidence_references": [
+            "OBS-eb16ba7226ed",
+            "SIG-595a02c16396"
+          ],
+          "extraction_method": "longest_line_heuristic",
+          "human_review_status": "not_required",
+          "id": "SIG-ba1964f3c57c",
+          "prompt_version": null,
+          "provider": null,
+          "raw_response_hash": null,
+          "schema_version": "1.0",
+          "signal_type": "entity",
+          "source_image_id": "IMG-24c47a150a90b812",
+          "source_image_sha256": "24c47a150a90b8126d865302fda732a31ab1c466a8342eb68f29538ef2e0cfe6",
+          "temporal_validity": {
+            "valid_from": "2026-08-19T08:04:50Z",
+            "valid_until": null
+          },
+          "validation_status": "extracted",
+          "value": {
+            "entity_type": "page_title",
+            "text": "GitHub \u2014 forgeworld-runtime"
+          }
+        }
+      ],
+      "fingerprint": {
+        "confidence": 1.0,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:50Z",
+        "evidence_references": [
+          "OBS-eb16ba7226ed"
+        ],
+        "extraction_method": "dhash_8x8",
+        "human_review_status": "not_required",
+        "id": "SIG-b6607280fcf0",
+        "prompt_version": null,
+        "provider": null,
+        "raw_response_hash": null,
+        "schema_version": "1.0",
+        "signal_type": "visual_fingerprint",
+        "source_image_id": "IMG-24c47a150a90b812",
+        "source_image_sha256": "24c47a150a90b8126d865302fda732a31ab1c466a8342eb68f29538ef2e0cfe6",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:50Z",
+          "valid_until": null
+        },
+        "validation_status": "extracted",
+        "value": "000b0f0f17030100"
+      },
+      "ocr": {
+        "confidence": 0.87,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:48Z",
+        "evidence_references": [
+          "OBS-eb16ba7226ed"
+        ],
+        "extraction_method": "ocr",
+        "human_review_status": "not_required",
+        "id": "SIG-595a02c16396",
+        "prompt_version": "fixture-v1",
+        "provider": "mock:fixture_ocr",
+        "raw_response_hash": "a4cbff3229325040877d101b5af0b5d068d13b2d4507b9041f6a1f0149f72a86",
+        "schema_version": "1.0",
+        "signal_type": "ocr_text",
+        "source_image_id": "IMG-24c47a150a90b812",
+        "source_image_sha256": "24c47a150a90b8126d865302fda732a31ab1c466a8342eb68f29538ef2e0cfe6",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:48Z",
+          "valid_until": null
+        },
+        "validation_status": "extracted",
+        "value": "Pocket Cortex\nGitHub \u2014 forgeworld-runtime"
+      }
+    }
+  },
+  "run_1554": {
+    "candidates": [
+      {
+        "confidence": 0.85,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:43Z",
+        "evidence_references": [
+          "SIG-7c1c544281bb"
+        ],
+        "extraction_method": "retrieval",
+        "human_review_status": "not_required",
+        "id": "CND-a1e8320b1f26",
+        "prompt_version": null,
+        "provider": "mock:fixture_retrieval",
+        "raw_response_hash": "c1fe7400acd86d44ca6404a155b74c4fdf4fc9fbc0ae7969e886fd77ae208cff",
+        "retrieved_at": "2026-08-19T08:04:43Z",
+        "schema_version": "1.0",
+        "snippet": "WhatsApp is a messaging platform.",
+        "source_image_id": "IMG-bec6aac880d86669",
+        "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:43Z",
+          "valid_until": null
+        },
+        "title": "WhatsApp - Wikipedia",
+        "url": "https://en.wikipedia.org/wiki/WhatsApp",
+        "validation_status": "CANDIDATE_MATCH"
+      },
+      {
+        "confidence": 0.9,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:43Z",
+        "evidence_references": [
+          "SIG-7c1c544281bb"
+        ],
+        "extraction_method": "retrieval",
+        "human_review_status": "not_required",
+        "id": "CND-038d210071c8",
+        "prompt_version": null,
+        "provider": "mock:fixture_retrieval",
+        "raw_response_hash": "338ed578c1209fe4865d0d0ff09843b20faa3ee7520477728e63f9d91f24927f",
+        "retrieved_at": "2026-08-19T08:04:43Z",
+        "schema_version": "1.0",
+        "snippet": "Official WhatsApp site.",
+        "source_image_id": "IMG-bec6aac880d86669",
+        "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:43Z",
+          "valid_until": null
+        },
+        "title": "WhatsApp.com",
+        "url": "https://www.whatsapp.com/",
+        "validation_status": "CANDIDATE_MATCH"
+      },
+      {
+        "confidence": 0.5,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:43Z",
+        "evidence_references": [
+          "SIG-aa79491d5500"
+        ],
+        "extraction_method": "retrieval",
+        "human_review_status": "not_required",
+        "id": "CND-aae121623d67",
+        "prompt_version": null,
+        "provider": "mock:fixture_retrieval",
+        "raw_response_hash": "ae7aac871da68d4ea82e79a73ce4f090e6e6064e631087a9f67f6c35935a7cf9",
+        "retrieved_at": "2026-08-19T08:04:43Z",
+        "schema_version": "1.0",
+        "snippet": "Internal ForgeWorld project page.",
+        "source_image_id": "IMG-bec6aac880d86669",
+        "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:43Z",
+          "valid_until": null
+        },
+        "title": "Pocket Cortex",
+        "url": "https://forgeworld.example/pocket-cortex",
+        "validation_status": "CANDIDATE_MATCH"
+      }
+    ],
+    "claims": [
+      {
+        "claim_predicate": "is corroborated by independent sources",
+        "claim_subject": "WhatsApp",
+        "claim_text": "WhatsApp is corroborated by independent sources (2 distinct, independent source domains: ['en.wikipedia.org', 'www.whatsapp.com'])",
+        "confidence": 0.8,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:43Z",
+        "evidence_references": [
+          "REL-fe0776e69895"
+        ],
+        "extraction_method": "claim_extraction",
+        "human_review_status": "not_required",
+        "id": "CLM-9c1d7a182ab0",
+        "prompt_version": null,
+        "provider": "perception.claims",
+        "raw_response_hash": null,
+        "schema_version": "1.0",
+        "source_image_id": "IMG-bec6aac880d86669",
+        "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:43Z",
+          "valid_until": null
+        },
+        "validation_status": "corroborated-claim"
+      },
+      {
+        "claim_predicate": "has only single-source or non-independent support",
+        "claim_subject": "Pocket Cortex",
+        "claim_text": "Pocket Cortex has only single-source or non-independent support (only 1 distinct domain among 1 candidate(s) -- not independent)",
+        "confidence": 0.3,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:43Z",
+        "evidence_references": [
+          "REL-9e5348dcabee"
+        ],
+        "extraction_method": "claim_extraction",
+        "human_review_status": "not_required",
+        "id": "CLM-88427a0e6dc8",
+        "prompt_version": null,
+        "provider": "perception.claims",
+        "raw_response_hash": null,
+        "schema_version": "1.0",
+        "source_image_id": "IMG-bec6aac880d86669",
+        "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:43Z",
+          "valid_until": null
+        },
+        "validation_status": "unverified-claim"
+      }
+    ],
+    "contradictions": [],
+    "observation": {
+      "capture_source": "termux_manual_upload_synthetic",
+      "confidence": 1.0,
+      "contradiction_state": "none",
+      "created_at": "2026-08-19T08:04:43Z",
+      "device_note": "synthetic fixture (1554.png/1555.png not present in this environment)",
+      "evidence_references": [],
+      "extraction_method": "capture",
+      "file_size_bytes": 190,
+      "height": 64,
+      "human_review_status": "not_required",
+      "id": "OBS-4b64bc57057e",
+      "mime_type": "image/png",
+      "prompt_version": null,
+      "provider": null,
+      "raw_response_hash": null,
+      "schema_version": "1.0",
+      "source_image_id": "IMG-bec6aac880d86669",
+      "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+      "temporal_validity": {
+        "valid_from": "2026-08-19T08:04:43Z",
+        "valid_until": null
+      },
+      "validation_status": "hash_verified",
+      "width": 64
+    },
+    "promotion_decisions": [
+      {
+        "authority_decision": "HUMAN_ONLY",
+        "confidence": null,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:43Z",
+        "decided_by": "human:jamdav688y@gmail.com",
+        "decision": "PROMOTED",
+        "evidence_references": [
+          "PRP-909c8b39b6da"
+        ],
+        "evidence_state": "SUPPORTED",
+        "extraction_method": "human_promotion_decision",
+        "human_review_status": "reviewed",
+        "id": "PRO-7eb8c37c92ed",
+        "prompt_version": null,
+        "provider": null,
+        "raw_response_hash": null,
+        "reason": "Promotion allowed: independent authority and evidence thresholds both satisfied.",
+        "schema_version": "1.0",
+        "source_image_id": "IMG-bec6aac880d86669",
+        "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:43Z",
+          "valid_until": null
+        },
+        "validation_status": "PROMOTED"
+      },
+      {
+        "authority_decision": "HUMAN_ONLY",
+        "confidence": null,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:43Z",
+        "decided_by": "human:jamdav688y@gmail.com",
+        "decision": "DEFERRED",
+        "evidence_references": [
+          "PRP-8075e070287a"
+        ],
+        "evidence_state": "OBSERVED",
+        "extraction_method": "human_promotion_decision",
+        "human_review_status": "reviewed",
+        "id": "PRO-b3f6dbf8ad58",
+        "prompt_version": null,
+        "provider": null,
+        "raw_response_hash": null,
+        "reason": "Promotion denied: evidence=OBSERVED < required=SUPPORTED",
+        "schema_version": "1.0",
+        "source_image_id": "IMG-bec6aac880d86669",
+        "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:43Z",
+          "valid_until": null
+        },
+        "validation_status": "DEFERRED"
+      }
+    ],
+    "proposals": [
+      {
+        "confidence": 0.8,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:43Z",
+        "evidence_references": [
+          "CLM-9c1d7a182ab0"
+        ],
+        "extraction_method": "capability_proposal",
+        "human_review_status": "pending",
+        "id": "PRP-909c8b39b6da",
+        "prompt_version": null,
+        "proposed_capability_text": "Perception Gateway observation: WhatsApp is corroborated by independent sources (2 distinct, independent source domains: ['en.wikipedia.org', 'www.whatsapp.com'])",
+        "provider": "perception.proposal",
+        "rationale": "Derived from ExtractedClaim CLM-9c1d7a182ab0 (validation_status=corroborated-claim) via EvidenceRelationship REL-fe0776e69895 (corroborates); independence_basis=\"2 distinct, independent source domains: ['en.wikipedia.org', 'www.whatsapp.com']\".",
+        "raw_response_hash": null,
+        "schema_version": "1.0",
+        "source_image_id": "IMG-bec6aac880d86669",
+        "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:43Z",
+          "valid_until": null
+        },
+        "validation_status": "PROPOSED"
+      },
+      {
+        "confidence": 0.3,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:43Z",
+        "evidence_references": [
+          "CLM-88427a0e6dc8"
+        ],
+        "extraction_method": "capability_proposal",
+        "human_review_status": "pending",
+        "id": "PRP-8075e070287a",
+        "prompt_version": null,
+        "proposed_capability_text": "Perception Gateway observation: Pocket Cortex has only single-source or non-independent support (only 1 distinct domain among 1 candidate(s) -- not independent)",
+        "provider": "perception.proposal",
+        "rationale": "Derived from ExtractedClaim CLM-88427a0e6dc8 (validation_status=unverified-claim) via EvidenceRelationship REL-9e5348dcabee (unrelated); independence_basis='only 1 distinct domain among 1 candidate(s) -- not independent'.",
+        "raw_response_hash": null,
+        "schema_version": "1.0",
+        "source_image_id": "IMG-bec6aac880d86669",
+        "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:43Z",
+          "valid_until": null
+        },
+        "validation_status": "PROPOSED"
+      }
+    ],
+    "relationships": [
+      {
+        "confidence": 0.8,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:43Z",
+        "evidence_references": [
+          "CND-a1e8320b1f26",
+          "CND-038d210071c8"
+        ],
+        "extraction_method": "corroboration_analysis",
+        "human_review_status": "not_required",
+        "id": "REL-fe0776e69895",
+        "independence_basis": "2 distinct, independent source domains: ['en.wikipedia.org', 'www.whatsapp.com']",
+        "prompt_version": null,
+        "provider": "perception.corroboration",
+        "raw_response_hash": null,
+        "relationship_type": "corroborates",
+        "schema_version": "1.0",
+        "source_image_id": "IMG-bec6aac880d86669",
+        "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:43Z",
+          "valid_until": null
+        },
+        "validation_status": "proposed"
+      },
+      {
+        "confidence": 0.3,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:43Z",
+        "evidence_references": [
+          "CND-aae121623d67"
+        ],
+        "extraction_method": "corroboration_analysis",
+        "human_review_status": "not_required",
+        "id": "REL-9e5348dcabee",
+        "independence_basis": "only 1 distinct domain among 1 candidate(s) -- not independent",
+        "prompt_version": null,
+        "provider": "perception.corroboration",
+        "raw_response_hash": null,
+        "relationship_type": "unrelated",
+        "schema_version": "1.0",
+        "source_image_id": "IMG-bec6aac880d86669",
+        "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:43Z",
+          "valid_until": null
+        },
+        "validation_status": "proposed"
+      }
+    ],
+    "signals": {
+      "entities": [
+        {
+          "confidence": 1.0,
+          "contradiction_state": "none",
+          "created_at": "2026-08-19T08:04:43Z",
+          "evidence_references": [
+            "OBS-4b64bc57057e",
+            "SIG-0c2837ec4859"
+          ],
+          "extraction_method": "keyword_match",
+          "human_review_status": "not_required",
+          "id": "SIG-7c1c544281bb",
+          "prompt_version": null,
+          "provider": null,
+          "raw_response_hash": null,
+          "schema_version": "1.0",
+          "signal_type": "entity",
+          "source_image_id": "IMG-bec6aac880d86669",
+          "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+          "temporal_validity": {
+            "valid_from": "2026-08-19T08:04:43Z",
+            "valid_until": null
+          },
+          "validation_status": "extracted",
+          "value": {
+            "entity_type": "platform_name",
+            "text": "WhatsApp"
+          }
+        },
+        {
+          "confidence": 1.0,
+          "contradiction_state": "none",
+          "created_at": "2026-08-19T08:04:43Z",
+          "evidence_references": [
+            "OBS-4b64bc57057e",
+            "SIG-0c2837ec4859"
+          ],
+          "extraction_method": "keyword_match",
+          "human_review_status": "not_required",
+          "id": "SIG-aa79491d5500",
+          "prompt_version": null,
+          "provider": null,
+          "raw_response_hash": null,
+          "schema_version": "1.0",
+          "signal_type": "entity",
+          "source_image_id": "IMG-bec6aac880d86669",
+          "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+          "temporal_validity": {
+            "valid_from": "2026-08-19T08:04:43Z",
+            "valid_until": null
+          },
+          "validation_status": "extracted",
+          "value": {
+            "entity_type": "platform_name",
+            "text": "Pocket Cortex"
+          }
+        },
+        {
+          "confidence": 0.6,
+          "contradiction_state": "none",
+          "created_at": "2026-08-19T08:04:43Z",
+          "evidence_references": [
+            "OBS-4b64bc57057e",
+            "SIG-0c2837ec4859"
+          ],
+          "extraction_method": "longest_line_heuristic",
+          "human_review_status": "not_required",
+          "id": "SIG-cf5d1623edf4",
+          "prompt_version": null,
+          "provider": null,
+          "raw_response_hash": null,
+          "schema_version": "1.0",
+          "signal_type": "entity",
+          "source_image_id": "IMG-bec6aac880d86669",
+          "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+          "temporal_validity": {
+            "valid_from": "2026-08-19T08:04:43Z",
+            "valid_until": null
+          },
+          "validation_status": "extracted",
+          "value": {
+            "entity_type": "page_title",
+            "text": "WhatsApp Intelligence Membrane"
+          }
+        }
+      ],
+      "fingerprint": {
+        "confidence": 1.0,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:43Z",
+        "evidence_references": [
+          "OBS-4b64bc57057e"
+        ],
+        "extraction_method": "dhash_8x8",
+        "human_review_status": "not_required",
+        "id": "SIG-4469fcb10911",
+        "prompt_version": null,
+        "provider": null,
+        "raw_response_hash": null,
+        "schema_version": "1.0",
+        "signal_type": "visual_fingerprint",
+        "source_image_id": "IMG-bec6aac880d86669",
+        "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:43Z",
+          "valid_until": null
+        },
+        "validation_status": "extracted",
+        "value": "0000552a552a552a"
+      },
+      "ocr": {
+        "confidence": 0.92,
+        "contradiction_state": "none",
+        "created_at": "2026-08-19T08:04:43Z",
+        "evidence_references": [
+          "OBS-4b64bc57057e"
+        ],
+        "extraction_method": "ocr",
+        "human_review_status": "not_required",
+        "id": "SIG-0c2837ec4859",
+        "prompt_version": "fixture-v1",
+        "provider": "mock:fixture_ocr",
+        "raw_response_hash": "a7f1efd31a128945fc2e340cc8cf23525cbbc874746b72720696926be7c0ceda",
+        "schema_version": "1.0",
+        "signal_type": "ocr_text",
+        "source_image_id": "IMG-bec6aac880d86669",
+        "source_image_sha256": "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec",
+        "temporal_validity": {
+          "valid_from": "2026-08-19T08:04:43Z",
+          "valid_until": null
+        },
+        "validation_status": "extracted",
+        "value": "Pocket Cortex\nWhatsApp Intelligence Membrane"
+      }
+    }
+  }
+}
