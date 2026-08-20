@@ -14,15 +14,42 @@ Anything else (16-bit, indexed/palette, interlaced) raises a clear
 UnsupportedPNGError rather than silently producing a wrong fingerprint --
 this is a from-scratch decoder sized to PROOF-001, not a general-purpose
 image library, and it should fail loudly outside that scope.
+
+JPEG is NOT supported. This repository has no third-party imaging
+dependency and this decoder does not pretend otherwise -- see
+detect_media_type() below and ingest.py's UNSUPPORTED_MEDIA path: JPEG
+content is detected by magic bytes and rejected with a structured,
+distinctly-labeled error, not silently mis-decoded or mis-labeled.
+
+Hardened against truncated/corrupt input (found during a claims-integrity
+revision pass on PR #5): every stdlib exception a malformed chunk stream
+or a truncated zlib/IDAT payload can raise (struct.error, zlib.error,
+IndexError) is caught here and re-raised as UnsupportedPNGError -- this
+function's documented failure mode -- so a truncated file can never escape
+as an uncaught, undocumented exception past this module's boundary.
 """
 import struct
 import zlib
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+JPEG_SIGNATURE = b"\xff\xd8\xff"
 
 
 class UnsupportedPNGError(Exception):
     pass
+
+
+def detect_media_type(data: bytes) -> str:
+    """Content-based media-type detection -- never trusts a filename
+    extension. Returns a MIME-ish string; 'image/png' only after matching
+    the actual PNG magic bytes, 'image/jpeg' likewise for JPEG's SOI
+    marker, 'application/octet-stream' for anything else. This is the
+    single source of truth ingest.py's mime_type field is derived from."""
+    if data[:8] == PNG_SIGNATURE:
+        return "image/png"
+    if data[:3] == JPEG_SIGNATURE:
+        return "image/jpeg"
+    return "application/octet-stream"
 
 
 def _paeth(a, b, c):
@@ -46,20 +73,25 @@ def decode_png(data: bytes):
     width = height = bit_depth = color_type = interlace = None
     idat = bytearray()
 
-    while pos < len(data):
-        length = struct.unpack(">I", data[pos:pos + 4])[0]
-        ctype = data[pos + 4:pos + 8]
-        chunk_data = data[pos + 8:pos + 8 + length]
-        pos += 8 + length + 4  # skip CRC
+    try:
+        while pos < len(data):
+            length = struct.unpack(">I", data[pos:pos + 4])[0]
+            ctype = data[pos + 4:pos + 8]
+            chunk_data = data[pos + 8:pos + 8 + length]
+            if len(chunk_data) < length:
+                raise UnsupportedPNGError(f"truncated PNG: chunk {ctype!r} declares {length} bytes but only {len(chunk_data)} are present")
+            pos += 8 + length + 4  # skip CRC
 
-        if ctype == b"IHDR":
-            width, height, bit_depth, color_type, _comp, _filt, interlace = struct.unpack(
-                ">IIBBBBB", chunk_data
-            )
-        elif ctype == b"IDAT":
-            idat.extend(chunk_data)
-        elif ctype == b"IEND":
-            break
+            if ctype == b"IHDR":
+                width, height, bit_depth, color_type, _comp, _filt, interlace = struct.unpack(
+                    ">IIBBBBB", chunk_data
+                )
+            elif ctype == b"IDAT":
+                idat.extend(chunk_data)
+            elif ctype == b"IEND":
+                break
+    except struct.error as e:
+        raise UnsupportedPNGError(f"truncated or corrupt PNG chunk structure: {e}") from e
 
     if width is None:
         raise UnsupportedPNGError("no IHDR chunk found")
@@ -71,7 +103,10 @@ def decode_png(data: bytes):
         raise UnsupportedPNGError(f"only grayscale/RGB/RGBA PNGs are supported (got color_type={color_type})")
 
     channels = {0: 1, 2: 3, 6: 4}[color_type]
-    raw = zlib.decompress(bytes(idat))
+    try:
+        raw = zlib.decompress(bytes(idat))
+    except zlib.error as e:
+        raise UnsupportedPNGError(f"truncated or corrupt PNG image data (zlib): {e}") from e
 
     stride = width * channels
     pixels = bytearray(height * stride)
@@ -79,9 +114,13 @@ def decode_png(data: bytes):
     offset = 0
 
     for y in range(height):
+        if offset >= len(raw):
+            raise UnsupportedPNGError(f"truncated PNG pixel data: expected {height} scanlines, ran out after row {y}")
         filter_type = raw[offset]
         offset += 1
         row = bytearray(raw[offset:offset + stride])
+        if len(row) < stride:
+            raise UnsupportedPNGError(f"truncated PNG scanline at row {y}: expected {stride} bytes, got {len(row)}")
         offset += stride
 
         if filter_type == 0:

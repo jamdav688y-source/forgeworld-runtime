@@ -25,12 +25,12 @@ from whatsapp.src import ledger as wa_ledger
 
 from . import schema
 from .common import now_iso, sha256_hex
-from .imaging import UnsupportedPNGError, decode_png
+from .imaging import UnsupportedPNGError, decode_png, detect_media_type
 
 MODULE_ROOT = Path(__file__).resolve().parent.parent
 IMAGE_STORE = MODULE_ROOT / "data" / "images"
 
-_MIME_BY_EXT = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
+_EXT_BY_MEDIA_TYPE = {"image/png": ".png", "image/jpeg": ".jpg"}
 
 
 class IngestError(Exception):
@@ -50,9 +50,17 @@ def ingest_image(source_path, capture_source: str, device_note: str = "") -> dic
     """CAPTURE + HASH. Returns a validated VisualObservation.
 
     `source_path` is read, never written to. Raises IngestError (fail
-    closed) if the file is missing, empty, or not decodable as a supported
-    PNG -- a VisualObservation is never fabricated for bytes we could not
-    actually verify.
+    closed) if the file is missing, empty, not a supported content type, or
+    not decodable as a supported PNG -- a VisualObservation is never
+    fabricated for bytes we could not actually verify.
+
+    mime_type is derived from the file's actual content (imaging.detect_media_type),
+    never from its filename extension -- an extension/content mismatch
+    (e.g. a real PNG named .jpg) previously produced a VisualObservation
+    with a factually wrong mime_type field; found and fixed during a
+    claims-integrity revision pass on PR #5. The filename extension is
+    used only as a hint before hashing (irrelevant to the result) and is
+    otherwise ignored.
     """
     source_path = Path(source_path)
     if not source_path.is_file():
@@ -65,8 +73,36 @@ def ingest_image(source_path, capture_source: str, device_note: str = "") -> dic
     digest = sha256_hex(data)
     _record("CAPTURE", image_sha256=digest, source_path=str(source_path), state="RECEIVED")
 
-    ext = source_path.suffix.lower() or ".png"
-    mime_type = _MIME_BY_EXT.get(ext, "application/octet-stream")
+    detected_media_type = detect_media_type(data)
+    _record(
+        "HASH", image_sha256=digest, state="MEDIA_TYPE_DETECTED",
+        detected_media_type=detected_media_type, filename_extension=source_path.suffix.lower(),
+    )
+
+    if detected_media_type == "image/jpeg":
+        _record(
+            "HASH", image_sha256=digest, state="UNSUPPORTED_MEDIA",
+            detected_media_type=detected_media_type,
+            reason="JPEG content is not decodable by this repository's pure-stdlib, PNG-only decoder; no third-party imaging dependency is used",
+        )
+        raise IngestError(
+            f"{source_path} was detected as JPEG content (by magic bytes, regardless of its "
+            f"{source_path.suffix.lower()!r} extension) -- JPEG is not supported by this governed "
+            f"ingestion pipeline; refusing to ingest rather than mis-decode or mis-label it"
+        )
+    if detected_media_type != "image/png":
+        _record(
+            "HASH", image_sha256=digest, state="UNSUPPORTED_MEDIA",
+            detected_media_type=detected_media_type,
+            reason="content did not match any supported image signature",
+        )
+        raise IngestError(
+            f"{source_path} content was not recognized as a supported image format "
+            f"(detected: {detected_media_type}) -- refusing to ingest"
+        )
+
+    mime_type = detected_media_type  # "image/png", confirmed by content, not asserted by filename
+    ext = _EXT_BY_MEDIA_TYPE[mime_type]
 
     IMAGE_STORE.mkdir(parents=True, exist_ok=True)
     stored_path = IMAGE_STORE / f"{digest}{ext}"

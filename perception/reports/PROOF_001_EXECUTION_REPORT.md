@@ -113,9 +113,19 @@ Knowledge Vault: 1 entry written (PRO-7eb8c37c92ed)
 
 ### Run B — bonus real screenshot (`1477.png`, genuinely present in this environment; not a stand-in for 1554/1555)
 
+**Claims-integrity note, added on revision**: "real screenshot" here means
+the *image bytes* are real (real PNG decoding, real sha256, real
+perceptual fingerprint computed from real pixels) — it does NOT mean any
+OCR engine actually read text off this image. This codebase has no
+text-recognition capability at all (see `perception/src/ocr.py`'s
+`CloudOCRProvider`, documented as an unwired, `NotImplementedError`
+extension point). The OCR text quoted below was hand-typed as a
+`FixtureOCRProvider` fixture value for this run, exactly like Run A's —
+it is not a claim that OCR extracted this text from `1477.png`'s pixels.
+
 ```
 observation: OBS-eb16ba7226ed  sha256=24c47a150a90b812...  1080x2388
-OCR text:    "Pocket Cortex\nGitHub — forgeworld-runtime"
+OCR text:    "Pocket Cortex\nGitHub — forgeworld-runtime"  (fixture-supplied, not machine-read from the image)
 fingerprint: 000b0f0f17030100
 
 entities:    GitHub, Pocket Cortex, ForgeWorld (platform_name),
