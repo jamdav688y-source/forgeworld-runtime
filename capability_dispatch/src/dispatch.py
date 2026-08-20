@@ -24,6 +24,7 @@ candidate from the selected set without recording why.
 import json
 
 from governance.authority import evaluate_authority
+from governance.invariants import evaluate_capability_design_invariants, invariants_permit_execution
 from governance.types import AuthorityState, EvidenceState, EVIDENCE_STATE_ORDER
 from router import mission_router
 
@@ -232,16 +233,55 @@ def evaluate_candidate(candidate: dict, identity_evidence: dict, overlap: dict, 
     result = _classify_disposition(candidate, identity_evidence, overlap, profile, verification_results, envelope)
     components = score_candidate(candidate, identity_evidence, overlap, profile, verification_results, reachability_state)
 
+    verified_dims = {v["dimension"]: v["validation_status"] for v in verification_results}
+    evidence_state = (
+        EvidenceState.SUPPORTED
+        if candidate.get("identity_status") == "VERIFIED"
+        and VERIFICATION_DIMENSIONS_REQUIRED_FOR_PROBE.issubset(
+            {dimension for dimension, status in verified_dims.items() if status == "PASSED"}
+        )
+        else EvidenceState.OBSERVED
+        if identity_evidence
+        else EvidenceState.UNKNOWN
+    )
+    invariant_results = evaluate_capability_design_invariants(
+        capability_available=bool(profile or overlap.get("matched_capability_ids")),
+        disposition=result["disposition"],
+        authority_state=authority_decision.decision,
+        supporting_evidence_state=evidence_state,
+        derived_evidence_state=evidence_state,
+        execution_succeeded=False,
+        promotion_requested=False,
+        promotion_authorized=False,
+        evidence_references=[
+            candidate.get("id"),
+            identity_evidence.get("id"),
+            overlap.get("id"),
+        ],
+    )
+    if result["disposition"] == "SANDBOX_PROBE" and not invariants_permit_execution(invariant_results):
+        result = {
+            "disposition": "BLOCK",
+            "hard_block": gate.hard_block(
+                "INSUFFICIENT_EVIDENCE",
+                "One or more ForgeWorld capability-design invariants were violated or unresolved; "
+                "the proposed sandbox probe fails closed.",
+                gate.CATEGORY_GOVERNANCE_REJECTION,
+            ),
+            "reasoning": "capability-design invariant gate failed",
+        }
+
     _record(
         "DISPATCH_EVALUATION", candidate_id=candidate["id"], disposition=result["disposition"],
         authority_decision=authority_decision.decision.value, component_scores=components,
-        reasoning=result["reasoning"], state="EVALUATED",
+        reasoning=result["reasoning"], invariant_results=invariant_results, state="EVALUATED",
     )
 
     return {
         "candidate": candidate, "disposition": result["disposition"], "hard_block": result["hard_block"],
         "reasoning": result["reasoning"], "component_scores": components,
         "authority_decision": authority_decision.decision.value, "overlap": overlap,
+        "invariant_results": invariant_results,
     }
 
 
