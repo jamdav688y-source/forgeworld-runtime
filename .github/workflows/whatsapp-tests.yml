@@ -8,6 +8,7 @@ on:
       - "router/**"
       - "capabilities/registry.json"
       - "governance/policy_defaults.json"
+      - "governance/invariants.py"
       - ".github/workflows/whatsapp-tests.yml"
   push:
     branches:
@@ -156,6 +157,7 @@ jobs:
           sys.exit(pytest.main([
               'capability_dispatch/tests/test_dispatch_matrix.py',
               'capability_dispatch/tests/test_authoritative_intake.py',
+              'capability_dispatch/tests/test_invariants.py',
               '-q',
           ]))
           "
