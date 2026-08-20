@@ -1,0 +1,25 @@
+name: agent-mesh-tests
+
+on:
+  pull_request:
+    paths:
+      - "agent_mesh/**"
+      - ".github/workflows/agent-mesh-tests.yml"
+
+jobs:
+  governed-session-mesh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run governed message-contract tests
+        run: python3 -m unittest agent_mesh.test_session_mesh -v
+      - name: Verify transport-neutral implementation
+        run: |
+          if grep -rEn "subprocess|socket\.connect|requests\.|urllib\.request|os\.system|exec\(" agent_mesh/ --include="*.py"; then
+            echo "Agent mesh must remain transport-neutral in this proof."
+            exit 1
+          fi
+          echo "No transport or execution calls found."
