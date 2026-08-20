@@ -25,10 +25,30 @@ git branch -D feature/fw-cap-dispatch-004   # local branch only
 No data migration, no service restart, no credential revocation, and no
 third-party cleanup is required, because none of those things happened.
 
-## If a real FW-CAP-DISPATCH-004.json is later ingested for real (not this mission)
+## Update (2026-08-20 revision): the real artifact has now been ingested
 
-A future session that actually runs `ingest.ingest_candidate_packet()`
-against a real artifact (not this mission's synthetic fixture) will write:
+The authoritative `FW-CAP-DISPATCH-004.json`/`.md` were committed by the
+repository owner (`611b41ef8`) under `capability_dispatch/intake/` and are
+**tracked, source-of-truth files** — never gitignored, never
+content-addressed alongside derived/runtime data. Rolling back *only*
+this ingestion (keeping the rest of the mission) is:
+
+```bash
+git rm capability_dispatch/intake/FW-CAP-DISPATCH-004.json capability_dispatch/intake/FW-CAP-DISPATCH-004.md
+git rm capability_dispatch/src/authoritative_intake.py capability_dispatch/tests/test_authoritative_intake.py
+# then revert the evidence/FW-CAP-DISPATCH-004/*.json files' authoritative_* sections back to their pre-revision content (git log -- evidence/FW-CAP-DISPATCH-004/ shows the exact prior commit)
+```
+
+`ingest_authoritative_packet()` running against them produced no side
+effects on any tracked file other than what this revision's own commit
+contains — see `authoritative_dispatch_output.json` for the full raw
+object graph, and the section below for what *any* real ingestion
+(this one included) writes to gitignored/tracked runtime files.
+
+A future session running `ingest.ingest_candidate_packet()` (the
+TEST_FIXTURE-only synthetic parser) or `authoritative_intake.ingest_authoritative_packet()`
+(the real-shape parser, now exercised for real) against a NEW artifact
+will write:
 
 - a governed copy under `capability_dispatch/data/artifacts/<sha256>.json` (gitignored)
 - Execution Ledger entries into `whatsapp/ledgers/execution_ledger.jsonl` (gitignored)

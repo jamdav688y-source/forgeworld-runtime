@@ -1,40 +1,75 @@
 {
   "mission_id": "FW-CAP-DISPATCH-004",
-  "run_id": "RUN-PROOF-001",
-  "resolver": "mock:fixture_identity (perception/src/ocr.py-pattern deterministic offline mock; no live network lookup performed anywhere in this mission)",
-  "resolutions": [
-    {
-      "candidate_id": "CAP-9350646f92f8", "observed_name": "SYNTHETIC-gitleaks-clone",
-      "identity_evidence_id": "IDE-835963a76804", "resolution": "VERIFIED",
-      "evidence_basis": "fixture: canonical_hint matches a well-formed, non-shortened repository URL with an active-looking maintainer org"
+  "run_id": "RUN-FW-CAP-DISPATCH-004-002-REVISION",
+  "authoritative_resolution": {
+    "record_class": "AUTHORITATIVE_MISSION_SOURCE",
+    "resolver": "mock:fixture_identity, EMPTY fixture map (no entries) -- see rationale below",
+    "rationale_for_empty_fixture_map": "This proof stays fully offline: no live GitHub/registry API lookup was performed for any of the 42 real candidate names or their 9 bare canonical_hint strings, per the mission's own offline constraint and 'Do not resolve shortened social URLs by inference' instruction extended to its logical conclusion for unconfirmed bare-domain hints too. Every candidate therefore resolves UNAVAILABLE ('no fixture entry registered'), which is the HONEST outcome given the constraint -- not a limitation of identity.py, which is fully capable of returning VERIFIED given real evidence (see the 3 VERIFIED cases in test_fixture_ingestion below, and capability_dispatch/src/identity.py's UnwiredRegistryIdentityResolver, the documented hook point for a future session with real registry-lookup authority).",
+    "resolution_distribution": {
+      "UNAVAILABLE": 42
     },
-    {
-      "candidate_id": "CAP-828d3059ff33", "observed_name": "SYNTHETIC-python-wrapper-cli",
-      "identity_evidence_id": "IDE-c1ab8103e51a", "resolution": "VERIFIED",
-      "evidence_basis": "fixture: canonical_hint matches a well-formed repository URL"
+    "candidate_count": 42,
+    "structural_guarantees_exercised": [
+      "no candidate was ever installed, cloned, or executed to determine its identity",
+      "no live network call was made -- capabilities.discover.probe_all() is never reached for any of these 42 evaluations, since overlap.matched_capability_ids is empty for every UNRESOLVED overlap (see overlap_analysis_report.json)",
+      "the shortened-URL override in identity.py exists and is regression-tested (test_fixture_ingestion below), but was not triggered by this real packet -- none of its 9 canonical_hint values are on a known shortener domain"
+    ],
+    "next_step_not_taken_this_mission": "A future session with explicit network/registry-lookup authority (not granted this mission) could wire capability_dispatch/src/identity.py's UnwiredRegistryIdentityResolver to a real, read-only GitHub API metadata query for each of the 9 candidates carrying a canonical_hint, and re-run identity resolution -- nothing in this mission's architecture needs to change to support that; only a resolver implementation and explicit authority are missing."
+  },
+  "test_fixture_ingestion": {
+    "record_class": "TEST_FIXTURE",
+    "prohibited_as_mission_source_evidence": true,
+    "note": "The 3 VERIFIED / 1 AMBIGUOUS / 1 UNAVAILABLE results below are against the synthetic fixture only, retained for deterministic test coverage of every identity_status branch (including the shortened-URL override) -- never mission-source evidence.",
+    "resolver": "mock:fixture_identity (perception/src/ocr.py-pattern deterministic offline mock; no live network lookup performed anywhere in this mission)",
+    "resolutions": [
+      {
+        "candidate_id": "CAP-9350646f92f8",
+        "observed_name": "SYNTHETIC-gitleaks-clone",
+        "identity_evidence_id": "IDE-835963a76804",
+        "resolution": "VERIFIED",
+        "evidence_basis": "fixture: canonical_hint matches a well-formed, non-shortened repository URL with an active-looking maintainer org"
+      },
+      {
+        "candidate_id": "CAP-828d3059ff33",
+        "observed_name": "SYNTHETIC-python-wrapper-cli",
+        "identity_evidence_id": "IDE-c1ab8103e51a",
+        "resolution": "VERIFIED",
+        "evidence_basis": "fixture: canonical_hint matches a well-formed repository URL"
+      },
+      {
+        "candidate_id": "CAP-466f2d5fa7ad",
+        "observed_name": "SYNTHETIC-shortlink-mystery-tool",
+        "identity_evidence_id": "IDE-d9cc9953c359",
+        "resolution": "AMBIGUOUS",
+        "evidence_basis": "fixture would have said VERIFIED from the raw hint alone -- OVERRIDDEN: canonical_hint is a known link-shortener domain; a shortened link can never resolve to VERIFIED without independently following it, which this mission does not do",
+        "note": "This is the mission's own explicit scenario: a shortened link that must remain unresolved. The structural override in identity.resolve_identity() fired correctly even though the fixture map itself said VERIFIED -- proving the override is independent of resolver confidence."
+      },
+      {
+        "candidate_id": "CAP-31cf4841902f",
+        "observed_name": "SYNTHETIC-unbounded-shell-agent",
+        "identity_evidence_id": "IDE-e72c49869bcd",
+        "resolution": "VERIFIED",
+        "evidence_basis": "fixture: canonical_hint matches a well-formed repository URL",
+        "note": "Identity being VERIFIED does not make this candidate dispatch-eligible -- see overlap_analysis_report.json and the DispatchDecision: it is separately blocked on UNBOUNDED_EXECUTION_SURFACE."
+      },
+      {
+        "candidate_id": "CAP-8f97b2df588f",
+        "observed_name": "SYNTHETIC-unknown-tool-xyz",
+        "identity_evidence_id": "IDE-0f0c9e6e6756",
+        "resolution": "UNAVAILABLE",
+        "evidence_basis": "no fixture entry registered for this candidate",
+        "note": "No canonical_hint, no maintainer_hint, no description in the source packet at all -- correctly resolves to UNAVAILABLE rather than a guess."
+      }
+    ],
+    "resolution_distribution": {
+      "VERIFIED": 3,
+      "AMBIGUOUS": 1,
+      "UNAVAILABLE": 1,
+      "REJECTED": 0
     },
-    {
-      "candidate_id": "CAP-466f2d5fa7ad", "observed_name": "SYNTHETIC-shortlink-mystery-tool",
-      "identity_evidence_id": "IDE-d9cc9953c359", "resolution": "AMBIGUOUS",
-      "evidence_basis": "fixture would have said VERIFIED from the raw hint alone -- OVERRIDDEN: canonical_hint is a known link-shortener domain; a shortened link can never resolve to VERIFIED without independently following it, which this mission does not do",
-      "note": "This is the mission's own explicit scenario: a shortened link that must remain unresolved. The structural override in identity.resolve_identity() fired correctly even though the fixture map itself said VERIFIED -- proving the override is independent of resolver confidence."
-    },
-    {
-      "candidate_id": "CAP-31cf4841902f", "observed_name": "SYNTHETIC-unbounded-shell-agent",
-      "identity_evidence_id": "IDE-e72c49869bcd", "resolution": "VERIFIED",
-      "evidence_basis": "fixture: canonical_hint matches a well-formed repository URL",
-      "note": "Identity being VERIFIED does not make this candidate dispatch-eligible -- see overlap_analysis_report.json and the DispatchDecision: it is separately blocked on UNBOUNDED_EXECUTION_SURFACE."
-    },
-    {
-      "candidate_id": "CAP-8f97b2df588f", "observed_name": "SYNTHETIC-unknown-tool-xyz",
-      "identity_evidence_id": "IDE-0f0c9e6e6756", "resolution": "UNAVAILABLE",
-      "evidence_basis": "no fixture entry registered for this candidate",
-      "note": "No canonical_hint, no maintainer_hint, no description in the source packet at all -- correctly resolves to UNAVAILABLE rather than a guess."
-    }
-  ],
-  "resolution_distribution": {"VERIFIED": 3, "AMBIGUOUS": 1, "UNAVAILABLE": 1, "REJECTED": 0},
-  "structural_guarantees_exercised": [
-    "no candidate was ever installed, cloned, or executed to determine its identity",
-    "the shortened-URL override (KNOWN_URL_SHORTENERS check in identity.py) fired for the one candidate with a bit.ly canonical_hint, regardless of what the resolver itself returned"
-  ]
+    "structural_guarantees_exercised": [
+      "no candidate was ever installed, cloned, or executed to determine its identity",
+      "the shortened-URL override (KNOWN_URL_SHORTENERS check in identity.py) fired for the one candidate with a bit.ly canonical_hint, regardless of what the resolver itself returned"
+    ]
+  }
 }

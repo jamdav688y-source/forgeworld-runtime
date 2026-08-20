@@ -84,7 +84,20 @@ def new_capability_candidate(
     *, artifact_id: str, artifact_sha256: str, observed_name: str, normalized_name: str,
     observed_category: str, normalized_category: str, canonical_hint, maintainer_hint,
     source_observation_id: str, source_notes: str = "",
+    canonical_hint_normalized=None, canonical_hint_normalization_method: str = "",
 ) -> dict:
+    """canonical_hint is always the RAW, unmodified value observed in the
+    source packet -- never rewritten. canonical_hint_normalized is a
+    separately-recorded best-effort normalization (e.g. a bare
+    "github.com/owner/repo" string with an assumed https:// scheme
+    prepended), with canonical_hint_normalization_method stating exactly
+    how it was derived. Both default to matching canonical_hint verbatim
+    (method "" / not_needed) when the raw hint was already well-formed --
+    see ingest.py's synthetic path -- and diverge only when the source
+    packet's hint needed a stated transformation to become a URL at all
+    -- see authoritative_intake.py's real 42-candidate packet, whose
+    canonical_hint values arrive as bare "github.com/owner/repo" strings.
+    """
     obj = common.build_envelope(
         "CAP", artifact_id, artifact_sha256, extraction_method="candidate_extraction",
         validation_status="extracted", confidence=None,
@@ -96,6 +109,8 @@ def new_capability_candidate(
         "observed_category": observed_category,
         "normalized_category": normalized_category,
         "canonical_hint": canonical_hint,
+        "canonical_hint_normalized": canonical_hint_normalized if canonical_hint_normalized is not None else canonical_hint,
+        "canonical_hint_normalization_method": canonical_hint_normalization_method,
         "canonical_repository_url": None,
         "maintainer_hint": maintainer_hint,
         "maintainer_identity": None,

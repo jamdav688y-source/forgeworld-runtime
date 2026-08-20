@@ -1,50 +1,170 @@
 {
   "mission_id": "FW-CAP-DISPATCH-004",
-  "run_id": "RUN-PROOF-001",
-  "comparison_target": "capabilities/registry.json (the SAME file router/mission_router.py already reads; loaded via capabilities.discover.load_registry(), not re-parsed)",
-  "comparisons": [
-    {
-      "candidate_id": "CAP-9350646f92f8", "observed_name": "SYNTHETIC-gitleaks-clone",
-      "overlap_id": "OVL-29008382c50a", "classification": "UNIQUE_GAP", "recommended_disposition": "SANDBOX_PROBE",
-      "matched_capability_ids": [], "shared_functions": [], "missing_functions": ["secret_scanning", "secret_detection"],
-      "basis": "no existing registered capability shares any inferred function tag with this candidate"
+  "run_id": "RUN-FW-CAP-DISPATCH-004-002-REVISION",
+  "authoritative_overlap_analysis": {
+    "record_class": "AUTHORITATIVE_MISSION_SOURCE",
+    "comparison_target": "capabilities/registry.json (the SAME file router/mission_router.py already reads; loaded via capabilities.discover.load_registry(), not re-parsed)",
+    "classification_distribution": {
+      "UNRESOLVED": 42
     },
-    {
-      "candidate_id": "CAP-828d3059ff33", "observed_name": "SYNTHETIC-python-wrapper-cli",
-      "overlap_id": "OVL-7c4282d49071", "classification": "FUNCTIONAL_DUPLICATE", "recommended_disposition": "DUPLICATE",
-      "matched_capability_ids": ["python"], "shared_functions": ["automation", "data_processing", "scripting"],
-      "missing_functions": [],
-      "basis": "100% of this candidate's inferred function tags are already covered by existing capability 'python' (['automation', 'data_processing', 'scripting'])",
-      "note": "This is the mission's explicit 'popular candidate duplicating an existing capability' scenario -- classified DUPLICATE regardless of any popularity signal, because CapabilityCandidate carries no popularity field for overlap.py to even read."
+    "candidate_count": 42,
+    "basis": "All 42 candidates classify UNRESOLVED, as a direct, correct consequence of identity_resolution_report.json's authoritative_resolution: overlap.py's own identity gate (identity_status must be VERIFIED before any function-tag comparison is attempted) fires for every one of them before overlap.py ever reads capabilities/registry.json's tags. This is not a failure of overlap analysis -- see overlap.py's module docstring: 'An unverified candidate is never compared against the registry at all.'",
+    "category_function_tags_added_for_this_packet": {
+      "note": "capability_dispatch/src/overlap.py's CATEGORY_FUNCTION_TAGS was extended with entries for this packet's 8 real category values (harness/skill/app_platform/connector_catalog/tool_or_app/prompt_library/prompt_or_optimization/security_skill). These mappings are READY but UNEXERCISED by this run's own classification results, for the same identity-gate reason above -- included so a future session with real identity-resolution authority does not have to build them under time pressure.",
+      "harness_maps_to": [
+        "code_generation",
+        "shell_execution",
+        "file_editing"
+      ],
+      "note_on_harness": "16 of the 42 candidates are category HARNESS (AI coding-agent harnesses/wrappers such as codex, cline, openinterpreter) -- these tags substantially overlap capabilities/registry.json's 'claude_code' entry's own tags. A future verified run against these specific candidates would likely produce several FUNCTIONAL_DUPLICATE or PARTIAL_OVERLAP classifications rather than UNIQUE_GAP -- an expected, not surprising, finding this report flags in advance rather than after the fact."
     },
-    {
-      "candidate_id": "CAP-466f2d5fa7ad", "observed_name": "SYNTHETIC-shortlink-mystery-tool",
-      "overlap_id": "OVL-db157d096153", "classification": "UNRESOLVED", "recommended_disposition": "BLOCK",
-      "matched_capability_ids": [], "shared_functions": [], "missing_functions": [],
-      "basis": "identity_status is 'AMBIGUOUS', not VERIFIED -- cannot compare against the registry",
-      "note": "Overlap analysis never even attempts a function-tag comparison for a non-VERIFIED candidate -- ordering matters (IDENTITY RESOLUTION strictly precedes OVERLAP ANALYSIS in the pipeline)."
-    },
-    {
-      "candidate_id": "CAP-31cf4841902f", "observed_name": "SYNTHETIC-unbounded-shell-agent",
-      "overlap_id": "OVL-4f194636c3b0", "classification": "PARTIAL_OVERLAP", "recommended_disposition": "ADAPT",
-      "matched_capability_ids": ["claude_code"], "shared_functions": ["shell_execution"],
-      "missing_functions": ["automation", "orchestration"],
-      "basis": "33% overlap with existing capability 'claude_code' (['shell_execution']); ['automation', 'orchestration'] not covered",
-      "note": "PARTIAL_OVERLAP -> ADAPT is this candidate's overlap classification, but it is separately and independently BLOCKed at the dispatch stage on UNBOUNDED_EXECUTION_SURFACE -- overlap classification and execution-surface safety are deliberately independent checks (see dispatch_decision below and dispatch.py's ordered disposition tree)."
-    },
-    {
-      "candidate_id": "CAP-8f97b2df588f", "observed_name": "SYNTHETIC-unknown-tool-xyz",
-      "overlap_id": "OVL-d2290ff9a29a", "classification": "UNRESOLVED", "recommended_disposition": "BLOCK",
-      "matched_capability_ids": [], "shared_functions": [], "missing_functions": [],
-      "basis": "identity_status is 'UNAVAILABLE', not VERIFIED -- cannot compare against the registry"
-    }
-  ],
-  "classification_distribution": {
-    "UNIQUE_GAP": 1, "PARTIAL_OVERLAP": 1, "FUNCTIONAL_DUPLICATE": 1, "ARCHITECTURAL_CONFLICT": 0, "UNRESOLVED": 2
+    "required_capabilities_covered_by_existing_registry_without_any_new_candidate": [
+      {
+        "candidate_id": null,
+        "disposition": "REUSE",
+        "existing_capability_id": "python",
+        "observed_name": null
+      },
+      {
+        "candidate_id": null,
+        "disposition": "REUSE",
+        "existing_capability_id": "airtable",
+        "observed_name": null
+      },
+      {
+        "candidate_id": null,
+        "disposition": "REUSE",
+        "existing_capability_id": "claude_code",
+        "observed_name": null
+      },
+      {
+        "candidate_id": null,
+        "disposition": "REUSE",
+        "existing_capability_id": "chatgpt",
+        "observed_name": null
+      },
+      {
+        "candidate_id": null,
+        "disposition": "REUSE",
+        "existing_capability_id": "python",
+        "observed_name": null
+      },
+      {
+        "candidate_id": null,
+        "disposition": "REUSE",
+        "existing_capability_id": "claude_code",
+        "observed_name": null
+      },
+      {
+        "candidate_id": null,
+        "disposition": "REUSE",
+        "existing_capability_id": "python",
+        "observed_name": null
+      }
+    ],
+    "final_dispatch_decision_id": "DEC-601c63567bdb",
+    "final_dispatch_decision_status": "NO_SUFFICIENT_CANDIDATE",
+    "final_dispatch_decision_note": "NO_SUFFICIENT_CANDIDATE: of the 8 distinct required_capabilities derived from this packet's own category vocabulary, several are already covered by REUSE against the existing registry (python/airtable/claude_code/chatgpt -- no new candidate needed for those), but not all 8 are covered, because the remaining gap categories have no VERIFIED candidate available to fill them in this offline run. This is the correct, fail-closed outcome given the identity-resolution constraint above -- not a bug."
   },
-  "final_dispatch_decision": {
-    "decision_id": "DEC-3b3aacf20d9a", "status": "DISPATCHED",
-    "selected_set": [{"candidate_id": "CAP-9350646f92f8", "observed_name": "SYNTHETIC-gitleaks-clone", "disposition": "SANDBOX_PROBE"}],
-    "note": "Of 5 candidates and 5 overlap analyses, exactly 1 candidate reached SANDBOX_PROBE for the mission's one required capability (secret_scanning_cli) -- the smallest sufficient set, not the largest available toolset."
+  "test_fixture_ingestion": {
+    "record_class": "TEST_FIXTURE",
+    "prohibited_as_mission_source_evidence": true,
+    "note": "The UNIQUE_GAP/FUNCTIONAL_DUPLICATE/PARTIAL_OVERLAP/UNRESOLVED distribution below is against the synthetic fixture only, retained for deterministic test coverage of every classification branch -- never mission-source evidence.",
+    "comparison_target": "capabilities/registry.json (the SAME file router/mission_router.py already reads; loaded via capabilities.discover.load_registry(), not re-parsed)",
+    "comparisons": [
+      {
+        "candidate_id": "CAP-9350646f92f8",
+        "observed_name": "SYNTHETIC-gitleaks-clone",
+        "overlap_id": "OVL-29008382c50a",
+        "classification": "UNIQUE_GAP",
+        "recommended_disposition": "SANDBOX_PROBE",
+        "matched_capability_ids": [],
+        "shared_functions": [],
+        "missing_functions": [
+          "secret_scanning",
+          "secret_detection"
+        ],
+        "basis": "no existing registered capability shares any inferred function tag with this candidate"
+      },
+      {
+        "candidate_id": "CAP-828d3059ff33",
+        "observed_name": "SYNTHETIC-python-wrapper-cli",
+        "overlap_id": "OVL-7c4282d49071",
+        "classification": "FUNCTIONAL_DUPLICATE",
+        "recommended_disposition": "DUPLICATE",
+        "matched_capability_ids": [
+          "python"
+        ],
+        "shared_functions": [
+          "automation",
+          "data_processing",
+          "scripting"
+        ],
+        "missing_functions": [],
+        "basis": "100% of this candidate's inferred function tags are already covered by existing capability 'python' (['automation', 'data_processing', 'scripting'])",
+        "note": "This is the mission's explicit 'popular candidate duplicating an existing capability' scenario -- classified DUPLICATE regardless of any popularity signal, because CapabilityCandidate carries no popularity field for overlap.py to even read."
+      },
+      {
+        "candidate_id": "CAP-466f2d5fa7ad",
+        "observed_name": "SYNTHETIC-shortlink-mystery-tool",
+        "overlap_id": "OVL-db157d096153",
+        "classification": "UNRESOLVED",
+        "recommended_disposition": "BLOCK",
+        "matched_capability_ids": [],
+        "shared_functions": [],
+        "missing_functions": [],
+        "basis": "identity_status is 'AMBIGUOUS', not VERIFIED -- cannot compare against the registry",
+        "note": "Overlap analysis never even attempts a function-tag comparison for a non-VERIFIED candidate -- ordering matters (IDENTITY RESOLUTION strictly precedes OVERLAP ANALYSIS in the pipeline)."
+      },
+      {
+        "candidate_id": "CAP-31cf4841902f",
+        "observed_name": "SYNTHETIC-unbounded-shell-agent",
+        "overlap_id": "OVL-4f194636c3b0",
+        "classification": "PARTIAL_OVERLAP",
+        "recommended_disposition": "ADAPT",
+        "matched_capability_ids": [
+          "claude_code"
+        ],
+        "shared_functions": [
+          "shell_execution"
+        ],
+        "missing_functions": [
+          "automation",
+          "orchestration"
+        ],
+        "basis": "33% overlap with existing capability 'claude_code' (['shell_execution']); ['automation', 'orchestration'] not covered",
+        "note": "PARTIAL_OVERLAP -> ADAPT is this candidate's overlap classification, but it is separately and independently BLOCKed at the dispatch stage on UNBOUNDED_EXECUTION_SURFACE -- overlap classification and execution-surface safety are deliberately independent checks (see dispatch_decision below and dispatch.py's ordered disposition tree)."
+      },
+      {
+        "candidate_id": "CAP-8f97b2df588f",
+        "observed_name": "SYNTHETIC-unknown-tool-xyz",
+        "overlap_id": "OVL-d2290ff9a29a",
+        "classification": "UNRESOLVED",
+        "recommended_disposition": "BLOCK",
+        "matched_capability_ids": [],
+        "shared_functions": [],
+        "missing_functions": [],
+        "basis": "identity_status is 'UNAVAILABLE', not VERIFIED -- cannot compare against the registry"
+      }
+    ],
+    "classification_distribution": {
+      "UNIQUE_GAP": 1,
+      "PARTIAL_OVERLAP": 1,
+      "FUNCTIONAL_DUPLICATE": 1,
+      "ARCHITECTURAL_CONFLICT": 0,
+      "UNRESOLVED": 2
+    },
+    "final_dispatch_decision": {
+      "decision_id": "DEC-3b3aacf20d9a",
+      "status": "DISPATCHED",
+      "selected_set": [
+        {
+          "candidate_id": "CAP-9350646f92f8",
+          "observed_name": "SYNTHETIC-gitleaks-clone",
+          "disposition": "SANDBOX_PROBE"
+        }
+      ],
+      "note": "Of 5 candidates and 5 overlap analyses, exactly 1 candidate reached SANDBOX_PROBE for the mission's one required capability (secret_scanning_cli) -- the smallest sufficient set, not the largest available toolset."
+    }
   }
 }

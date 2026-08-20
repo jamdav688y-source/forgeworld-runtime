@@ -1,34 +1,568 @@
 {
   "mission_id": "FW-CAP-DISPATCH-004",
-  "run_id": "RUN-PROOF-001",
-  "source": {
-    "note": "Ingested from capability_dispatch/fixtures/FW-CAP-DISPATCH-004.synthetic.json -- the disclosed synthetic substitute (see artifact_validation.json); no real FW-CAP-DISPATCH-004.json/.md was ever supplied.",
-    "source_observation_id": "SRC-be1b02776ff8",
-    "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
-    "candidate_count_declared": 5,
-    "candidate_count_extracted": 5
+  "run_id": "RUN-FW-CAP-DISPATCH-004-002-REVISION",
+  "authoritative_ingestion": {
+    "record_class": "AUTHORITATIVE_MISSION_SOURCE",
+    "source": {
+      "note": "Ingested from capability_dispatch/intake/FW-CAP-DISPATCH-004.json/.md, committed by the repository owner at 611b41ef8cc4c1bd1837c054aa69a8183e17fe26 and independently sha256-verified before any parsing (see artifact_validation.json's superseding_update_2026_08_20).",
+      "json_source_observation_id": "SRC-236f3514f9c4",
+      "json_source_artifact_sha256": "8252cf225ad9017c33f7bbadbcaba1d0e65e0a86a6231376a1b536f066798e1f",
+      "md_source_observation_id": "SRC-0ce84596310f",
+      "md_source_artifact_sha256": "b696b375f3921b185017c912d3a3ce5583db71d57db5af53136c4350d358a07b",
+      "candidate_count_declared": "not present in this packet shape (no candidate_count field) -- see derivation note below",
+      "candidate_count_derived": 42,
+      "candidate_count_derivation_method": "len(packet['capability_candidates']) -- stated explicitly in each SourceObservation.source_notes, never silently assumed"
+    },
+    "candidates": [
+      {
+        "id": "CAP-0bd4011e1441",
+        "observed_name": "ECC",
+        "normalized_name": "ecc",
+        "observed_category": "HARNESS",
+        "normalized_category": "harness",
+        "canonical_hint_raw": "github.com/affaan-m/ECC",
+        "canonical_hint_normalized": "https://github.com/affaan-m/ECC",
+        "canonical_hint_normalization_method": "assumed_https_scheme_prepended_to_bare_domain_path",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-9b391ef36d83",
+        "observed_name": "gstack",
+        "normalized_name": "gstack",
+        "observed_category": "HARNESS",
+        "normalized_category": "harness",
+        "canonical_hint_raw": "github.com/glarrytan/gstack",
+        "canonical_hint_normalized": "https://github.com/glarrytan/gstack",
+        "canonical_hint_normalization_method": "assumed_https_scheme_prepended_to_bare_domain_path",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-3181f4af89e6",
+        "observed_name": "cc-switch",
+        "normalized_name": "cc_switch",
+        "observed_category": "HARNESS",
+        "normalized_category": "harness",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-9f7a8e19af26",
+        "observed_name": "awesome-design-md",
+        "normalized_name": "awesome_design_md",
+        "observed_category": "HARNESS",
+        "normalized_category": "harness",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-bf86afa145ca",
+        "observed_name": "graphify",
+        "normalized_name": "graphify",
+        "observed_category": "HARNESS",
+        "normalized_category": "harness",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-99cd24497d67",
+        "observed_name": "codex",
+        "normalized_name": "codex",
+        "observed_category": "HARNESS",
+        "normalized_category": "harness",
+        "canonical_hint_raw": "github.com/openai/codex",
+        "canonical_hint_normalized": "https://github.com/openai/codex",
+        "canonical_hint_normalization_method": "assumed_https_scheme_prepended_to_bare_domain_path",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-0d07311a3d75",
+        "observed_name": "caveman",
+        "normalized_name": "caveman",
+        "observed_category": "HARNESS",
+        "normalized_category": "harness",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-b1bc17ae7a27",
+        "observed_name": "claude-mem",
+        "normalized_name": "claude_mem",
+        "observed_category": "HARNESS",
+        "normalized_category": "harness",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-504c56aa3e2a",
+        "observed_name": "open-design",
+        "normalized_name": "open_design",
+        "observed_category": "HARNESS",
+        "normalized_category": "harness",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-ee53f61ff528",
+        "observed_name": "agent-skills",
+        "normalized_name": "agent_skills",
+        "observed_category": "HARNESS",
+        "normalized_category": "harness",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-4bcaa0cb45e3",
+        "observed_name": "Understand-Anything",
+        "normalized_name": "understand_anything",
+        "observed_category": "HARNESS",
+        "normalized_category": "harness",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-358e1d8acb1e",
+        "observed_name": "ruflo",
+        "normalized_name": "ruflo",
+        "observed_category": "HARNESS",
+        "normalized_category": "harness",
+        "canonical_hint_raw": "github.com/ruvnet/ruflo",
+        "canonical_hint_normalized": "https://github.com/ruvnet/ruflo",
+        "canonical_hint_normalization_method": "assumed_https_scheme_prepended_to_bare_domain_path",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-ee729f511157",
+        "observed_name": "openinterpreter",
+        "normalized_name": "openinterpreter",
+        "observed_category": "HARNESS",
+        "normalized_category": "harness",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-03a3e14a8585",
+        "observed_name": "oh-my-opencode",
+        "normalized_name": "oh_my_opencode",
+        "observed_category": "HARNESS",
+        "normalized_category": "harness",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-5889c1738924",
+        "observed_name": "codegraph",
+        "normalized_name": "codegraph",
+        "observed_category": "HARNESS",
+        "normalized_category": "harness",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-ab249000340b",
+        "observed_name": "cline",
+        "normalized_name": "cline",
+        "observed_category": "HARNESS",
+        "normalized_category": "harness",
+        "canonical_hint_raw": "github.com/cline/cline",
+        "canonical_hint_normalized": "https://github.com/cline/cline",
+        "canonical_hint_normalization_method": "assumed_https_scheme_prepended_to_bare_domain_path",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-5324bd4df12f",
+        "observed_name": "superpowers",
+        "normalized_name": "superpowers",
+        "observed_category": "SKILL",
+        "normalized_category": "skill",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-6d851cfe3659",
+        "observed_name": "awesome-llm-apps",
+        "normalized_name": "awesome_llm_apps",
+        "observed_category": "SKILL",
+        "normalized_category": "skill",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-1c496477d2e7",
+        "observed_name": "ui-ux-pro-max-skill",
+        "normalized_name": "ui_ux_pro_max_skill",
+        "observed_category": "SKILL",
+        "normalized_category": "skill",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-a631f29911f8",
+        "observed_name": "taste-skill",
+        "normalized_name": "taste_skill",
+        "observed_category": "SKILL",
+        "normalized_category": "skill",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-208769df5e3d",
+        "observed_name": "agentic-awesome-skills",
+        "normalized_name": "agentic_awesome_skills",
+        "observed_category": "SKILL",
+        "normalized_category": "skill",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-dd7b8927fe1d",
+        "observed_name": "LibreChat",
+        "normalized_name": "librechat",
+        "observed_category": "SKILL",
+        "normalized_category": "skill",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-2cf32d5084d9",
+        "observed_name": "awesome-mcp-servers",
+        "normalized_name": "awesome_mcp_servers",
+        "observed_category": "CONNECTOR_CATALOG",
+        "normalized_category": "connector_catalog",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-084712faa150",
+        "observed_name": "dify",
+        "normalized_name": "dify",
+        "observed_category": "APP_PLATFORM",
+        "normalized_category": "app_platform",
+        "canonical_hint_raw": "github.com/langgenius/dify",
+        "canonical_hint_normalized": "https://github.com/langgenius/dify",
+        "canonical_hint_normalization_method": "assumed_https_scheme_prepended_to_bare_domain_path",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-6e3173e87bd2",
+        "observed_name": "hyperframes",
+        "normalized_name": "hyperframes",
+        "observed_category": "APP_PLATFORM",
+        "normalized_category": "app_platform",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-fb9fd9ab0452",
+        "observed_name": "UI-TARS-desktop",
+        "normalized_name": "ui_tars_desktop",
+        "observed_category": "APP_PLATFORM",
+        "normalized_category": "app_platform",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-4bb6ffe9e60a",
+        "observed_name": "browser",
+        "normalized_name": "browser",
+        "observed_category": "APP_PLATFORM",
+        "normalized_category": "app_platform",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-6871b8eab6ee",
+        "observed_name": "hermes-agent",
+        "normalized_name": "hermes_agent",
+        "observed_category": "TOOL_OR_APP",
+        "normalized_category": "tool_or_app",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-6a75c04dec85",
+        "observed_name": "markitdown",
+        "normalized_name": "markitdown",
+        "observed_category": "TOOL_OR_APP",
+        "normalized_category": "tool_or_app",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-a4a3b5a3ee71",
+        "observed_name": "agency-agents",
+        "normalized_name": "agency_agents",
+        "observed_category": "TOOL_OR_APP",
+        "normalized_category": "tool_or_app",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-df04c13807da",
+        "observed_name": "spec-kit",
+        "normalized_name": "spec_kit",
+        "observed_category": "TOOL_OR_APP",
+        "normalized_category": "tool_or_app",
+        "canonical_hint_raw": "github.com/github/spec-kit",
+        "canonical_hint_normalized": "https://github.com/github/spec-kit",
+        "canonical_hint_normalization_method": "assumed_https_scheme_prepended_to_bare_domain_path",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-8e1e78cad7d2",
+        "observed_name": "ponytail",
+        "normalized_name": "ponytail",
+        "observed_category": "TOOL_OR_APP",
+        "normalized_category": "tool_or_app",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-1be81e0643fc",
+        "observed_name": "OpenCut",
+        "normalized_name": "opencut",
+        "observed_category": "TOOL_OR_APP",
+        "normalized_category": "tool_or_app",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-0fb34224bfb0",
+        "observed_name": "rtk",
+        "normalized_name": "rtk",
+        "observed_category": "TOOL_OR_APP",
+        "normalized_category": "tool_or_app",
+        "canonical_hint_raw": "github.com/rtk-ai/rtk",
+        "canonical_hint_normalized": "https://github.com/rtk-ai/rtk",
+        "canonical_hint_normalization_method": "assumed_https_scheme_prepended_to_bare_domain_path",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-2f9eb8376d4e",
+        "observed_name": "prompts.chat",
+        "normalized_name": "prompts_chat",
+        "observed_category": "PROMPT_LIBRARY",
+        "normalized_category": "prompt_library",
+        "canonical_hint_raw": "github.com/f/prompts.chat",
+        "canonical_hint_normalized": "https://github.com/f/prompts.chat",
+        "canonical_hint_normalization_method": "assumed_https_scheme_prepended_to_bare_domain_path",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-886a5763e446",
+        "observed_name": "dspy",
+        "normalized_name": "dspy",
+        "observed_category": "PROMPT_OR_OPTIMIZATION",
+        "normalized_category": "prompt_or_optimization",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-fde4f0eebbcb",
+        "observed_name": "social-media-skills",
+        "normalized_name": "social_media_skills",
+        "observed_category": "SKILL",
+        "normalized_category": "skill",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-89e48d949519",
+        "observed_name": "ai-second-brain",
+        "normalized_name": "ai_second_brain",
+        "observed_category": "SKILL",
+        "normalized_category": "skill",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-d9803ae9c88f",
+        "observed_name": "agent-harness-starter",
+        "normalized_name": "agent_harness_starter",
+        "observed_category": "HARNESS",
+        "normalized_category": "harness",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-fa1a1ad0f614",
+        "observed_name": "show-me",
+        "normalized_name": "show_me",
+        "observed_category": "SKILL",
+        "normalized_category": "skill",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-9c48de530bdd",
+        "observed_name": "life-automation-skills",
+        "normalized_name": "life_automation_skills",
+        "observed_category": "SKILL",
+        "normalized_category": "skill",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-0ac8fa9361e9",
+        "observed_name": "exposure-audit",
+        "normalized_name": "exposure_audit",
+        "observed_category": "SECURITY_SKILL",
+        "normalized_category": "security_skill",
+        "canonical_hint_raw": null,
+        "canonical_hint_normalized": null,
+        "canonical_hint_normalization_method": "",
+        "identity_status_at_ingest": "UNVERIFIED"
+      }
+    ],
+    "validation_steps_performed": [
+      "JSON syntax validation: passed",
+      "content-based media-type detection (detect_media_type): confirmed application/json independent of the .json filename extension",
+      "required-field validation: passed (artifact_id, capability_candidates present -- this packet shape has no candidate_count field, handled via explicit derivation, not a required-field failure)",
+      "artifact-ID consistency: 'FW-CAP-DISPATCH-004' contains 'FW-CAP-DISPATCH-004': passed",
+      "candidate-count verification: not applicable to this packet shape (no declared count to cross-check) -- derived count (42) stated as derived, not verified-against-a-claim",
+      "duplicate-name detection (case-insensitive): no duplicates found among all 42 names",
+      "category normalization: original 'category' value (e.g. 'HARNESS') preserved verbatim as observed_category on every candidate; normalized_category recorded separately in lowercase (e.g. 'harness')",
+      "canonical-hint format review: 9/42 candidates carry a canonical_hint, and every one arrives as a bare 'github.com/owner/repo' string (no scheme) -- NONE were rejected as malformed; each raw value is preserved unmodified in canonical_hint, with a separately-recorded canonical_hint_normalized (https:// prepended) and canonical_hint_normalization_method stating exactly what was done. The remaining 33/42 candidates carry canonical_hint=null, preserved as null, never guessed.",
+      "epistemic-state review: all 42 candidates confirmed at the mission's required floor (schema.freshly_ingested_candidate_is_at_epistemic_floor) before acceptance",
+      "claims-integrity review: this packet carries no per-candidate free-text notes to preserve (source_notes deliberately left empty per candidate -- nothing was fabricated to fill that field; the packet's own narrative/uncertainty lives in source_observations[].notes and strategy_signals[], both preserved verbatim in authoritative_dispatch_output.json)"
+    ],
+    "uncertainty_preserved": [
+      "9 canonical_hint values are bare domain+path strings, not confirmed URLs to a live, existing repository -- normalization only adds a scheme assumption, it does not confirm the target exists or is owned by the stated org",
+      "33 candidates carry no canonical_hint, no maintainer hint, and no per-candidate notes at all -- ingested honestly as bare names with a category, nothing invented",
+      "the .md artifact itself states 'Canonical identity resolution: incomplete' -- this ingestion does not resolve identity, only extracts candidates (see identity_resolution_report.json's authoritative_resolution section for what identity resolution against this real packet actually produced)"
+    ]
   },
-  "candidates": [
-    {"id": "CAP-9350646f92f8", "observed_name": "SYNTHETIC-gitleaks-clone", "normalized_name": "synthetic_gitleaks_clone", "observed_category": "secret-scanning-cli", "normalized_category": "secret_scanning_cli", "identity_status_at_ingest": "UNVERIFIED"},
-    {"id": "CAP-828d3059ff33", "observed_name": "SYNTHETIC-python-wrapper-cli", "normalized_name": "synthetic_python_wrapper_cli", "observed_category": "scripting-utility", "normalized_category": "scripting_utility", "identity_status_at_ingest": "UNVERIFIED"},
-    {"id": "CAP-466f2d5fa7ad", "observed_name": "SYNTHETIC-shortlink-mystery-tool", "normalized_name": "synthetic_shortlink_mystery_tool", "observed_category": "unknown", "normalized_category": "unknown", "identity_status_at_ingest": "UNVERIFIED"},
-    {"id": "CAP-31cf4841902f", "observed_name": "SYNTHETIC-unbounded-shell-agent", "normalized_name": "synthetic_unbounded_shell_agent", "observed_category": "automation-agent", "normalized_category": "automation_agent", "identity_status_at_ingest": "UNVERIFIED"},
-    {"id": "CAP-8f97b2df588f", "observed_name": "SYNTHETIC-unknown-tool-xyz", "normalized_name": "synthetic_unknown_tool_xyz", "observed_category": "unknown", "normalized_category": "unknown", "identity_status_at_ingest": "UNVERIFIED"}
-  ],
-  "validation_steps_performed": [
-    "JSON syntax validation: passed",
-    "content-based media-type detection (detect_media_type): confirmed application/json independent of the .json filename extension",
-    "required-field validation: passed (artifact_id, candidate_count, candidates all present)",
-    "artifact-ID consistency: 'FW-CAP-DISPATCH-004-SYNTHETIC' contains 'FW-CAP-DISPATCH-004': passed",
-    "candidate-count verification: declared 5 == extracted 5: passed",
-    "duplicate-name detection (case-insensitive): no duplicates found",
-    "category normalization: original observed_category preserved verbatim on every candidate; normalized_category recorded separately (e.g. 'secret-scanning-cli' -> 'secret_scanning_cli')",
-    "canonical-hint format review: all 5 canonical_hint values are well-formed URLs or explicit null; none malformed",
-    "epistemic-state review: every candidate confirmed at the mission's required floor (schema.freshly_ingested_candidate_is_at_epistemic_floor) before acceptance",
-    "claims-integrity review: every candidate's source_notes field byte-for-byte identical to the source packet's value (checked programmatically in ingest.py, not merely asserted)"
-  ],
-  "uncertainty_preserved": [
-    "SYNTHETIC-gitleaks-clone: source_notes retains the raw 'star count 2.3k in frame 1, 2.4k in frame 2' observation, never collapsed into a single asserted star count",
-    "SYNTHETIC-shortlink-mystery-tool: canonical_hint is a bit.ly short link, stored as-is; source_notes explicitly states the destination was not independently resolved"
-  ]
+  "test_fixture_ingestion": {
+    "record_class": "TEST_FIXTURE",
+    "prohibited_as_mission_source_evidence": true,
+    "note": "Retained strictly as deterministic, offline, network-free test coverage (capability_dispatch/fixtures/FW-CAP-DISPATCH-004.synthetic.json, capability_dispatch/tests/). Never used as mission-source evidence from this revision forward -- superseded by authoritative_ingestion above.",
+    "source": {
+      "note": "Ingested from capability_dispatch/fixtures/FW-CAP-DISPATCH-004.synthetic.json -- the disclosed synthetic substitute (see artifact_validation.json); no real FW-CAP-DISPATCH-004.json/.md was ever supplied.",
+      "source_observation_id": "SRC-be1b02776ff8",
+      "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
+      "candidate_count_declared": 5,
+      "candidate_count_extracted": 5
+    },
+    "candidates": [
+      {
+        "id": "CAP-9350646f92f8",
+        "observed_name": "SYNTHETIC-gitleaks-clone",
+        "normalized_name": "synthetic_gitleaks_clone",
+        "observed_category": "secret-scanning-cli",
+        "normalized_category": "secret_scanning_cli",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-828d3059ff33",
+        "observed_name": "SYNTHETIC-python-wrapper-cli",
+        "normalized_name": "synthetic_python_wrapper_cli",
+        "observed_category": "scripting-utility",
+        "normalized_category": "scripting_utility",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-466f2d5fa7ad",
+        "observed_name": "SYNTHETIC-shortlink-mystery-tool",
+        "normalized_name": "synthetic_shortlink_mystery_tool",
+        "observed_category": "unknown",
+        "normalized_category": "unknown",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-31cf4841902f",
+        "observed_name": "SYNTHETIC-unbounded-shell-agent",
+        "normalized_name": "synthetic_unbounded_shell_agent",
+        "observed_category": "automation-agent",
+        "normalized_category": "automation_agent",
+        "identity_status_at_ingest": "UNVERIFIED"
+      },
+      {
+        "id": "CAP-8f97b2df588f",
+        "observed_name": "SYNTHETIC-unknown-tool-xyz",
+        "normalized_name": "synthetic_unknown_tool_xyz",
+        "observed_category": "unknown",
+        "normalized_category": "unknown",
+        "identity_status_at_ingest": "UNVERIFIED"
+      }
+    ],
+    "validation_steps_performed": [
+      "JSON syntax validation: passed",
+      "content-based media-type detection (detect_media_type): confirmed application/json independent of the .json filename extension",
+      "required-field validation: passed (artifact_id, candidate_count, candidates all present)",
+      "artifact-ID consistency: 'FW-CAP-DISPATCH-004-SYNTHETIC' contains 'FW-CAP-DISPATCH-004': passed",
+      "candidate-count verification: declared 5 == extracted 5: passed",
+      "duplicate-name detection (case-insensitive): no duplicates found",
+      "category normalization: original observed_category preserved verbatim on every candidate; normalized_category recorded separately (e.g. 'secret-scanning-cli' -> 'secret_scanning_cli')",
+      "canonical-hint format review: all 5 canonical_hint values are well-formed URLs or explicit null; none malformed",
+      "epistemic-state review: every candidate confirmed at the mission's required floor (schema.freshly_ingested_candidate_is_at_epistemic_floor) before acceptance",
+      "claims-integrity review: every candidate's source_notes field byte-for-byte identical to the source packet's value (checked programmatically in ingest.py, not merely asserted)"
+    ],
+    "uncertainty_preserved": [
+      "SYNTHETIC-gitleaks-clone: source_notes retains the raw 'star count 2.3k in frame 1, 2.4k in frame 2' observation, never collapsed into a single asserted star count",
+      "SYNTHETIC-shortlink-mystery-tool: canonical_hint is a bit.ly short link, stored as-is; source_notes explicitly states the destination was not independently resolved"
+    ]
+  }
 }

@@ -18,6 +18,9 @@ on:
       - "router/**"
       - "capabilities/registry.json"
       - "governance/policy_defaults.json"
+# capability_dispatch/** already covers capability_dispatch/intake/** --
+# the authoritative FW-CAP-DISPATCH-004.json/.md live there and are
+# validated by the capability-dispatch-test job below.
 
 jobs:
   test:
@@ -99,9 +102,31 @@ jobs:
               print(name, a)
           "
 
-      - name: Run capability_dispatch/tests (12 TEST-DISPATCH scenarios) with JUnit output
+      - name: Validate the AUTHORITATIVE intake artifacts (hash-pinned, syntax, candidate count)
         run: |
-          python3 -m pytest capability_dispatch/tests/test_dispatch_matrix.py -v \
+          python3 -c "
+          import hashlib, json
+          json_bytes = open('capability_dispatch/intake/FW-CAP-DISPATCH-004.json', 'rb').read()
+          md_bytes = open('capability_dispatch/intake/FW-CAP-DISPATCH-004.md', 'rb').read()
+          json_sha = hashlib.sha256(json_bytes).hexdigest()
+          md_sha = hashlib.sha256(md_bytes).hexdigest()
+          expected_json = '8252cf225ad9017c33f7bbadbcaba1d0e65e0a86a6231376a1b536f066798e1f'
+          expected_md = 'b696b375f3921b185017c912d3a3ce5583db71d57db5af53136c4350d358a07b'
+          assert json_sha == expected_json, f'authoritative JSON sha256 changed: {json_sha} != {expected_json}'
+          assert md_sha == expected_md, f'authoritative MD sha256 changed: {md_sha} != {expected_md}'
+          packet = json.loads(json_bytes)
+          for field in ('artifact_id', 'capability_candidates'):
+              assert field in packet, f'missing required field: {field}'
+          assert 'FW-CAP-DISPATCH-004' in packet['artifact_id']
+          assert len(packet['capability_candidates']) == 42, f\"expected 42 candidates, found {len(packet['capability_candidates'])}\"
+          names = [c['name'].lower() for c in packet['capability_candidates']]
+          assert len(names) == len(set(names)), 'duplicate candidate name found'
+          print('authoritative intake artifacts: hashes match, JSON valid,', len(packet['capability_candidates']), 'candidates, no duplicates')
+          "
+
+      - name: Run capability_dispatch/tests (12 TEST-DISPATCH scenarios + authoritative intake) with JUnit output
+        run: |
+          python3 -m pytest capability_dispatch/tests/test_dispatch_matrix.py capability_dispatch/tests/test_authoritative_intake.py -v \
             --junitxml=evidence/FW-CAP-DISPATCH-004/dispatch_test_results.xml
 
       - name: Report exact test totals
@@ -128,7 +153,11 @@ jobs:
           socket.create_connection = blocked
           import sys
           import pytest
-          sys.exit(pytest.main(['capability_dispatch/tests/test_dispatch_matrix.py', '-q']))
+          sys.exit(pytest.main([
+              'capability_dispatch/tests/test_dispatch_matrix.py',
+              'capability_dispatch/tests/test_authoritative_intake.py',
+              '-q',
+          ]))
           "
 
       - name: Verify third-party safety boundary (no install/clone/execute capability in source)

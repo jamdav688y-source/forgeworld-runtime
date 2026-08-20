@@ -32,6 +32,24 @@ CATEGORY_FUNCTION_TAGS = {
     "secret_scanning_cli": {"security_scanning", "secret_detection"},
     "automation_agent": {"automation", "shell_execution", "orchestration"},
     "unknown": set(),
+    # Added for the FW-CAP-DISPATCH-004 authoritative intake (42-candidate
+    # packet, capability_dispatch/intake/FW-CAP-DISPATCH-004.json), whose
+    # observed_category values differ from the synthetic fixture's. These
+    # mappings are not exercised by that packet's own dispatch run in this
+    # proof -- every one of the 42 candidates resolves identity as
+    # UNAVAILABLE (no live registry lookup was performed; see
+    # authoritative_intake.py), so overlap.py's own identity gate returns
+    # UNRESOLVED before any tag comparison happens. They are added anyway
+    # so a future session with real identity-resolution authority does not
+    # have to extend this table under time pressure.
+    "harness": {"code_generation", "shell_execution", "file_editing"},
+    "skill": {"documentation", "research"},
+    "app_platform": {"automation", "orchestration"},
+    "connector_catalog": {"structured_data"},
+    "tool_or_app": {"automation"},
+    "prompt_library": {"writing"},
+    "prompt_or_optimization": {"analysis"},
+    "security_skill": {"security_scanning"},
 }
 
 FUNCTIONAL_DUPLICATE_THRESHOLD = 0.75  # fraction of candidate's tags already covered

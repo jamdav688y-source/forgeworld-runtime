@@ -11,7 +11,64 @@ Branch: `feature/fw-cap-dispatch-004`, based on `claude/perception-gateway`
 Execution Ledger, Evidence gates, Authority Model — only exist on that
 unmerged branch, not on `main`).
 
-## On the supplied input artifacts
+## Revision (2026-08-20): authoritative artifacts received and integrated
+
+`FW-CAP-DISPATCH-004.json` and `FW-CAP-DISPATCH-004.md` were subsequently
+committed directly to this branch by the repository owner at
+`611b41ef8cc4c1bd1837c054aa69a8183e17fe26`, under
+`capability_dispatch/intake/`. Both files' sha256 hashes were
+independently recomputed in this session and matched the declared values
+exactly (see `artifact_validation.json`'s `superseding_update_2026_08_20`).
+
+A **second, real-shape ingester** (`capability_dispatch/src/authoritative_intake.py`)
+was written because the authoritative packet's JSON shape genuinely
+differs from the synthetic fixture's: `capability_candidates[].name`/`.category`
+instead of `candidates[].observed_name`/`.observed_category`, no
+`candidate_count` field at all (derived and stated as derived), and
+`canonical_hint` values arriving as bare `github.com/owner/repo` strings
+with no scheme (preserved raw, with a separately-recorded
+`canonical_hint_normalized` + `canonical_hint_normalization_method` —
+never silently rewritten in place).
+
+```
+SourceObservation SRC-236f3514f9c4, sha256=8252cf225ad9017c..., 42 candidates (derived)
+SourceObservation SRC-0ce84596310f (the .md companion), sha256=b696b375f3921b18...
+
+42/42 candidates ingested, 0 duplicates, epistemic floor confirmed for all 42.
+9/42 carry a canonical_hint (all bare "github.com/owner/repo", normalized with an
+assumed https:// scheme, raw value preserved unmodified).
+
+Identity resolution: FixtureIdentityResolver({}) (EMPTY -- no live network/registry
+lookup performed this mission) -> 42/42 UNAVAILABLE. This is the honest, correct
+outcome given the offline constraint, not a defect -- the artifact's own .md states
+"Canonical identity resolution: incomplete".
+
+Overlap analysis: 42/42 UNRESOLVED, as a direct consequence of the above (overlap.py's
+identity gate fires before any registry comparison is attempted for a non-VERIFIED candidate).
+
+Dispatch (no mission fields supplied): DEC-380ce2c1747e HARD_BLOCKED / MISSING_PROBLEM_STATEMENT
+Dispatch (illustrative mission_request, required_capabilities = the packet's own 8
+observed categories): DEC-601c63567bdb NO_SUFFICIENT_CANDIDATE
+  4 of 8 required categories covered via REUSE against the EXISTING registry
+  (python x3, airtable, claude_code x2, chatgpt -- no new candidate needed);
+  remaining categories uncovered because no candidate in this packet could be
+  verified without live network access this mission does not have.
+```
+
+Full raw objects: `authoritative_dispatch_output.json` in this directory.
+Full per-report detail: `candidate_import_report.json`,
+`identity_resolution_report.json`, `overlap_analysis_report.json`,
+`claims_integrity_report.json` — each now split into an
+`authoritative_*`/`AUTHORITATIVE_MISSION_SOURCE` section (this packet) and
+a `test_fixture_ingestion`/`TEST_FIXTURE` section (the synthetic packet,
+prohibited from serving as mission-source evidence from this revision
+forward, retained only for deterministic offline test coverage).
+
+New regression coverage: `capability_dispatch/tests/test_authoritative_intake.py`
+(hash-pinned against the real committed files, so a future accidental edit
+to `capability_dispatch/intake/*.json/.md` fails CI immediately).
+
+### Original (pre-revision) synthetic-substitute rationale, preserved for the record
 
 `FW-CAP-DISPATCH-004.json` and `FW-CAP-DISPATCH-004.md` were never
 supplied to this mission — confirmed by exhaustive filesystem search (see
@@ -19,7 +76,9 @@ supplied to this mission — confirmed by exhaustive filesystem search (see
 (`capability_dispatch/fixtures/FW-CAP-DISPATCH-004.synthetic.json`) was
 built instead, modeled on the mission brief's own description of the
 source material (screenshots with changing star counts and unresolved
-shortened links). This report never claims the named files were used.
+shortened links). That version of this report never claimed the named
+files were used, and this revision does not retroactively claim the
+synthetic run was ever anything but a stand-in.
 
 ## What was built
 
@@ -38,7 +97,7 @@ than duplicating them (full table: `repository_reuse_map.json`):
 | DISPATCH LEARNING RECORD | `learning.py` | `router/record_outcome.py` (writes through it) |
 | THIRD-PARTY SAFETY BOUNDARY | `safety_boundary.py` | — (net new, per confirmed gap) |
 
-## Proof run (real code, synthetic input)
+## Proof run (real code, TEST_FIXTURE synthetic input — historical, pre-revision)
 
 One full pipeline run against the synthetic fixture, decided by
 `human:jamdav688y@gmail.com`, `authority_envelope=GRANTED_BOUNDED`:
@@ -145,4 +204,7 @@ this session).
 
 ## Completion status
 
-**INTEGRATION_COMPLETE**
+**ACTUAL_ARTIFACT_INTEGRATION_COMPLETE** (this revision) — supersedes the
+prior **INTEGRATION_COMPLETE** marker, which was scoped to the synthetic
+substitute only. See the top-level PR #6 revision commit for exact test
+totals and CI verification.
