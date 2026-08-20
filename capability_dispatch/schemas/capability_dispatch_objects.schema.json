@@ -1,0 +1,135 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "forgeworld:capability_dispatch:objects:1.0",
+  "title": "FW-CAP-DISPATCH-004 — required objects",
+  "description": "Documentation/interop schema. Actual enforcement is capability_dispatch/src/schema.py's hand-rolled validate_*() functions -- the same convention perception/schemas/perception_objects.schema.json and whatsapp/src/schema.py already established (no jsonschema package is available in this repository).",
+  "$defs": {
+    "envelope": {
+      "type": "object",
+      "required": [
+        "id", "schema_version", "created_at", "source_artifact_id", "source_artifact_sha256",
+        "extraction_method", "provider", "prompt_version", "raw_response_hash",
+        "confidence", "evidence_references", "validation_status", "human_review_status",
+        "contradiction_state", "temporal_validity"
+      ],
+      "properties": {
+        "id": {"type": "string"},
+        "schema_version": {"type": "string", "const": "1.0"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "source_artifact_id": {"type": ["string", "null"]},
+        "source_artifact_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "extraction_method": {"type": "string"},
+        "provider": {"type": ["string", "null"]},
+        "prompt_version": {"type": ["string", "null"]},
+        "raw_response_hash": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "confidence": {"type": ["number", "null"], "minimum": 0.0, "maximum": 1.0},
+        "evidence_references": {"type": "array", "items": {"type": "string"}},
+        "validation_status": {"type": "string"},
+        "human_review_status": {"type": "string"},
+        "contradiction_state": {"type": "string", "enum": ["none", "active", "resolved"]},
+        "temporal_validity": {"type": "object"}
+      }
+    },
+
+    "SourceObservation": {
+      "allOf": [{"$ref": "#/$defs/envelope"}, {
+        "type": "object",
+        "required": ["media_type", "filename", "file_size_bytes", "candidate_count"],
+        "properties": {
+          "validation_status": {"enum": ["unvalidated", "hash_verified"]},
+          "media_type": {"type": "string", "description": "content-detected, never trusted from a filename extension -- see ingest.detect_media_type()"},
+          "candidate_count": {"type": "integer"}
+        }
+      }]
+    },
+
+    "CapabilityCandidate": {
+      "allOf": [{"$ref": "#/$defs/envelope"}, {
+        "type": "object",
+        "required": ["observed_name", "identity_status", "safety_status", "license_status", "maintenance_status", "installation_status", "authority_status", "promotion_status", "registry_overlap"],
+        "properties": {
+          "identity_status": {"enum": ["UNVERIFIED", "VERIFIED", "AMBIGUOUS", "UNAVAILABLE", "REJECTED"]},
+          "safety_status": {"enum": ["NOT_ASSESSED", "PASSED", "FAILED", "INCONCLUSIVE"]},
+          "license_status": {"enum": ["NOT_ASSESSED", "PASSED", "FAILED", "INCONCLUSIVE"]},
+          "maintenance_status": {"enum": ["NOT_ASSESSED", "PASSED", "FAILED", "INCONCLUSIVE"]},
+          "installation_status": {"enum": ["NOT_INSTALLED", "SANDBOXED", "INSTALLED"]},
+          "authority_status": {"enum": ["NOT_GRANTED", "GRANTED_BOUNDED", "GRANTED"]},
+          "promotion_status": {"enum": ["NOT_ELIGIBLE", "ELIGIBLE_PENDING_REVIEW", "PROMOTED", "REJECTED"]},
+          "registry_overlap": {"enum": ["UNIQUE_GAP", "PARTIAL_OVERLAP", "FUNCTIONAL_DUPLICATE", "ARCHITECTURAL_CONFLICT", "UNRESOLVED"]}
+        }
+      }]
+    },
+
+    "IdentityEvidence": {
+      "allOf": [{"$ref": "#/$defs/envelope"}, {
+        "type": "object",
+        "required": ["candidate_id", "resolution", "evidence_basis"],
+        "properties": {
+          "resolution": {"enum": ["UNVERIFIED", "VERIFIED", "AMBIGUOUS", "UNAVAILABLE", "REJECTED"]}
+        }
+      }]
+    },
+
+    "VerificationResult": {
+      "allOf": [{"$ref": "#/$defs/envelope"}, {
+        "type": "object",
+        "required": ["candidate_id", "dimension", "basis"],
+        "properties": {
+          "dimension": {"enum": ["safety", "license", "maintainability"]},
+          "validation_status": {"enum": ["NOT_ASSESSED", "PASSED", "FAILED", "INCONCLUSIVE"]}
+        }
+      }]
+    },
+
+    "RegistryOverlap": {
+      "allOf": [{"$ref": "#/$defs/envelope"}, {
+        "type": "object",
+        "required": ["candidate_id", "classification", "recommended_disposition"],
+        "properties": {
+          "classification": {"enum": ["UNIQUE_GAP", "PARTIAL_OVERLAP", "FUNCTIONAL_DUPLICATE", "ARCHITECTURAL_CONFLICT", "UNRESOLVED"]},
+          "recommended_disposition": {"enum": ["REUSE", "ADAPT", "SANDBOX_PROBE", "OBSERVE", "DUPLICATE", "REJECT", "BLOCK"]}
+        }
+      }]
+    },
+
+    "DispatchProfile": {
+      "allOf": [{"$ref": "#/$defs/envelope"}, {
+        "type": "object",
+        "required": ["candidate_id", "network_required", "filesystem_required", "shell_required", "credential_required"],
+        "properties": {
+          "network_required": {"type": "boolean"},
+          "filesystem_required": {"type": "boolean"},
+          "shell_required": {"type": "boolean"},
+          "credential_required": {"type": "boolean"},
+          "reversibility": {"type": ["string", "null"]}
+        }
+      }]
+    },
+
+    "DispatchDecision": {
+      "allOf": [{"$ref": "#/$defs/envelope"}, {
+        "type": "object",
+        "required": ["mission_id", "run_id", "required_capabilities", "selected_set"],
+        "properties": {
+          "validation_status": {"enum": ["HARD_BLOCKED", "DISPATCHED", "NO_SUFFICIENT_CANDIDATE"]},
+          "hard_block_reason": {
+            "enum": [
+              "MISSING_PROBLEM_STATEMENT", "MISSING_DESIRED_OUTCOME", "MISSING_SUCCESS_METRIC",
+              "IDENTITY_AMBIGUOUS_FOR_INSTALL", "AUTHORITY_NOT_GRANTED", "LICENSE_INCOMPATIBLE",
+              "UNBOUNDED_EXECUTION_SURFACE", "SECURITY_REVIEW_FAILED", "ARCHITECTURAL_CONFLICT",
+              "INSUFFICIENT_EVIDENCE", null
+            ]
+          }
+        }
+      }]
+    },
+
+    "DispatchLearningRecord": {
+      "allOf": [{"$ref": "#/$defs/envelope"}, {
+        "type": "object",
+        "required": ["decision_id", "candidate_id"],
+        "properties": {}
+      }]
+    }
+  }
+}

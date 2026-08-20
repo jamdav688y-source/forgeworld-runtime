@@ -121,6 +121,26 @@
       "constraints": {},
       "reason": "Added for FORGEWORLD PERCEPTION GATEWAY PROOF 001: a CapabilityProposal (perception/src/schema.py) may never self-promote into the Knowledge Vault -- 'models may propose relationships but may not validate them' is a mission constraint, and this policy is what makes evaluate_authority() actually deny an agent-actor attempt at PROMOTE_KNOWLEDGE rather than the rule existing only in prose. Same blast-radius posture as PROMOTE_RELEASE: no autonomous path exists.",
       "evidence_required": ["SUPPORTED"]
+    },
+    {
+      "policy_id": "POLICY-sandbox-probe-candidate-v1",
+      "capability": "SANDBOX_PROBE_CANDIDATE",
+      "scope": {"resource": "capability_candidate", "target": "*"},
+      "trust_boundary": "LOCAL_FILE",
+      "decision": "ALLOWED_BOUNDED",
+      "constraints": {"crosses_external_boundary": false},
+      "reason": "Added for FORGEWORLD DYNAMIC CAPABILITY DISPATCH INTEGRATION MISSION (FW-CAP-DISPATCH-004): an isolated, reversible sandbox probe of a fully-verified, unique-gap capability candidate never touches a remote system or crosses an external trust boundary by definition (see capability_dispatch/src/dispatch.py's UNBOUNDED_EXECUTION_SURFACE gate, which independently blocks any candidate requiring network+shell+credentials before this policy is even consulted). This mission itself grants no THIRD_PARTY_INSTALLATION_AUTHORITY or PRODUCTION_PROMOTION_AUTHORITY -- this policy only ever lets the dispatch engine assign the SANDBOX_PROBE disposition to a candidate; it never authorizes installing, cloning, or actually executing anything (see capability_dispatch/THIRD_PARTY_SAFETY_BOUNDARY.md).",
+      "evidence_required": ["SUPPORTED"]
+    },
+    {
+      "policy_id": "POLICY-install-third-party-capability-v1",
+      "capability": "INSTALL_THIRD_PARTY_CAPABILITY",
+      "scope": {"resource": "capability_candidate", "target": "*"},
+      "trust_boundary": "GOVERNANCE",
+      "decision": "HUMAN_ONLY",
+      "constraints": {},
+      "reason": "Added for FW-CAP-DISPATCH-004. Installing a third-party capability is the mission's named highest-severity gate (13 pre-installation requirements, mission Section 13) -- this policy is what makes evaluate_authority() actually deny an autonomous attempt rather than the rule existing only in prose. No capability_dispatch code path currently calls evaluate_authority for this capability at all (this mission grants no installation authority to exercise), so this policy is a forward-looking fixture only, matching PROMOTE_RELEASE's and PROMOTE_KNOWLEDGE's identical posture.",
+      "evidence_required": ["VALIDATED"]
     }
   ]
 }

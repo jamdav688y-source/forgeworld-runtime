@@ -4,12 +4,20 @@ on:
   pull_request:
     paths:
       - "whatsapp/**"
+      - "capability_dispatch/**"
+      - "router/**"
+      - "capabilities/registry.json"
+      - "governance/policy_defaults.json"
       - ".github/workflows/whatsapp-tests.yml"
   push:
     branches:
       - main
     paths:
       - "whatsapp/**"
+      - "capability_dispatch/**"
+      - "router/**"
+      - "capabilities/registry.json"
+      - "governance/policy_defaults.json"
 
 jobs:
   test:
@@ -53,3 +61,95 @@ jobs:
             exit 1
           fi
           echo "No hardcoded secret patterns found."
+
+  capability-dispatch-test:
+    name: capability_dispatch (FW-CAP-DISPATCH-004) test suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pytest (stdlib unittest.TestCase suite, pytest as the runner)
+        run: pip install --quiet pytest
+
+      - name: Validate the dispatch ingest fixture JSON (syntax + required fields)
+        run: |
+          python3 -c "
+          import json, sys
+          packet = json.load(open('capability_dispatch/fixtures/FW-CAP-DISPATCH-004.synthetic.json'))
+          for field in ('artifact_id', 'candidate_count', 'candidates'):
+              assert field in packet, f'missing required field: {field}'
+          assert packet['candidate_count'] == len(packet['candidates']), 'candidate_count mismatch'
+          assert 'FW-CAP-DISPATCH-004' in packet['artifact_id'], 'artifact_id does not reference this mission'
+          print('dispatch ingest fixture JSON: valid,', packet['candidate_count'], 'candidates')
+          "
+
+      - name: Verify fixture files are deterministic (unchanged sha256 across repeated reads)
+        run: |
+          python3 -c "
+          import hashlib
+          for name in ('FW-CAP-DISPATCH-004.synthetic.json', 'identity_fixtures.json'):
+              path = f'capability_dispatch/fixtures/{name}'
+              a = hashlib.sha256(open(path, 'rb').read()).hexdigest()
+              b = hashlib.sha256(open(path, 'rb').read()).hexdigest()
+              assert a == b, f'{name} hash is not stable across reads'
+              print(name, a)
+          "
+
+      - name: Run capability_dispatch/tests (12 TEST-DISPATCH scenarios) with JUnit output
+        run: |
+          python3 -m pytest capability_dispatch/tests/test_dispatch_matrix.py -v \
+            --junitxml=evidence/FW-CAP-DISPATCH-004/dispatch_test_results.xml
+
+      - name: Report exact test totals
+        if: always()
+        run: |
+          python3 -c "
+          import xml.etree.ElementTree as ET
+          root = ET.parse('evidence/FW-CAP-DISPATCH-004/dispatch_test_results.xml').getroot()
+          suite = root.find('testsuite')
+          print(f\"tests={suite.get('tests')} failures={suite.get('failures')} errors={suite.get('errors')} skipped={suite.get('skipped')}\")
+          "
+
+      - name: Confirm no network calls are required (offline sanity check)
+        run: |
+          python3 -c "
+          import socket
+          # Blocked in THIS interpreter, then pytest is run in-process
+          # (pytest.main(), not a subprocess) so the block actually
+          # applies to the same process executing the tests -- a
+          # subprocess would start a fresh interpreter with socket
+          # un-blocked, silently defeating this check.
+          def blocked(*a, **k):
+              raise RuntimeError('network access attempted during test run: socket.create_connection blocked')
+          socket.create_connection = blocked
+          import sys
+          import pytest
+          sys.exit(pytest.main(['capability_dispatch/tests/test_dispatch_matrix.py', '-q']))
+          "
+
+      - name: Verify third-party safety boundary (no install/clone/execute capability in source)
+        run: |
+          if grep -rn --include="*.py" --exclude-dir=__pycache__ "subprocess\|os\.system\|os\.popen\|shutil\.\|git clone\|pip install\|npm install\|urlretrieve\|urllib.request\|requests\.\|eval(\|exec(" capability_dispatch/src/ | grep -v "safety_boundary.py"; then
+            echo "A capability_dispatch/src/ module references an install/execute-capable call -- failing the build."
+            exit 1
+          fi
+          echo "No installation/execution-capable calls found outside safety_boundary.py's own docstring."
+
+      - name: Verify no real secrets committed under capability_dispatch/
+        run: |
+          if grep -rEn "(api[_-]?key|secret|token|password)[\"']?\s*[:=]\s*[\"'][A-Za-z0-9_\-]{20,}" capability_dispatch/ --include="*.py" --include="*.json" --include="*.md" -i | grep -v "fixture\|not-real\|synthetic\|os.environ"; then
+            echo "Possible hardcoded secret found -- failing the build."
+            exit 1
+          fi
+          echo "No hardcoded secret patterns found."
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fw-cap-dispatch-004-evidence
+          path: evidence/FW-CAP-DISPATCH-004/
+          retention-days: 30

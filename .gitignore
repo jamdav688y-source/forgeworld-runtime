@@ -6,3 +6,4 @@ whatsapp/.env.*
 whatsapp/ledgers/*.jsonl
 perception/ledgers/*.jsonl
 perception/data/
+capability_dispatch/data/

@@ -1,0 +1,39 @@
+{
+  "mission_id": "FW-CAP-DISPATCH-004",
+  "run_id": "RUN-PROOF-001",
+  "scope": "Every disposition and hard-block reason this run produced, checked against the evidence it claims to be based on.",
+  "checks": [
+    {
+      "claim": "CAP-828d3059ff33 (SYNTHETIC-python-wrapper-cli) is a FUNCTIONAL_DUPLICATE of 'python'",
+      "evidence": "OVL-7c4282d49071.shared_functions = ['automation','data_processing','scripting'], matched against capabilities/registry.json's 'python' entry's actual tags field, read live via capabilities.discover.load_registry() at analysis time, not hardcoded",
+      "verdict": "TRACEABLE -- re-running capabilities.discover.load_registry() reproduces the same tag set this claim cites"
+    },
+    {
+      "claim": "CAP-466f2d5fa7ad (SYNTHETIC-shortlink-mystery-tool) resolved AMBIGUOUS, not VERIFIED",
+      "evidence": "identity.py's structural shortened-URL override fired because canonical_hint's domain ('bit.ly') is in KNOWN_URL_SHORTENERS -- independently verifiable by inspecting the candidate's own canonical_hint field, not by trusting the resolver's stated confidence",
+      "verdict": "TRACEABLE -- the override is a pure function of the candidate's own data, reproducible without re-running the resolver"
+    },
+    {
+      "claim": "CAP-31cf4841902f (SYNTHETIC-unbounded-shell-agent) was BLOCKed for UNBOUNDED_EXECUTION_SURFACE",
+      "evidence": "its DispatchProfile explicitly declares shell_required=true, credential_required=true, network_required=true, reversibility='irreversible' -- schema.is_unbounded_execution_surface() is a pure boolean function of exactly these four fields, no hidden inputs",
+      "verdict": "TRACEABLE -- checkable by reading the DispatchProfile object alone"
+    },
+    {
+      "claim": "The gitleaks-clone candidate reached SANDBOX_PROBE",
+      "evidence": "identity_status=VERIFIED (IDE-835963a76804), overlap=UNIQUE_GAP (OVL-29008382c50a), authority_envelope=GRANTED_BOUNDED (governance.authority.evaluate_authority against POLICY-sandbox-probe-candidate-v1), all three VerificationResult dimensions PASSED, DispatchProfile.reversibility='reversible' -- every one of these five independent facts is a separately-constructed, separately-validated object, not a single unchecked assumption",
+      "verdict": "TRACEABLE -- five independent objects, each individually re-verifiable"
+    },
+    {
+      "claim": "The dispatch decision's confidence value is 0.9",
+      "evidence": "computed as the mean of the selected candidate's component_scores dict (not a single opaque number invented separately) -- component_scores itself is attached to the DispatchDecision's underlying evaluation, inspectable per-axis",
+      "verdict": "TRACEABLE, WITH A NOTED LIMITATION -- see execution_summary.md's 'Limitations' section: 'freshness' and several cost/latency axes are informational placeholders in this proof (synthetic candidates carry hand-authored, not measured, cost/latency estimates), so the confidence number is real arithmetic over real fields, but those fields' own values are themselves synthetic, not measured"
+    },
+    {
+      "claim": "Star-count observations never influenced any disposition",
+      "evidence": "grep across capability_dispatch/src/ for 'star' or 'popularity' as a structured field name: zero matches outside of source_notes free-text handling in ingest.py's docstrings and the fixture packet's own free-text notes",
+      "verdict": "TRACEABLE -- structural absence confirmed by source inspection, not merely asserted (see TestDispatch007DuplicateCapability::test_star_count_never_influences_disposition)"
+    }
+  ],
+  "violations_found": [],
+  "overall_verdict": "No claims-integrity violations found in this run. Every disposition and classification traces to a specific, independently re-checkable object or source-code function -- none rest on an unstated assumption or a value invented at report-writing time rather than computed during the run."
+}

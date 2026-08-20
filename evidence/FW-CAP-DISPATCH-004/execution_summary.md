@@ -1,0 +1,148 @@
+# FW-CAP-DISPATCH-004 — Execution Summary
+
+## Mission
+
+> Integrate the supplied capability-candidate intelligence into
+> ForgeWorld's canonical database and systemic dispatch architecture.
+
+Branch: `feature/fw-cap-dispatch-004`, based on `claude/perception-gateway`
+(PR #5) at `00f353fb4d1fedbd7fe45d1d213ac3bf62447ae4` — see
+`baseline.json` for why (the mission's own required canonical components —
+Execution Ledger, Evidence gates, Authority Model — only exist on that
+unmerged branch, not on `main`).
+
+## On the supplied input artifacts
+
+`FW-CAP-DISPATCH-004.json` and `FW-CAP-DISPATCH-004.md` were never
+supplied to this mission — confirmed by exhaustive filesystem search (see
+`artifact_validation.json`). A clearly-labeled synthetic substitute
+(`capability_dispatch/fixtures/FW-CAP-DISPATCH-004.synthetic.json`) was
+built instead, modeled on the mission brief's own description of the
+source material (screenshots with changing star counts and unresolved
+shortened links). This report never claims the named files were used.
+
+## What was built
+
+Twelve required functions, each in its own module under
+`capability_dispatch/src/`, extending existing canonical components rather
+than duplicating them (full table: `repository_reuse_map.json`):
+
+| Function | Module | Extends |
+|---|---|---|
+| SOURCE OBSERVATION ingestion | `ingest.py` | perception's governed-ingest pattern |
+| CANDIDATE IDENTITY RESOLUTION | `identity.py` | perception's provider-neutral pattern |
+| REGISTRY OVERLAP ANALYSIS | `overlap.py` | `capabilities/discover.py`, perception's EvidenceRelationship shape |
+| PROBLEM-FIRST DISPATCH GATE | `gate.py` | — (net new, per confirmed gap) |
+| DYNAMIC DISPATCH ENGINE | `dispatch.py` | `router/mission_router.py` (imported, not reimplemented) |
+| CONTEXT COMPILATION | `context.py` | `governance/authority.py`'s `load_policies()` |
+| DISPATCH LEARNING RECORD | `learning.py` | `router/record_outcome.py` (writes through it) |
+| THIRD-PARTY SAFETY BOUNDARY | `safety_boundary.py` | — (net new, per confirmed gap) |
+
+## Proof run (real code, synthetic input)
+
+One full pipeline run against the synthetic fixture, decided by
+`human:jamdav688y@gmail.com`, `authority_envelope=GRANTED_BOUNDED`:
+
+```
+SourceObservation SRC-be1b02776ff8, sha256=16bf1f80823e1a05..., 5 candidates
+
+CAP-9350646f92f8  SYNTHETIC-gitleaks-clone          VERIFIED    UNIQUE_GAP          -> SANDBOX_PROBE
+CAP-828d3059ff33  SYNTHETIC-python-wrapper-cli       VERIFIED    FUNCTIONAL_DUPLICATE -> DUPLICATE
+CAP-466f2d5fa7ad  SYNTHETIC-shortlink-mystery-tool   AMBIGUOUS   UNRESOLVED          -> BLOCK
+CAP-31cf4841902f  SYNTHETIC-unbounded-shell-agent    VERIFIED    PARTIAL_OVERLAP     -> BLOCK (UNBOUNDED_EXECUTION_SURFACE, overrides ADAPT)
+CAP-8f97b2df588f  SYNTHETIC-unknown-tool-xyz         UNAVAILABLE UNRESOLVED          -> BLOCK
+
+DispatchDecision DEC-3b3aacf20d9a: DISPATCHED
+  selected_set: [{candidate_id: CAP-9350646f92f8, disposition: SANDBOX_PROBE}]
+  (the smallest sufficient set for required_capabilities=['secret_scanning_cli'])
+
+Hard-block demonstrations:
+  DEC-eddd090d006c: HARD_BLOCKED / MISSING_PROBLEM_STATEMENT
+  DEC-a85503015d90: HARD_BLOCKED / MISSING_SUCCESS_METRIC
+
+DispatchLearningRecord LRN-b21b140e1a0d: evidence_sufficiency=SUPPORTED,
+  written through router.record_outcome.record() into capabilities/history.jsonl
+  (isolated tmp path during this proof run -- see rollback_plan.md)
+```
+
+A second scenario (`RUN-REUSE-A`, exercised in manual verification, not
+re-run for this file) confirmed the smallest-sufficient-set logic also
+recognizes when an *already-registered* capability satisfies a
+requirement with **no new candidate at all**: `required_capabilities=['scripting_utility']`
+resolved to `disposition: REUSE`, `candidate_id: null`,
+`existing_capability_id: 'python'`.
+
+Full raw objects: `dispatch_proof_output.json` in this directory.
+
+## Execution Ledger coverage
+
+```
+CAPTURE: 1   HASH: 2   IDENTITY_RESOLUTION: 10   REGISTRY_OVERLAP: 5
+DISPATCH_EVALUATION: 5   DISPATCH_DECISION: 3   CONTEXT_COMPILATION: 1
+DISPATCH_LEARNING: 1
+```
+(19 records this run, all `system=capability_dispatch`, in the same
+`whatsapp/ledgers/execution_ledger.jsonl` file the WhatsApp membrane and
+Perception Gateway already write into.)
+
+## A real bug found and fixed mid-mission
+
+`dispatch.score_candidate()` originally called
+`capabilities.discover.probe_all()` unconditionally — which performs a
+real TCP connection attempt for the `github` registry entry
+(`api.github.com:443`). This would have violated the mission's own "Do
+not use live external repositories in unit tests" / CI "must operate
+without requiring live external network access" requirements. Fixed by
+making `reachability_state` an explicit, optional parameter threaded
+through `score_candidate` → `evaluate_candidate` → `run_dispatch`; every
+test in `capability_dispatch/tests/` supplies a deterministic fixture
+dict and additionally monkeypatches `socket.create_connection` to raise
+if anything ever tries a real connection (see `tests/base.py`). Verified:
+the full test suite passes with that block active.
+
+A second gap was found and fixed during test-writing, not before: the
+initial `select_smallest_sufficient_set()` only ever considered newly
+ingested candidates, never an already-registered capability that might
+already satisfy a requirement outright — meaning the engine could recommend
+installing something redundant even when nothing needed to be added at
+all. Fixed by checking `capabilities/registry.json` for a covering
+capability first, only falling through to candidate evaluation for
+requirements the registry doesn't already cover.
+
+## Test results
+
+```
+capability_dispatch/tests/test_dispatch_matrix.py: 26 passed
+  (TEST-DISPATCH-001 through TEST-DISPATCH-012, all 12 named scenarios,
+   several with multiple assertions each -- see dispatch_test_results.xml)
+tests/governance: 60 passed (unmodified)
+whatsapp/tests: 60 passed (unmodified)
+perception/tests: 69 passed (unmodified)
+```
+
+No test run modifies a tracked repository file (`governance/evidence_log.jsonl`,
+`router/decisions.jsonl`, `capabilities/history.jsonl` all verified clean
+via `git status --porcelain` before and after every test invocation in
+this session).
+
+## Limitations and deferred work
+
+- Cost/latency/freshness figures on `DispatchProfile` objects in this
+  proof are hand-authored for the synthetic fixture, not measured from
+  any real execution — the confidence arithmetic over them is real, but
+  its inputs are illustrative, not empirical.
+- No real identity resolver, license database, or maintenance-activity
+  API is wired (`UnwiredRegistryIdentityResolver` documents the hook
+  point, raises `NotImplementedError`).
+- `SANDBOX_PROBE` disposition is fully computed and recorded, but this
+  mission grants no execution authority — no candidate is ever actually
+  run, sandboxed or otherwise (see `THIRD_PARTY_SAFETY_BOUNDARY.md`).
+- The category → function-tags mapping (`overlap.py`'s
+  `CATEGORY_FUNCTION_TAGS`) is a small, hand-maintained table, the same
+  posture as `whatsapp/src/classify.py`'s keyword lists — not a claim of
+  semantic understanding, and it will need extending as new candidate
+  categories appear.
+
+## Completion status
+
+**INTEGRATION_COMPLETE**

@@ -1,0 +1,110 @@
+{
+  "mission_id": "FW-CAP-DISPATCH-004",
+  "run_id": "RUN-FW-CAP-DISPATCH-004-001",
+  "recorded_at": "2026-08-19T17:20:00Z",
+  "repository": {
+    "identity": "jamdav688y-source/forgeworld-runtime",
+    "remote_url": "https://github.com/jamdav688y-source/forgeworld-runtime",
+    "working_directory": "/home/user/forgeworld-runtime"
+  },
+  "branch_state": {
+    "branch_at_mission_start": "claude/perception-gateway",
+    "head_sha_at_mission_start": "00f353fb4d1fedbd7fe45d1d213ac3bf62447ae4",
+    "default_branch": "main",
+    "default_branch_sha": "809544940050ea6567b22d87badf4c959a6582fa",
+    "feature_branch_created": "feature/fw-cap-dispatch-004",
+    "feature_branch_base_sha": "00f353fb4d1fedbd7fe45d1d213ac3bf62447ae4",
+    "feature_branch_base_note": "Branched from claude/perception-gateway (PR #5), NOT from main. See dependency note below."
+  },
+  "working_tree_status_before_edits": "clean (git status --short --branch showed only the tracking-branch line, no changes)",
+  "instruction_files_found": {
+    "command": "find .. \\( -name AGENTS.md -o -name CLAUDE.md \\) -print",
+    "result": []
+  },
+  "runtime_versions": {
+    "python": "Python 3.11.15",
+    "git": "git version 2.43.0"
+  },
+  "package_manager_evidence": {
+    "python": "no requirements.txt/pyproject.toml/lockfile at repo root; forgeworld-mobile-research/requirements.txt exists but is unrelated to this mission's target modules (router/, capabilities/, whatsapp/, governance/, perception/) -- confirms this repo's established zero-third-party-dependency-for-core-modules posture",
+    "node": "package.json present under pocket-cortex/ only; not relevant to this mission's Python-based target modules"
+  },
+  "database_technology": "None. All persistence in the target modules is flat-file: JSON (capabilities/registry.json), append-only JSONL (capabilities/history.jsonl, router/decisions.jsonl, whatsapp/ledgers/*.jsonl, perception/ledgers/*.jsonl), and JSON config files (governance/policy_defaults.json, governance/revocations.json). No SQL/NoSQL database exists for these modules. pocket-cortex/ separately uses node:sqlite, but that module is unrelated to this mission's scope.",
+  "schema_and_migration_conventions": {
+    "validation_style": "Hand-rolled Python validation functions (no jsonschema package available; no dependency-management story exists in this repo) -- see whatsapp/src/schema.py and perception/src/schema.py, both new_x()/validate_x() pairs per object type.",
+    "migration_style": "perception/src/migrations.py: register(object_type, from_version) decorator + migrate() function, no-op at current schema_version, raises on unknown version. No prior migration module existed before the Perception Gateway mission (PR #5)."
+  },
+  "test_framework": {
+    "whatsapp/tests": "stdlib unittest, run via 'python3 -m unittest discover -s whatsapp/tests -p test_*.py'",
+    "tests/governance": "pytest, run via 'python3 -m pytest tests/governance -q'",
+    "perception/tests": "unittest.TestCase classes, run via 'python3 -m pytest perception/tests -q' (pytest can collect unittest.TestCase; both styles coexist in this repo)",
+    "pytest_version": "9.1.1 (confirmed installed in this environment)"
+  },
+  "ci_workflows": {
+    "count": 1,
+    "workflows": [
+      {
+        "file": ".github/workflows/whatsapp-tests.yml",
+        "name": "whatsapp-tests",
+        "triggers": "pull_request paths=[whatsapp/**, .github/workflows/whatsapp-tests.yml]; push to main paths=[whatsapp/**]",
+        "job": "whatsapp module test suite -- runs unittest discover, an offline-sanity network-block check, and a hardcoded-secret grep"
+      }
+    ],
+    "note": "No CI currently covers tests/governance/, perception/tests/, router/, or capabilities/. This mission extends whatsapp-tests.yml's trigger paths and adds a job rather than creating a second, disconnected workflow file."
+  },
+  "pr_5_state": {
+    "number": 5,
+    "title": "Add FORGEWORLD Perception Gateway (PROOF 001)",
+    "state": "open",
+    "draft": false,
+    "merged": false,
+    "mergeable_state": "clean",
+    "head_ref": "claude/perception-gateway",
+    "head_sha": "00f353fb4d1fedbd7fe45d1d213ac3bf62447ae4",
+    "base_ref": "main",
+    "base_sha": "809544940050ea6567b22d87badf4c959a6582fa",
+    "ci_check": "whatsapp module test suite: success (run 32279442481)",
+    "review_comments": 0,
+    "checked_at": "2026-08-19T17:20:00Z"
+  },
+  "relevant_unmerged_branches": [
+    "claude/perception-gateway (= PR #5; contains governance/, whatsapp/, perception/ -- none of which exist on main)",
+    "claude/forgeworld-authority-separation (merged into claude/perception-gateway already; governance/ origin)",
+    "claude/forgeworld-whatsapp-membrane-sj47yn (merged into claude/perception-gateway already; whatsapp/ origin)"
+  ],
+  "existing_relevant_components_confirmed_present": {
+    "IntelligenceRouter_equivalent": "router/mission_router.py -- route() function: deterministic single-capability selection, decomposed confidence (reachability/task_fit/output_quality/historical_evidence) and 5-axis cost, appends DispatchDecision-shaped records to router/decisions.jsonl",
+    "DispatchDecision_ledger_equivalent": "router/decisions.jsonl (currently empty, 0 bytes)",
+    "DispatchLearningRecord_write_path_equivalent": "router/record_outcome.py -- record() function, the single sanctioned write path into capabilities/history.jsonl (currently empty, 0 bytes)",
+    "CapabilityRegistry_equivalent": "capabilities/registry.json -- id/kind/provider/check/tags/cost shape; perception/registry.json is a second instance of the same shape/pattern for a different domain (retrieval connectors), not a competing schema",
+    "ExecutionSurface_probe_equivalent": "capabilities/discover.py -- probe_one()/probe_all(): command/env/network/self/manual reachability checks",
+    "AuthorityModel_equivalent": "governance/authority.py -- evaluate_authority(), AuthorityPolicy, AuthorityDecision; governance/policy_defaults.json policy fixtures",
+    "EvidenceModel_equivalent": "governance/evidence.py -- observe()/validate()/institutionalize()/current_evidence_state()",
+    "PromotionGate_equivalent": "governance/promotion.py -- can_promote()",
+    "ExecutionLedger_equivalent": "whatsapp/src/ledger.py -- append()/read_all()/find(), path-parameterized, reused directly by perception/src/*.py for a second domain",
+    "KnowledgeVault_equivalent": "perception/ledgers/knowledge_vault.jsonl -- new in PR #5, written only on a human PROMOTED decision",
+    "EvidenceRelationship_equivalent": "perception/src/schema.py's EvidenceRelationship object (corroborates/contradicts/near_duplicate/unrelated) -- directly reusable pattern for registry-overlap classification",
+    "VisualObservation_ExternalObservation_equivalent": "perception/src/schema.py's VisualObservation + perception/src/common.py's shared envelope -- directly reusable for a non-visual 'external candidate observation' object",
+    "SandboxProbe_equivalent": "NONE FOUND -- confirmed gap, net-new for this mission",
+    "MissionControl_equivalent": "whatsapp/src/cli.py + perception/src/cli.py (phone-first, no-dashboard CLI pattern) -- this mission's CLI, if any, should follow the identical pattern",
+    "CapabilityCandidate_equivalent": "NONE FOUND as a typed object -- capabilities/registry.json entries are already-decided, already-installed capabilities, not candidates under evaluation. Confirmed gap.",
+    "DispatchProfile_equivalent": "capabilities/registry.json's per-entry shape (tags/cost/check) is a partial equivalent but lacks execution-surface, permission-surface, credential/network/filesystem/shell requirements, reversibility, failure modes. Confirmed partial gap."
+  },
+  "commands_executed_for_this_baseline": [
+    "pwd",
+    "git status --short --branch",
+    "git rev-parse HEAD",
+    "git remote -v",
+    "git branch --all",
+    "find .. ( -name AGENTS.md -o -name CLAUDE.md ) -print",
+    "python3 --version",
+    "git --version",
+    "find .github -type f",
+    "git rev-parse origin/main",
+    "cat .github/workflows/whatsapp-tests.yml",
+    "cat router/mission_router.py",
+    "cat router/record_outcome.py",
+    "cat capabilities/registry.json",
+    "wc -l capabilities/history.jsonl router/decisions.jsonl"
+  ]
+}

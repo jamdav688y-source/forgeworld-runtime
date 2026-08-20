@@ -1,0 +1,828 @@
+{
+  "candidates": [
+    {
+      "authority_status": "NOT_GRANTED",
+      "canonical_hint": "https://github.com/synthetic-org/gitleaks-clone",
+      "canonical_repository_url": "https://github.com/synthetic-org/gitleaks-clone",
+      "confidence": null,
+      "contradiction_state": "none",
+      "created_at": "2026-08-20T14:24:00Z",
+      "evidence_references": [
+        "SRC-be1b02776ff8"
+      ],
+      "extraction_method": "candidate_extraction",
+      "human_review_status": "not_required",
+      "id": "CAP-9350646f92f8",
+      "identity_status": "VERIFIED",
+      "identity_verified_at": "2026-08-20T14:24:00Z",
+      "installation_status": "NOT_INSTALLED",
+      "license_status": "NOT_ASSESSED",
+      "maintainer_hint": "synthetic-org",
+      "maintainer_identity": "synthetic-org",
+      "maintenance_status": "NOT_ASSESSED",
+      "normalized_category": "secret_scanning_cli",
+      "normalized_name": "synthetic_gitleaks_clone",
+      "observed_category": "secret-scanning-cli",
+      "observed_name": "SYNTHETIC-gitleaks-clone",
+      "promotion_status": "NOT_ELIGIBLE",
+      "prompt_version": null,
+      "provider": null,
+      "raw_response_hash": null,
+      "registry_overlap": "UNRESOLVED",
+      "safety_status": "NOT_ASSESSED",
+      "schema_version": "1.0",
+      "source_artifact_id": "FW-CAP-DISPATCH-004-SYNTHETIC",
+      "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
+      "source_notes": "Screenshot shows star count 2.3k in frame 1, 2.4k in frame 2 (36 hours apart per visible timestamp) -- treated as an unverified, changing observation, not a fact.",
+      "temporal_validity": {
+        "valid_from": "2026-08-20T14:24:00Z",
+        "valid_until": null
+      },
+      "validation_status": "extracted"
+    },
+    {
+      "authority_status": "NOT_GRANTED",
+      "canonical_hint": "https://github.com/synthetic-org/python-wrapper-cli",
+      "canonical_repository_url": "https://github.com/synthetic-org/python-wrapper-cli",
+      "confidence": null,
+      "contradiction_state": "none",
+      "created_at": "2026-08-20T14:24:00Z",
+      "evidence_references": [
+        "SRC-be1b02776ff8"
+      ],
+      "extraction_method": "candidate_extraction",
+      "human_review_status": "not_required",
+      "id": "CAP-828d3059ff33",
+      "identity_status": "VERIFIED",
+      "identity_verified_at": "2026-08-20T14:24:00Z",
+      "installation_status": "NOT_INSTALLED",
+      "license_status": "NOT_ASSESSED",
+      "maintainer_hint": "synthetic-org",
+      "maintainer_identity": "synthetic-org",
+      "maintenance_status": "NOT_ASSESSED",
+      "normalized_category": "scripting_utility",
+      "normalized_name": "synthetic_python_wrapper_cli",
+      "observed_category": "scripting-utility",
+      "observed_name": "SYNTHETIC-python-wrapper-cli",
+      "promotion_status": "NOT_ELIGIBLE",
+      "prompt_version": null,
+      "provider": null,
+      "raw_response_hash": null,
+      "registry_overlap": "UNRESOLVED",
+      "safety_status": "NOT_ASSESSED",
+      "schema_version": "1.0",
+      "source_artifact_id": "FW-CAP-DISPATCH-004-SYNTHETIC",
+      "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
+      "source_notes": "Described in the screenshot as 'a friendlier python CLI wrapper for automation and data processing' -- likely overlaps an existing installed capability; not assumed, to be checked.",
+      "temporal_validity": {
+        "valid_from": "2026-08-20T14:24:00Z",
+        "valid_until": null
+      },
+      "validation_status": "extracted"
+    },
+    {
+      "authority_status": "NOT_GRANTED",
+      "canonical_hint": "https://bit.ly/3xYzAbC",
+      "canonical_repository_url": "https://bit.ly/3xYzAbC",
+      "confidence": null,
+      "contradiction_state": "none",
+      "created_at": "2026-08-20T14:24:00Z",
+      "evidence_references": [
+        "SRC-be1b02776ff8"
+      ],
+      "extraction_method": "candidate_extraction",
+      "human_review_status": "not_required",
+      "id": "CAP-466f2d5fa7ad",
+      "identity_status": "AMBIGUOUS",
+      "identity_verified_at": "2026-08-20T14:24:00Z",
+      "installation_status": "NOT_INSTALLED",
+      "license_status": "NOT_ASSESSED",
+      "maintainer_hint": null,
+      "maintainer_identity": null,
+      "maintenance_status": "NOT_ASSESSED",
+      "normalized_category": "unknown",
+      "normalized_name": "synthetic_shortlink_mystery_tool",
+      "observed_category": "unknown",
+      "observed_name": "SYNTHETIC-shortlink-mystery-tool",
+      "promotion_status": "NOT_ELIGIBLE",
+      "prompt_version": null,
+      "provider": null,
+      "raw_response_hash": null,
+      "registry_overlap": "UNRESOLVED",
+      "safety_status": "NOT_ASSESSED",
+      "schema_version": "1.0",
+      "source_artifact_id": "FW-CAP-DISPATCH-004-SYNTHETIC",
+      "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
+      "source_notes": "Only a shortened link is visible in the screenshot; the destination was not independently resolved during this mission (mission brief: 'shortened links must remain unverified observations until independently resolved'). Do not follow or expand this link automatically.",
+      "temporal_validity": {
+        "valid_from": "2026-08-20T14:24:00Z",
+        "valid_until": null
+      },
+      "validation_status": "extracted"
+    },
+    {
+      "authority_status": "NOT_GRANTED",
+      "canonical_hint": "https://github.com/synthetic-org/unbounded-shell-agent",
+      "canonical_repository_url": "https://github.com/synthetic-org/unbounded-shell-agent",
+      "confidence": null,
+      "contradiction_state": "none",
+      "created_at": "2026-08-20T14:24:00Z",
+      "evidence_references": [
+        "SRC-be1b02776ff8"
+      ],
+      "extraction_method": "candidate_extraction",
+      "human_review_status": "not_required",
+      "id": "CAP-31cf4841902f",
+      "identity_status": "VERIFIED",
+      "identity_verified_at": "2026-08-20T14:24:00Z",
+      "installation_status": "NOT_INSTALLED",
+      "license_status": "NOT_ASSESSED",
+      "maintainer_hint": "synthetic-org",
+      "maintainer_identity": "synthetic-org",
+      "maintenance_status": "NOT_ASSESSED",
+      "normalized_category": "automation_agent",
+      "normalized_name": "synthetic_unbounded_shell_agent",
+      "observed_category": "automation-agent",
+      "observed_name": "SYNTHETIC-unbounded-shell-agent",
+      "promotion_status": "NOT_ELIGIBLE",
+      "prompt_version": null,
+      "provider": null,
+      "raw_response_hash": null,
+      "registry_overlap": "UNRESOLVED",
+      "safety_status": "NOT_ASSESSED",
+      "schema_version": "1.0",
+      "source_artifact_id": "FW-CAP-DISPATCH-004-SYNTHETIC",
+      "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
+      "source_notes": "README screenshot text mentions 'full shell access, arbitrary network egress, and stored credentials for one-click automation' -- flagged for execution-surface review, not taken as a recommendation.",
+      "temporal_validity": {
+        "valid_from": "2026-08-20T14:24:00Z",
+        "valid_until": null
+      },
+      "validation_status": "extracted"
+    },
+    {
+      "authority_status": "NOT_GRANTED",
+      "canonical_hint": null,
+      "canonical_repository_url": null,
+      "confidence": null,
+      "contradiction_state": "none",
+      "created_at": "2026-08-20T14:24:00Z",
+      "evidence_references": [
+        "SRC-be1b02776ff8"
+      ],
+      "extraction_method": "candidate_extraction",
+      "human_review_status": "not_required",
+      "id": "CAP-8f97b2df588f",
+      "identity_status": "UNAVAILABLE",
+      "identity_verified_at": "2026-08-20T14:24:00Z",
+      "installation_status": "NOT_INSTALLED",
+      "license_status": "NOT_ASSESSED",
+      "maintainer_hint": null,
+      "maintainer_identity": null,
+      "maintenance_status": "NOT_ASSESSED",
+      "normalized_category": "unknown",
+      "normalized_name": "synthetic_unknown_tool_xyz",
+      "observed_category": "unknown",
+      "observed_name": "SYNTHETIC-unknown-tool-xyz",
+      "promotion_status": "NOT_ELIGIBLE",
+      "prompt_version": null,
+      "provider": null,
+      "raw_response_hash": null,
+      "registry_overlap": "UNRESOLVED",
+      "safety_status": "NOT_ASSESSED",
+      "schema_version": "1.0",
+      "source_artifact_id": "FW-CAP-DISPATCH-004-SYNTHETIC",
+      "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
+      "source_notes": "Name visible in a list screenshot with no accompanying link, star count, or description -- no basis for any identity claim at all.",
+      "temporal_validity": {
+        "valid_from": "2026-08-20T14:24:00Z",
+        "valid_until": null
+      },
+      "validation_status": "extracted"
+    }
+  ],
+  "compiled_context": {
+    "active_mission": {
+      "desired_outcome": "Secrets are caught before landing in a shared branch.",
+      "mission_id": "FW-CAP-DISPATCH-004",
+      "problem_statement": "We cannot detect committed secrets before they reach a shared branch.",
+      "success_metric": "a sandbox probe run demonstrates detection on a known-bad fixture with zero false negatives"
+    },
+    "applicable_constraints": [],
+    "directly_relevant_evidence": [
+      "IDE-835963a76804",
+      "OVL-29008382c50a",
+      "VER-4121727c6d14",
+      "VER-299fed208c4e",
+      "VER-7089040880d7"
+    ],
+    "necessary_project_context": [],
+    "output_verification_contract": {
+      "expected_evidence": "sandbox probe execution log + governance.evidence OBSERVED record, if any SANDBOX_PROBE candidate is later authorized to run",
+      "sandbox_requirements": [
+        "CAP-9350646f92f8"
+      ]
+    },
+    "required_authority_rules": [
+      {
+        "capability": "SANDBOX_PROBE_CANDIDATE",
+        "decision": "ALLOWED_BOUNDED",
+        "policy_id": "POLICY-sandbox-probe-candidate-v1"
+      }
+    ],
+    "selected_capability_instructions": [
+      {
+        "candidate_id": "CAP-9350646f92f8",
+        "canonical_repository_url": "https://github.com/synthetic-org/gitleaks-clone",
+        "disposition": "SANDBOX_PROBE",
+        "observed_name": "SYNTHETIC-gitleaks-clone"
+      }
+    ],
+    "selection_rationale": {
+      "CAP-9350646f92f8": "selected into the smallest sufficient set for this mission",
+      "IDE-835963a76804": "identity evidence for selected candidate CAP-9350646f92f8",
+      "OVL-29008382c50a": "registry overlap analysis for selected candidate CAP-9350646f92f8",
+      "POLICY-sandbox-probe-candidate-v1": "authority policy actually checked for capability 'SANDBOX_PROBE_CANDIDATE' in this decision",
+      "VER-299fed208c4e": "license verification for selected candidate CAP-9350646f92f8",
+      "VER-4121727c6d14": "safety verification for selected candidate CAP-9350646f92f8",
+      "VER-7089040880d7": "maintainability verification for selected candidate CAP-9350646f92f8",
+      "active_mission": "the mission this decision was made for -- always included"
+    }
+  },
+  "dispatch_decision": {
+    "authority_decision": [
+      "ALLOWED_BOUNDED",
+      "ALLOWED_BOUNDED",
+      "ALLOWED_BOUNDED",
+      "ALLOWED_BOUNDED",
+      "ALLOWED_BOUNDED"
+    ],
+    "confidence": 0.9,
+    "considered_candidate_ids": [
+      "CAP-9350646f92f8",
+      "CAP-828d3059ff33",
+      "CAP-466f2d5fa7ad",
+      "CAP-31cf4841902f",
+      "CAP-8f97b2df588f"
+    ],
+    "contradiction_state": "none",
+    "created_at": "2026-08-20T14:24:00Z",
+    "desired_outcome": "Secrets are caught before landing in a shared branch.",
+    "evidence_references": [
+      "CAP-9350646f92f8",
+      "CAP-828d3059ff33",
+      "CAP-466f2d5fa7ad",
+      "CAP-31cf4841902f",
+      "CAP-8f97b2df588f"
+    ],
+    "execution_result": null,
+    "expected_evidence": "sandbox probe execution log + governance.evidence OBSERVED record, if any SANDBOX_PROBE candidate is later authorized to run",
+    "extraction_method": "dispatch_decision",
+    "hard_block_reason": null,
+    "human_review_status": "pending",
+    "id": "DEC-3b3aacf20d9a",
+    "mission_id": "FW-CAP-DISPATCH-004",
+    "overlap_decision": [
+      "UNIQUE_GAP",
+      "FUNCTIONAL_DUPLICATE",
+      "UNRESOLVED",
+      "PARTIAL_OVERLAP",
+      "UNRESOLVED"
+    ],
+    "problem_statement": "We cannot detect committed secrets before they reach a shared branch.",
+    "prompt_version": null,
+    "provider": null,
+    "raw_response_hash": null,
+    "rejected": [
+      {
+        "candidate_id": "CAP-828d3059ff33",
+        "disposition": "DUPLICATE",
+        "observed_name": "SYNTHETIC-python-wrapper-cli",
+        "reasoning": "100% of this candidate's inferred function tags are already covered by existing capability 'python' (['automation', 'data_processing', 'scripting'])"
+      },
+      {
+        "candidate_id": "CAP-466f2d5fa7ad",
+        "disposition": "BLOCK",
+        "observed_name": "SYNTHETIC-shortlink-mystery-tool",
+        "reasoning": "identity not VERIFIED"
+      },
+      {
+        "candidate_id": "CAP-31cf4841902f",
+        "disposition": "BLOCK",
+        "observed_name": "SYNTHETIC-unbounded-shell-agent",
+        "reasoning": "unbounded execution surface"
+      },
+      {
+        "candidate_id": "CAP-8f97b2df588f",
+        "disposition": "BLOCK",
+        "observed_name": "SYNTHETIC-unknown-tool-xyz",
+        "reasoning": "identity not VERIFIED"
+      }
+    ],
+    "required_capabilities": [
+      "secret_scanning_cli"
+    ],
+    "risk_decision": [
+      "SANDBOX_PROBE",
+      "DUPLICATE",
+      "BLOCK",
+      "BLOCK",
+      "BLOCK"
+    ],
+    "root_cause_hypothesis": "No secret-scanning capability is registered or wired into any workflow.",
+    "run_id": "RUN-PROOF-001",
+    "sandbox_requirements": [
+      "CAP-9350646f92f8"
+    ],
+    "schema_version": "1.0",
+    "selected_set": [
+      {
+        "candidate_id": "CAP-9350646f92f8",
+        "disposition": "SANDBOX_PROBE",
+        "existing_capability_id": null,
+        "observed_name": "SYNTHETIC-gitleaks-clone"
+      }
+    ],
+    "source_artifact_id": "FW-CAP-DISPATCH-004",
+    "source_artifact_sha256": null,
+    "success_metric": "a sandbox probe run demonstrates detection on a known-bad fixture with zero false negatives",
+    "temporal_validity": {
+      "valid_from": "2026-08-20T14:24:00Z",
+      "valid_until": null
+    },
+    "unresolved_questions": [
+      "SYNTHETIC-python-wrapper-cli: DUPLICATE -- 100% of this candidate's inferred function tags are already covered by existing capability 'python' (['automation', 'data_processing', 'scripting'])",
+      "SYNTHETIC-shortlink-mystery-tool: BLOCK -- identity not VERIFIED",
+      "SYNTHETIC-unbounded-shell-agent: BLOCK -- unbounded execution surface",
+      "SYNTHETIC-unknown-tool-xyz: BLOCK -- identity not VERIFIED"
+    ],
+    "validation_status": "DISPATCHED"
+  },
+  "execution_ledger_record_count": 28,
+  "execution_ledger_stage_counts": {
+    "CAPTURE": 1,
+    "CONTEXT_COMPILATION": 1,
+    "DISPATCH_DECISION": 3,
+    "DISPATCH_EVALUATION": 5,
+    "DISPATCH_LEARNING": 1,
+    "HASH": 2,
+    "IDENTITY_RESOLUTION": 10,
+    "REGISTRY_OVERLAP": 5
+  },
+  "hard_block_missing_problem_statement": {
+    "authority_decision": "NOT_CHECKED",
+    "confidence": null,
+    "considered_candidate_ids": [],
+    "contradiction_state": "none",
+    "created_at": "2026-08-20T14:24:00Z",
+    "desired_outcome": "x",
+    "evidence_references": [],
+    "execution_result": null,
+    "expected_evidence": "",
+    "extraction_method": "dispatch_decision",
+    "hard_block_reason": "MISSING_PROBLEM_STATEMENT",
+    "human_review_status": "not_required",
+    "id": "DEC-eddd090d006c",
+    "mission_id": "FW-CAP-DISPATCH-004",
+    "overlap_decision": "NOT_CHECKED",
+    "problem_statement": null,
+    "prompt_version": null,
+    "provider": null,
+    "raw_response_hash": null,
+    "rejected": [],
+    "required_capabilities": [],
+    "risk_decision": "NOT_CHECKED",
+    "root_cause_hypothesis": null,
+    "run_id": "RUN-PROOF-HB1",
+    "sandbox_requirements": [],
+    "schema_version": "1.0",
+    "selected_set": [],
+    "source_artifact_id": "FW-CAP-DISPATCH-004",
+    "source_artifact_sha256": null,
+    "success_metric": "y",
+    "temporal_validity": {
+      "valid_from": "2026-08-20T14:24:00Z",
+      "valid_until": null
+    },
+    "unresolved_questions": [
+      "mission_request.problem_statement is empty or absent -- the system will not guess what problem this mission is trying to solve."
+    ],
+    "validation_status": "HARD_BLOCKED"
+  },
+  "hard_block_missing_success_metric": {
+    "authority_decision": "NOT_CHECKED",
+    "confidence": null,
+    "considered_candidate_ids": [],
+    "contradiction_state": "none",
+    "created_at": "2026-08-20T14:24:00Z",
+    "desired_outcome": "x",
+    "evidence_references": [],
+    "execution_result": null,
+    "expected_evidence": "",
+    "extraction_method": "dispatch_decision",
+    "hard_block_reason": "MISSING_SUCCESS_METRIC",
+    "human_review_status": "not_required",
+    "id": "DEC-a85503015d90",
+    "mission_id": "FW-CAP-DISPATCH-004",
+    "overlap_decision": "NOT_CHECKED",
+    "problem_statement": "p",
+    "prompt_version": null,
+    "provider": null,
+    "raw_response_hash": null,
+    "rejected": [],
+    "required_capabilities": [],
+    "risk_decision": "NOT_CHECKED",
+    "root_cause_hypothesis": null,
+    "run_id": "RUN-PROOF-HB2",
+    "sandbox_requirements": [],
+    "schema_version": "1.0",
+    "selected_set": [],
+    "source_artifact_id": "FW-CAP-DISPATCH-004",
+    "source_artifact_sha256": null,
+    "success_metric": null,
+    "temporal_validity": {
+      "valid_from": "2026-08-20T14:24:00Z",
+      "valid_until": null
+    },
+    "unresolved_questions": [
+      "mission_request.success_metric is empty or absent -- the system will not guess how success would be measured."
+    ],
+    "validation_status": "HARD_BLOCKED"
+  },
+  "identity_evidence": [
+    {
+      "candidate_id": "CAP-9350646f92f8",
+      "canonical_owner": "synthetic-org",
+      "canonical_repository_url": "https://github.com/synthetic-org/gitleaks-clone",
+      "confidence": 0.9,
+      "contradiction_state": "none",
+      "created_at": "2026-08-20T14:24:00Z",
+      "evidence_basis": "fixture: canonical_hint matches a well-formed, non-shortened repository URL with an active-looking maintainer org",
+      "evidence_references": [
+        "CAP-9350646f92f8"
+      ],
+      "extraction_method": "identity_resolution",
+      "human_review_status": "not_required",
+      "id": "IDE-835963a76804",
+      "license_id": "MIT",
+      "prompt_version": null,
+      "provider": "mock:fixture_identity",
+      "raw_response_hash": "17cb9b3f92778453cdca4e3035e6f23e78007402a3368140530ac7f272437d07",
+      "resolution": "VERIFIED",
+      "schema_version": "1.0",
+      "source_artifact_id": "FW-CAP-DISPATCH-004-SYNTHETIC",
+      "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
+      "temporal_validity": {
+        "valid_from": "2026-08-20T14:24:00Z",
+        "valid_until": null
+      },
+      "validation_status": "VERIFIED"
+    },
+    {
+      "candidate_id": "CAP-828d3059ff33",
+      "canonical_owner": "synthetic-org",
+      "canonical_repository_url": "https://github.com/synthetic-org/python-wrapper-cli",
+      "confidence": 0.85,
+      "contradiction_state": "none",
+      "created_at": "2026-08-20T14:24:00Z",
+      "evidence_basis": "fixture: canonical_hint matches a well-formed repository URL",
+      "evidence_references": [
+        "CAP-828d3059ff33"
+      ],
+      "extraction_method": "identity_resolution",
+      "human_review_status": "not_required",
+      "id": "IDE-c1ab8103e51a",
+      "license_id": "Apache-2.0",
+      "prompt_version": null,
+      "provider": "mock:fixture_identity",
+      "raw_response_hash": "1c84000c45ea88dc36b183117162ff4d64729290554dc1dd217db26d002cbf31",
+      "resolution": "VERIFIED",
+      "schema_version": "1.0",
+      "source_artifact_id": "FW-CAP-DISPATCH-004-SYNTHETIC",
+      "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
+      "temporal_validity": {
+        "valid_from": "2026-08-20T14:24:00Z",
+        "valid_until": null
+      },
+      "validation_status": "VERIFIED"
+    },
+    {
+      "candidate_id": "CAP-466f2d5fa7ad",
+      "canonical_owner": null,
+      "canonical_repository_url": "https://bit.ly/3xYzAbC",
+      "confidence": 0.6,
+      "contradiction_state": "none",
+      "created_at": "2026-08-20T14:24:00Z",
+      "evidence_basis": "fixture would have said VERIFIED from the raw hint alone -- this entry exists specifically to prove resolve_identity()'s shortened-URL override fires even when a resolver is overconfident -- OVERRIDDEN: canonical_hint is a known link-shortener domain; a shortened link can never resolve to VERIFIED without independently following it, which this mission does not do",
+      "evidence_references": [
+        "CAP-466f2d5fa7ad"
+      ],
+      "extraction_method": "identity_resolution",
+      "human_review_status": "not_required",
+      "id": "IDE-d9cc9953c359",
+      "license_id": null,
+      "prompt_version": null,
+      "provider": "mock:fixture_identity",
+      "raw_response_hash": "8a5357c33198ed8dd68140fe54af56aeb54a4108d6ba29c65d8b6cdef7493640",
+      "resolution": "AMBIGUOUS",
+      "schema_version": "1.0",
+      "source_artifact_id": "FW-CAP-DISPATCH-004-SYNTHETIC",
+      "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
+      "temporal_validity": {
+        "valid_from": "2026-08-20T14:24:00Z",
+        "valid_until": null
+      },
+      "validation_status": "AMBIGUOUS"
+    },
+    {
+      "candidate_id": "CAP-31cf4841902f",
+      "canonical_owner": "synthetic-org",
+      "canonical_repository_url": "https://github.com/synthetic-org/unbounded-shell-agent",
+      "confidence": 0.9,
+      "contradiction_state": "none",
+      "created_at": "2026-08-20T14:24:00Z",
+      "evidence_basis": "fixture: canonical_hint matches a well-formed repository URL",
+      "evidence_references": [
+        "CAP-31cf4841902f"
+      ],
+      "extraction_method": "identity_resolution",
+      "human_review_status": "not_required",
+      "id": "IDE-e72c49869bcd",
+      "license_id": "MIT",
+      "prompt_version": null,
+      "provider": "mock:fixture_identity",
+      "raw_response_hash": "d34a92cd5dad9246b41a7e5e165285cb21b63b3af3921fee5eaa765926467c43",
+      "resolution": "VERIFIED",
+      "schema_version": "1.0",
+      "source_artifact_id": "FW-CAP-DISPATCH-004-SYNTHETIC",
+      "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
+      "temporal_validity": {
+        "valid_from": "2026-08-20T14:24:00Z",
+        "valid_until": null
+      },
+      "validation_status": "VERIFIED"
+    },
+    {
+      "candidate_id": "CAP-8f97b2df588f",
+      "canonical_owner": null,
+      "canonical_repository_url": null,
+      "confidence": 0.0,
+      "contradiction_state": "none",
+      "created_at": "2026-08-20T14:24:00Z",
+      "evidence_basis": "no fixture entry registered for this candidate",
+      "evidence_references": [
+        "CAP-8f97b2df588f"
+      ],
+      "extraction_method": "identity_resolution",
+      "human_review_status": "not_required",
+      "id": "IDE-0f0c9e6e6756",
+      "license_id": null,
+      "prompt_version": null,
+      "provider": "mock:fixture_identity",
+      "raw_response_hash": "96420fcbf5a93ee78633bf8a9a6c64cd0f81b7671266bf54e368ec721a39d972",
+      "resolution": "UNAVAILABLE",
+      "schema_version": "1.0",
+      "source_artifact_id": "FW-CAP-DISPATCH-004-SYNTHETIC",
+      "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
+      "temporal_validity": {
+        "valid_from": "2026-08-20T14:24:00Z",
+        "valid_until": null
+      },
+      "validation_status": "UNAVAILABLE"
+    }
+  ],
+  "learning_record": {
+    "candidate_id": "CAP-9350646f92f8",
+    "confidence": null,
+    "contradiction_state": "none",
+    "created_at": "2026-08-20T14:24:00Z",
+    "decision_id": "DEC-3b3aacf20d9a",
+    "evidence_references": [
+      "DEC-3b3aacf20d9a",
+      "CAP-9350646f92f8"
+    ],
+    "evidence_sufficiency": "SUPPORTED",
+    "expected_outcome": "detect fixture secrets",
+    "extraction_method": "dispatch_learning_record",
+    "failure_classification": null,
+    "human_review_status": "not_required",
+    "id": "LRN-b21b140e1a0d",
+    "measured_outcome": "detected, no false negatives (simulated)",
+    "observed_cost": 0.12,
+    "observed_latency": 2.1,
+    "observed_utility": 0.75,
+    "predicted_cost": 0.1,
+    "predicted_latency": 2.0,
+    "predicted_utility": 0.8,
+    "promotion_decision": "NOT_ELIGIBLE",
+    "prompt_version": null,
+    "provider": null,
+    "raw_response_hash": null,
+    "rollback_result": "not_needed",
+    "routing_policy_delta": "success_score=0.8958 recorded for candidate CAP-9350646f92f8 under mission_class derived from ['secret_scanning_cli']",
+    "schema_version": "1.0",
+    "source_artifact_id": "FW-CAP-DISPATCH-004-SYNTHETIC",
+    "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
+    "temporal_validity": {
+      "valid_from": "2026-08-20T14:24:00Z",
+      "valid_until": null
+    },
+    "validation_status": "recorded"
+  },
+  "registry_overlaps": [
+    {
+      "basis": "no existing registered capability shares any inferred function tag with this candidate",
+      "candidate_id": "CAP-9350646f92f8",
+      "classification": "UNIQUE_GAP",
+      "confidence": 0.5,
+      "conflicting_assumptions": [],
+      "contradiction_state": "none",
+      "created_at": "2026-08-20T14:24:00Z",
+      "evidence_references": [
+        "CAP-9350646f92f8"
+      ],
+      "extraction_method": "registry_overlap_analysis",
+      "human_review_status": "not_required",
+      "id": "OVL-29008382c50a",
+      "matched_capability_ids": [],
+      "missing_functions": [
+        "secret_detection",
+        "security_scanning"
+      ],
+      "prompt_version": null,
+      "provider": "capability_dispatch.overlap",
+      "raw_response_hash": null,
+      "recommended_disposition": "SANDBOX_PROBE",
+      "schema_version": "1.0",
+      "shared_functions": [],
+      "source_artifact_id": "FW-CAP-DISPATCH-004-SYNTHETIC",
+      "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
+      "temporal_validity": {
+        "valid_from": "2026-08-20T14:24:00Z",
+        "valid_until": null
+      },
+      "validation_status": "proposed"
+    },
+    {
+      "basis": "100% of this candidate's inferred function tags are already covered by existing capability 'python' (['automation', 'data_processing', 'scripting'])",
+      "candidate_id": "CAP-828d3059ff33",
+      "classification": "FUNCTIONAL_DUPLICATE",
+      "confidence": 0.7,
+      "conflicting_assumptions": [],
+      "contradiction_state": "none",
+      "created_at": "2026-08-20T14:24:00Z",
+      "evidence_references": [
+        "CAP-828d3059ff33",
+        "python"
+      ],
+      "extraction_method": "registry_overlap_analysis",
+      "human_review_status": "not_required",
+      "id": "OVL-7c4282d49071",
+      "matched_capability_ids": [
+        "python"
+      ],
+      "missing_functions": [],
+      "prompt_version": null,
+      "provider": "capability_dispatch.overlap",
+      "raw_response_hash": null,
+      "recommended_disposition": "DUPLICATE",
+      "schema_version": "1.0",
+      "shared_functions": [
+        "automation",
+        "data_processing",
+        "scripting"
+      ],
+      "source_artifact_id": "FW-CAP-DISPATCH-004-SYNTHETIC",
+      "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
+      "temporal_validity": {
+        "valid_from": "2026-08-20T14:24:00Z",
+        "valid_until": null
+      },
+      "validation_status": "proposed"
+    },
+    {
+      "basis": "identity_status is 'AMBIGUOUS', not VERIFIED -- cannot compare against the registry",
+      "candidate_id": "CAP-466f2d5fa7ad",
+      "classification": "UNRESOLVED",
+      "confidence": 0.0,
+      "conflicting_assumptions": [],
+      "contradiction_state": "none",
+      "created_at": "2026-08-20T14:24:00Z",
+      "evidence_references": [
+        "CAP-466f2d5fa7ad"
+      ],
+      "extraction_method": "registry_overlap_analysis",
+      "human_review_status": "not_required",
+      "id": "OVL-db157d096153",
+      "matched_capability_ids": [],
+      "missing_functions": [],
+      "prompt_version": null,
+      "provider": "capability_dispatch.overlap",
+      "raw_response_hash": null,
+      "recommended_disposition": "BLOCK",
+      "schema_version": "1.0",
+      "shared_functions": [],
+      "source_artifact_id": "FW-CAP-DISPATCH-004-SYNTHETIC",
+      "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
+      "temporal_validity": {
+        "valid_from": "2026-08-20T14:24:00Z",
+        "valid_until": null
+      },
+      "validation_status": "proposed"
+    },
+    {
+      "basis": "33% overlap with existing capability 'claude_code' (['shell_execution']); ['automation', 'orchestration'] not covered",
+      "candidate_id": "CAP-31cf4841902f",
+      "classification": "PARTIAL_OVERLAP",
+      "confidence": 0.7,
+      "conflicting_assumptions": [],
+      "contradiction_state": "none",
+      "created_at": "2026-08-20T14:24:00Z",
+      "evidence_references": [
+        "CAP-31cf4841902f",
+        "claude_code"
+      ],
+      "extraction_method": "registry_overlap_analysis",
+      "human_review_status": "not_required",
+      "id": "OVL-4f194636c3b0",
+      "matched_capability_ids": [
+        "claude_code"
+      ],
+      "missing_functions": [
+        "automation",
+        "orchestration"
+      ],
+      "prompt_version": null,
+      "provider": "capability_dispatch.overlap",
+      "raw_response_hash": null,
+      "recommended_disposition": "ADAPT",
+      "schema_version": "1.0",
+      "shared_functions": [
+        "shell_execution"
+      ],
+      "source_artifact_id": "FW-CAP-DISPATCH-004-SYNTHETIC",
+      "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
+      "temporal_validity": {
+        "valid_from": "2026-08-20T14:24:00Z",
+        "valid_until": null
+      },
+      "validation_status": "proposed"
+    },
+    {
+      "basis": "identity_status is 'UNAVAILABLE', not VERIFIED -- cannot compare against the registry",
+      "candidate_id": "CAP-8f97b2df588f",
+      "classification": "UNRESOLVED",
+      "confidence": 0.0,
+      "conflicting_assumptions": [],
+      "contradiction_state": "none",
+      "created_at": "2026-08-20T14:24:00Z",
+      "evidence_references": [
+        "CAP-8f97b2df588f"
+      ],
+      "extraction_method": "registry_overlap_analysis",
+      "human_review_status": "not_required",
+      "id": "OVL-d2290ff9a29a",
+      "matched_capability_ids": [],
+      "missing_functions": [],
+      "prompt_version": null,
+      "provider": "capability_dispatch.overlap",
+      "raw_response_hash": null,
+      "recommended_disposition": "BLOCK",
+      "schema_version": "1.0",
+      "shared_functions": [],
+      "source_artifact_id": "FW-CAP-DISPATCH-004-SYNTHETIC",
+      "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
+      "temporal_validity": {
+        "valid_from": "2026-08-20T14:24:00Z",
+        "valid_until": null
+      },
+      "validation_status": "proposed"
+    }
+  ],
+  "source_observation": {
+    "candidate_count": 5,
+    "capture_source": "proof_run",
+    "confidence": 1.0,
+    "contradiction_state": "none",
+    "created_at": "2026-08-20T14:24:00Z",
+    "evidence_references": [],
+    "extraction_method": "governed_ingest",
+    "file_size_bytes": 2733,
+    "filename": "FW-CAP-DISPATCH-004.synthetic.json",
+    "human_review_status": "not_required",
+    "id": "SRC-be1b02776ff8",
+    "media_type": "application/json",
+    "prompt_version": null,
+    "provider": null,
+    "raw_response_hash": null,
+    "schema_version": "1.0",
+    "source_artifact_id": "FW-CAP-DISPATCH-004-SYNTHETIC",
+    "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
+    "source_notes": "No real FW-CAP-DISPATCH-004.json/.md was ever supplied to this mission (see evidence/FW-CAP-DISPATCH-004/artifact_validation.json). This is a clearly-labeled, deterministic, hand-authored stand-in modeled on the mission brief's own description of the source material: screenshots of candidate tools/repos with star counts and shortened links, some of which change between frames and remain unresolved.",
+    "temporal_validity": {
+      "valid_from": "2026-08-20T14:24:00Z",
+      "valid_until": null
+    },
+    "validation_status": "hash_verified"
+  }
+}

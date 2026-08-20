@@ -1,0 +1,34 @@
+{
+  "mission_id": "FW-CAP-DISPATCH-004",
+  "run_id": "RUN-PROOF-001",
+  "source": {
+    "note": "Ingested from capability_dispatch/fixtures/FW-CAP-DISPATCH-004.synthetic.json -- the disclosed synthetic substitute (see artifact_validation.json); no real FW-CAP-DISPATCH-004.json/.md was ever supplied.",
+    "source_observation_id": "SRC-be1b02776ff8",
+    "source_artifact_sha256": "16bf1f80823e1a050e65e4e0ed21b9e87c1e480affd93952692a652ac2584c88",
+    "candidate_count_declared": 5,
+    "candidate_count_extracted": 5
+  },
+  "candidates": [
+    {"id": "CAP-9350646f92f8", "observed_name": "SYNTHETIC-gitleaks-clone", "normalized_name": "synthetic_gitleaks_clone", "observed_category": "secret-scanning-cli", "normalized_category": "secret_scanning_cli", "identity_status_at_ingest": "UNVERIFIED"},
+    {"id": "CAP-828d3059ff33", "observed_name": "SYNTHETIC-python-wrapper-cli", "normalized_name": "synthetic_python_wrapper_cli", "observed_category": "scripting-utility", "normalized_category": "scripting_utility", "identity_status_at_ingest": "UNVERIFIED"},
+    {"id": "CAP-466f2d5fa7ad", "observed_name": "SYNTHETIC-shortlink-mystery-tool", "normalized_name": "synthetic_shortlink_mystery_tool", "observed_category": "unknown", "normalized_category": "unknown", "identity_status_at_ingest": "UNVERIFIED"},
+    {"id": "CAP-31cf4841902f", "observed_name": "SYNTHETIC-unbounded-shell-agent", "normalized_name": "synthetic_unbounded_shell_agent", "observed_category": "automation-agent", "normalized_category": "automation_agent", "identity_status_at_ingest": "UNVERIFIED"},
+    {"id": "CAP-8f97b2df588f", "observed_name": "SYNTHETIC-unknown-tool-xyz", "normalized_name": "synthetic_unknown_tool_xyz", "observed_category": "unknown", "normalized_category": "unknown", "identity_status_at_ingest": "UNVERIFIED"}
+  ],
+  "validation_steps_performed": [
+    "JSON syntax validation: passed",
+    "content-based media-type detection (detect_media_type): confirmed application/json independent of the .json filename extension",
+    "required-field validation: passed (artifact_id, candidate_count, candidates all present)",
+    "artifact-ID consistency: 'FW-CAP-DISPATCH-004-SYNTHETIC' contains 'FW-CAP-DISPATCH-004': passed",
+    "candidate-count verification: declared 5 == extracted 5: passed",
+    "duplicate-name detection (case-insensitive): no duplicates found",
+    "category normalization: original observed_category preserved verbatim on every candidate; normalized_category recorded separately (e.g. 'secret-scanning-cli' -> 'secret_scanning_cli')",
+    "canonical-hint format review: all 5 canonical_hint values are well-formed URLs or explicit null; none malformed",
+    "epistemic-state review: every candidate confirmed at the mission's required floor (schema.freshly_ingested_candidate_is_at_epistemic_floor) before acceptance",
+    "claims-integrity review: every candidate's source_notes field byte-for-byte identical to the source packet's value (checked programmatically in ingest.py, not merely asserted)"
+  ],
+  "uncertainty_preserved": [
+    "SYNTHETIC-gitleaks-clone: source_notes retains the raw 'star count 2.3k in frame 1, 2.4k in frame 2' observation, never collapsed into a single asserted star count",
+    "SYNTHETIC-shortlink-mystery-tool: canonical_hint is a bit.ly short link, stored as-is; source_notes explicitly states the destination was not independently resolved"
+  ]
+}

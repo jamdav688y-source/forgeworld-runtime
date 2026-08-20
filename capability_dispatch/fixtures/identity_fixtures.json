@@ -1,0 +1,34 @@
+{
+  "synthetic_gitleaks_clone": {
+    "resolution": "VERIFIED",
+    "canonical_repository_url": "https://github.com/synthetic-org/gitleaks-clone",
+    "canonical_owner": "synthetic-org",
+    "license_id": "MIT",
+    "evidence_basis": "fixture: canonical_hint matches a well-formed, non-shortened repository URL with an active-looking maintainer org",
+    "confidence": 0.9
+  },
+  "synthetic_python_wrapper_cli": {
+    "resolution": "VERIFIED",
+    "canonical_repository_url": "https://github.com/synthetic-org/python-wrapper-cli",
+    "canonical_owner": "synthetic-org",
+    "license_id": "Apache-2.0",
+    "evidence_basis": "fixture: canonical_hint matches a well-formed repository URL",
+    "confidence": 0.85
+  },
+  "synthetic_shortlink_mystery_tool": {
+    "resolution": "VERIFIED",
+    "canonical_repository_url": "https://bit.ly/3xYzAbC",
+    "canonical_owner": null,
+    "license_id": null,
+    "evidence_basis": "fixture would have said VERIFIED from the raw hint alone -- this entry exists specifically to prove resolve_identity()'s shortened-URL override fires even when a resolver is overconfident",
+    "confidence": 0.6
+  },
+  "synthetic_unbounded_shell_agent": {
+    "resolution": "VERIFIED",
+    "canonical_repository_url": "https://github.com/synthetic-org/unbounded-shell-agent",
+    "canonical_owner": "synthetic-org",
+    "license_id": "MIT",
+    "evidence_basis": "fixture: canonical_hint matches a well-formed repository URL",
+    "confidence": 0.9
+  }
+}

@@ -1,0 +1,121 @@
+{
+  "mission_id": "FW-CAP-DISPATCH-004",
+  "run_id": "RUN-FW-CAP-DISPATCH-004-001",
+  "reuse_map": [
+    {
+      "required_function": "Raw observations (envelope: stable ID, schema version, timestamp, source ID, source hash, extraction method, provider, confidence, evidence refs, validation/review/contradiction status, temporal validity)",
+      "canonical_existing_component": "perception.src.common's build_envelope()/validate_envelope() + ENVELOPE_FIELDS",
+      "location": "perception/src/common.py",
+      "reuse_method": "Import and call directly (from perception.src import common) -- capability_dispatch objects are built on the exact same envelope, not a re-implementation.",
+      "confirmed_gap": "None -- the envelope itself is domain-neutral already.",
+      "planned_change": "None to common.py. capability_dispatch/src/schema.py's new_x() functions call common.build_envelope() the same way perception/src/schema.py's do."
+    },
+    {
+      "required_function": "Source artifacts (the FW-CAP-DISPATCH-004 candidate-list packet itself)",
+      "canonical_existing_component": "perception.src.ingest's content-addressed, copy-not-alter governed ingestion pattern",
+      "location": "perception/src/ingest.py",
+      "reuse_method": "Pattern reused (same sha256-keyed storage, same fail-closed IngestError, same Execution Ledger recording via whatsapp.src.ledger), applied to a JSON packet instead of a PNG image.",
+      "confirmed_gap": "No existing ingester accepts a JSON candidate-list packet (perception's ingest.py is PNG-specific via imaging.decode_png).",
+      "planned_change": "New capability_dispatch/src/ingest.py, structurally parallel to perception/src/ingest.py but validating JSON syntax + required fields instead of decoding a PNG."
+    },
+    {
+      "required_function": "Provenance tracking",
+      "canonical_existing_component": "perception's source_image_id/source_image_sha256 envelope fields + capture_source/device_note pattern",
+      "location": "perception/src/common.py, perception/src/schema.py::new_visual_observation",
+      "reuse_method": "Same envelope fields repurposed as source_artifact_id/source_artifact_sha256.",
+      "confirmed_gap": "None.",
+      "planned_change": "None beyond field renaming at the call site."
+    },
+    {
+      "required_function": "Evidence relationships (independence-checked corroboration/contradiction/overlap between two things)",
+      "canonical_existing_component": "perception.src.schema.new_evidence_relationship / EvidenceRelationship object + perception.src.corroboration's independence-basis reasoning pattern",
+      "location": "perception/src/schema.py, perception/src/corroboration.py",
+      "reuse_method": "Directly reused for REGISTRY OVERLAP ANALYSIS: relationship_type values remapped to UNIQUE_GAP/PARTIAL_OVERLAP/FUNCTIONAL_DUPLICATE/ARCHITECTURAL_CONFLICT/UNRESOLVED instead of corroborates/contradicts/near_duplicate/unrelated, independence_basis field reused verbatim as the human-readable comparison rationale.",
+      "confirmed_gap": "The specific overlap vocabulary (UNIQUE_GAP etc.) does not exist; corroboration.py's vocabulary is screenshot-retrieval-specific.",
+      "planned_change": "New capability_dispatch/src/overlap.py defines its own relationship_type enum reusing schema.new_evidence_relationship's shape via a thin wrapper, not editing perception/src/schema.py."
+    },
+    {
+      "required_function": "Candidate capabilities under evaluation (not yet installed/authorized)",
+      "canonical_existing_component": "NONE -- capabilities/registry.json entries are already-decided, already-installed capabilities. perception.src.schema.CandidateSource is the closest analog (an unvalidated retrieval result, CANDIDATE_MATCH default).",
+      "location": "perception/src/schema.py::new_candidate_source",
+      "reuse_method": "Pattern reused: CapabilityCandidate follows the identical 'starts unvalidated, only strengthens through explicit downstream steps' shape as CandidateSource.",
+      "confirmed_gap": "Confirmed net-new object type.",
+      "planned_change": "New CapabilityCandidate object in capability_dispatch/src/schema.py, envelope + epistemic fields (identity/safety/license/maintainability/installation/authority/promotion), all defaulting to the mission's specified NOT_* / UNVERIFIED / NOT_GRANTED / NOT_ELIGIBLE states."
+    },
+    {
+      "required_function": "Canonical capability records (already-decided, in-registry capabilities)",
+      "canonical_existing_component": "capabilities/registry.json + capabilities/discover.py::load_registry()/probe_one()/probe_all()",
+      "location": "capabilities/registry.json, capabilities/discover.py",
+      "reuse_method": "Imported and called directly (from capabilities import discover) for both overlap analysis (load_registry()) and execution-surface reachability probing (probe_one()) -- zero new reachability-probing logic written, matching perception/src/retrieval.py's prior reuse of the same function.",
+      "confirmed_gap": "None -- this component already exists and is already reused by two prior missions (WhatsApp router integration point, Perception Gateway retrieval registry).",
+      "planned_change": "None to capabilities/registry.json or discover.py. capability_dispatch reads from them read-only."
+    },
+    {
+      "required_function": "Authority (capability != authority)",
+      "canonical_existing_component": "governance.authority.evaluate_authority() / AuthorityPolicy / AuthorityDecision + governance/policy_defaults.json",
+      "location": "governance/authority.py, governance/policy_defaults.json",
+      "reuse_method": "Called directly for every AUTHORITY_NOT_GRANTED gate check and for SANDBOX_PROBE eligibility -- the exact mechanism perception/src/promotion.py already uses for PROMOTE_KNOWLEDGE, extended with new capability strings for this mission's dispatch decisions.",
+      "confirmed_gap": "No policy exists yet for a 'SANDBOX_PROBE_CANDIDATE' or 'INSTALL_THIRD_PARTY_CAPABILITY' capability string.",
+      "planned_change": "Two new additive HUMAN_ONLY / REQUIRES_APPROVAL policy fixtures added to governance/policy_defaults.json (SANDBOX_PROBE_CANDIDATE, INSTALL_THIRD_PARTY_CAPABILITY), matching the conservative-by-default posture every existing policy in that file already follows. No existing policy is modified."
+    },
+    {
+      "required_function": "Execution surfaces (reachability, permission surface, network/filesystem/shell/credential requirements)",
+      "canonical_existing_component": "capabilities/discover.py::probe_one() (command/env/network/self/manual reachability) + governance.types.TrustBoundary enum",
+      "location": "capabilities/discover.py, governance/types.py",
+      "reuse_method": "probe_one() reused directly for the reachability axis of DispatchProfile; TrustBoundary reused directly as the vocabulary for 'what boundary would granting this candidate authority cross'.",
+      "confirmed_gap": "No existing structure captures credential-surface / filesystem-surface / shell-surface / network-surface as separate, explicit boolean/enum fields the way this mission requires.",
+      "planned_change": "New DispatchProfile object (capability_dispatch/src/schema.py) adds these fields explicitly; probe_one()'s reachability result becomes one input among several, not the only signal."
+    },
+    {
+      "required_function": "Validation results (identity/license/safety/maintenance verification)",
+      "canonical_existing_component": "perception.src.ocr's OCRProvider / FixtureOCRProvider / CloudOCRProvider three-part interface pattern (deterministic mock + documented-unwired real provider)",
+      "location": "perception/src/ocr.py",
+      "reuse_method": "Exact same three-part pattern reused for identity resolution: IdentityResolver interface, FixtureIdentityResolver (deterministic offline mock), UnwiredRegistryIdentityResolver (documented, NotImplementedError, real network lookup hook point).",
+      "confirmed_gap": "No identity-resolution interface exists for anything (perception's OCR/retrieval providers resolve text/pages, not project/package identity).",
+      "planned_change": "New capability_dispatch/src/identity.py implementing the pattern for VERIFIED/AMBIGUOUS/UNAVAILABLE/REJECTED identity states."
+    },
+    {
+      "required_function": "Dispatch decisions",
+      "canonical_existing_component": "router.mission_router.route() -- single-capability selection with decomposed confidence/cost, appended to router/decisions.jsonl",
+      "location": "router/mission_router.py, router/decisions.jsonl",
+      "reuse_method": "route()'s scoring primitives (score_capability, task_fit, cost_score, build_tradeoff) imported and called directly, not reimplemented. The SAME router/decisions.jsonl file is the DispatchDecision ledger this mission writes into.",
+      "confirmed_gap": "route() selects exactly one capability for one mission_class; this mission requires selecting the SMALLEST SUFFICIENT SET of capabilities for a mission with multiple required_capabilities, plus a richer disposition (REUSE/ADAPT/SANDBOX_PROBE/OBSERVE/DUPLICATE/REJECT/BLOCK) that route()'s status field (routed/queued_no_reachable_capability) does not express.",
+      "planned_change": "New capability_dispatch/src/dispatch.py wraps and extends route(): calls score_capability() per required capability, applies set-cover selection across the results, computes a disposition per candidate, and writes an extended decision record (superset of route()'s existing fields, so router/decisions.jsonl stays one ledger, not two) into the SAME file. mission_router.py itself is not modified -- extension happens by import and composition, per the mission's own 'extend, don't replace' instruction."
+    },
+    {
+      "required_function": "Execution results",
+      "canonical_existing_component": "governance.execution.failure_classification.classify_failure() + governance.pipeline's EXECUTE/VERIFY stages",
+      "location": "execution/failure_classification.py, governance/pipeline.py",
+      "reuse_method": "classify_failure() reused directly wherever a SANDBOX_PROBE or (future, unauthorized-this-mission) execution needs failure categorization, rather than inventing a second failure taxonomy.",
+      "confirmed_gap": "governance/pipeline.py's action_fn/verify_fn hooks assume a single actor executing a single action; this mission's SANDBOX_PROBE disposition needs an isolated-surface wrapper around that, which does not exist.",
+      "planned_change": "capability_dispatch/src/dispatch.py's SANDBOX_PROBE path is structurally present (the disposition can be computed and recorded) but this mission grants no execution authority, so no code path actually invokes governance.pipeline.run_pipeline's action_fn for a real candidate -- see Third-Party Safety Boundary section of the mission report."
+    },
+    {
+      "required_function": "Promotion states",
+      "canonical_existing_component": "governance.promotion.can_promote() + perception.src.promotion's evaluate_promotion()/write_to_knowledge_vault() pattern",
+      "location": "governance/promotion.py, perception/src/promotion.py",
+      "reuse_method": "can_promote() called directly for INSTALLATION/AUTHORITY state transitions (mirroring exactly how perception/src/promotion.py already calls it for PromotionDecision) -- not reimplemented.",
+      "confirmed_gap": "None in the promotion mechanism itself; the gap is only that no policy exists yet for third-party-capability-installation (see Authority row above).",
+      "planned_change": "capability_dispatch's promotion-adjacent checks call the existing can_promote() with new capability strings; no new promotion primitive is written."
+    },
+    {
+      "required_function": "Learning-policy updates (Dispatch Learning Record)",
+      "canonical_existing_component": "router.record_outcome.record() -- the single sanctioned write path into capabilities/history.jsonl",
+      "location": "router/record_outcome.py, capabilities/history.jsonl",
+      "reuse_method": "record() called directly. mission_router.py's own historical_stats() already reads capabilities/history.jsonl back in on every route() call, so a learning-record written here immediately affects future routing without any new read path.",
+      "confirmed_gap": "record()'s current schema (capability_id, mission_class, success_score, notes) does not capture predicted-vs-observed utility/cost/latency, failure classification, rollback result, or evidence sufficiency as separate fields the way this mission requires.",
+      "planned_change": "New capability_dispatch/src/learning.py wraps record_outcome.record(): computes the mission's richer DispatchLearningRecord fields, folds them into a single success_score + a structured notes JSON string (record_outcome.py's schema is not modified -- its 4 fields are load-bearing for mission_router.py's historical_stats(), so widening them in place would risk breaking that reader; the richer detail rides in notes, parseable by anything that cares, ignorable by anything that does not)."
+    }
+  ],
+  "explicit_gaps_confirmed_net_new": [
+    "CapabilityCandidate object type",
+    "IdentityEvidence / VerificationResult object types and the identity-resolution interface itself",
+    "DispatchProfile object type (execution-surface/permission-surface detail)",
+    "Overlap classification vocabulary (UNIQUE_GAP/PARTIAL_OVERLAP/FUNCTIONAL_DUPLICATE/ARCHITECTURAL_CONFLICT/UNRESOLVED)",
+    "Problem-first pre-dispatch gate with the 10 named hard-block reasons",
+    "Smallest-sufficient-set multi-capability selection logic (route() only ever selects one)",
+    "SandboxProbe concept (confirmed absent anywhere in the repository)",
+    "Third-party pre-installation 13-gate checklist as an explicit, checkable data structure"
+  ],
+  "no_parallel_subsystem_confirmation": "Every ledger this mission writes to already exists: router/decisions.jsonl (DispatchDecision), capabilities/history.jsonl (learning records), whatsapp/ledgers/execution_ledger.jsonl (via perception's reuse pattern, for capability_dispatch's own stage-transition audit trail). No new database, queue, dashboard, or governance engine is introduced. governance/policy_defaults.json gains two additive policy fixtures; mission_router.py, record_outcome.py, discover.py, evaluate_authority(), can_promote(), current_evidence_state() are all called, never reimplemented."
+}
