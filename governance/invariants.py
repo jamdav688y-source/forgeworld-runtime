@@ -34,7 +34,7 @@ class InvariantResult:
         return data
 
 
-EXECUTABLE_DISPOSITIONS = frozenset({"REUSE", "ADAPT", "SANDBOX_PROBE"})
+EXECUTABLE_DISPOSITIONS = frozenset({"SANDBOX_PROBE"})
 PROMOTION_DISPOSITIONS = frozenset({"INSTALL", "PROMOTE", "PRODUCTION"})
 
 
