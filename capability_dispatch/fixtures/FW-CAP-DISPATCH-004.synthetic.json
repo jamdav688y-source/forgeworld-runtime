@@ -1,0 +1,44 @@
+{
+  "artifact_id": "FW-CAP-DISPATCH-004-SYNTHETIC",
+  "schema_version": "1.0",
+  "provenance": "synthetic_fixture_no_real_artifact_supplied",
+  "note": "No real FW-CAP-DISPATCH-004.json/.md was ever supplied to this mission (see evidence/FW-CAP-DISPATCH-004/artifact_validation.json). This is a clearly-labeled, deterministic, hand-authored stand-in modeled on the mission brief's own description of the source material: screenshots of candidate tools/repos with star counts and shortened links, some of which change between frames and remain unresolved.",
+  "candidate_count": 5,
+  "candidates": [
+    {
+      "observed_name": "SYNTHETIC-gitleaks-clone",
+      "observed_category": "secret-scanning-cli",
+      "canonical_hint": "https://github.com/synthetic-org/gitleaks-clone",
+      "maintainer_hint": "synthetic-org",
+      "source_notes": "Screenshot shows star count 2.3k in frame 1, 2.4k in frame 2 (36 hours apart per visible timestamp) -- treated as an unverified, changing observation, not a fact."
+    },
+    {
+      "observed_name": "SYNTHETIC-python-wrapper-cli",
+      "observed_category": "scripting-utility",
+      "canonical_hint": "https://github.com/synthetic-org/python-wrapper-cli",
+      "maintainer_hint": "synthetic-org",
+      "source_notes": "Described in the screenshot as 'a friendlier python CLI wrapper for automation and data processing' -- likely overlaps an existing installed capability; not assumed, to be checked."
+    },
+    {
+      "observed_name": "SYNTHETIC-shortlink-mystery-tool",
+      "observed_category": "unknown",
+      "canonical_hint": "https://bit.ly/3xYzAbC",
+      "maintainer_hint": null,
+      "source_notes": "Only a shortened link is visible in the screenshot; the destination was not independently resolved during this mission (mission brief: 'shortened links must remain unverified observations until independently resolved'). Do not follow or expand this link automatically."
+    },
+    {
+      "observed_name": "SYNTHETIC-unbounded-shell-agent",
+      "observed_category": "automation-agent",
+      "canonical_hint": "https://github.com/synthetic-org/unbounded-shell-agent",
+      "maintainer_hint": "synthetic-org",
+      "source_notes": "README screenshot text mentions 'full shell access, arbitrary network egress, and stored credentials for one-click automation' -- flagged for execution-surface review, not taken as a recommendation."
+    },
+    {
+      "observed_name": "SYNTHETIC-unknown-tool-xyz",
+      "observed_category": "unknown",
+      "canonical_hint": null,
+      "maintainer_hint": null,
+      "source_notes": "Name visible in a list screenshot with no accompanying link, star count, or description -- no basis for any identity claim at all."
+    }
+  ]
+}

@@ -1,0 +1,133 @@
+{
+  "artifact_id": "FW-CAP-DISPATCH-004",
+  "title": "Dynamic Capability Dispatch Intake",
+  "status": "CANDIDATE_INGEST_COMPLETE",
+  "promotion_status": "NOT_ELIGIBLE",
+  "captured_at": "2026-08-20T09:46:00-04:00",
+  "source_observations": [
+    {
+      "source_id": "FW-OBS-1590",
+      "sha256": "47b0c4d088b246cca54928189afea14f56508915c5f624c4ed647b3ad4d12531",
+      "actual_media_type": "image/jpeg",
+      "filename_extension": ".png",
+      "dimensions": [695, 1536],
+      "epistemic_state": "DIRECTLY_OBSERVED_VISUAL",
+      "notes": "LinkedIn screenshot listing Claude Code repositories, skills, and connectors. Star counts and short URLs are mutable and unverified."
+    },
+    {
+      "source_id": "FW-OBS-1591",
+      "sha256": "2a39c1aa4a85c544d2c89f9567b37034fd662209fa7e184f3da32ff76428a7da",
+      "actual_media_type": "image/jpeg",
+      "filename_extension": ".png",
+      "dimensions": [695, 1536],
+      "epistemic_state": "DIRECTLY_OBSERVED_VISUAL",
+      "notes": "Continuation of resource list. Repository existence, ownership, license, safety, and functionality remain unverified."
+    },
+    {
+      "source_id": "FW-OBS-1589",
+      "sha256": "0dc4403d635d71191ac38078591bb95ee958b4594ea86fd3ba4f9c7c4813580e",
+      "actual_media_type": "image/jpeg",
+      "filename_extension": ".png",
+      "dimensions": [695, 1536],
+      "epistemic_state": "DIRECTLY_OBSERVED_VISUAL",
+      "notes": "Problem-first AI strategy signal: problem, root cause, business outcome, and success metric precede tool selection."
+    }
+  ],
+  "strategy_signals": [
+    {
+      "signal_id": "FW-SIGNAL-PROBLEM-FIRST-001",
+      "source_id": "FW-OBS-1589",
+      "claim": "Dispatch should begin from a defined problem and measurable outcome rather than a preferred tool.",
+      "epistemic_state": "MODEL_INFERRED_FROM_VISUAL_OBSERVATION",
+      "proposed_policy": "Reject or defer capability selection when problem_statement, desired_outcome, and success_metric are absent."
+    }
+  ],
+  "capability_candidates": [
+    {"name": "ECC", "category": "HARNESS", "canonical_hint": "github.com/affaan-m/ECC"},
+    {"name": "gstack", "category": "HARNESS", "canonical_hint": "github.com/glarrytan/gstack"},
+    {"name": "cc-switch", "category": "HARNESS", "canonical_hint": null},
+    {"name": "awesome-design-md", "category": "HARNESS", "canonical_hint": null},
+    {"name": "graphify", "category": "HARNESS", "canonical_hint": null},
+    {"name": "codex", "category": "HARNESS", "canonical_hint": "github.com/openai/codex"},
+    {"name": "caveman", "category": "HARNESS", "canonical_hint": null},
+    {"name": "claude-mem", "category": "HARNESS", "canonical_hint": null},
+    {"name": "open-design", "category": "HARNESS", "canonical_hint": null},
+    {"name": "agent-skills", "category": "HARNESS", "canonical_hint": null},
+    {"name": "Understand-Anything", "category": "HARNESS", "canonical_hint": null},
+    {"name": "ruflo", "category": "HARNESS", "canonical_hint": "github.com/ruvnet/ruflo"},
+    {"name": "openinterpreter", "category": "HARNESS", "canonical_hint": null},
+    {"name": "oh-my-opencode", "category": "HARNESS", "canonical_hint": null},
+    {"name": "codegraph", "category": "HARNESS", "canonical_hint": null},
+    {"name": "cline", "category": "HARNESS", "canonical_hint": "github.com/cline/cline"},
+    {"name": "superpowers", "category": "SKILL", "canonical_hint": null},
+    {"name": "awesome-llm-apps", "category": "SKILL", "canonical_hint": null},
+    {"name": "ui-ux-pro-max-skill", "category": "SKILL", "canonical_hint": null},
+    {"name": "taste-skill", "category": "SKILL", "canonical_hint": null},
+    {"name": "agentic-awesome-skills", "category": "SKILL", "canonical_hint": null},
+    {"name": "LibreChat", "category": "SKILL", "canonical_hint": null},
+    {"name": "awesome-mcp-servers", "category": "CONNECTOR_CATALOG", "canonical_hint": null},
+    {"name": "dify", "category": "APP_PLATFORM", "canonical_hint": "github.com/langgenius/dify"},
+    {"name": "hyperframes", "category": "APP_PLATFORM", "canonical_hint": null},
+    {"name": "UI-TARS-desktop", "category": "APP_PLATFORM", "canonical_hint": null},
+    {"name": "browser", "category": "APP_PLATFORM", "canonical_hint": null},
+    {"name": "hermes-agent", "category": "TOOL_OR_APP", "canonical_hint": null},
+    {"name": "markitdown", "category": "TOOL_OR_APP", "canonical_hint": null},
+    {"name": "agency-agents", "category": "TOOL_OR_APP", "canonical_hint": null},
+    {"name": "spec-kit", "category": "TOOL_OR_APP", "canonical_hint": "github.com/github/spec-kit"},
+    {"name": "ponytail", "category": "TOOL_OR_APP", "canonical_hint": null},
+    {"name": "OpenCut", "category": "TOOL_OR_APP", "canonical_hint": null},
+    {"name": "rtk", "category": "TOOL_OR_APP", "canonical_hint": "github.com/rtk-ai/rtk"},
+    {"name": "prompts.chat", "category": "PROMPT_LIBRARY", "canonical_hint": "github.com/f/prompts.chat"},
+    {"name": "dspy", "category": "PROMPT_OR_OPTIMIZATION", "canonical_hint": null},
+    {"name": "social-media-skills", "category": "SKILL", "canonical_hint": null},
+    {"name": "ai-second-brain", "category": "SKILL", "canonical_hint": null},
+    {"name": "agent-harness-starter", "category": "HARNESS", "canonical_hint": null},
+    {"name": "show-me", "category": "SKILL", "canonical_hint": null},
+    {"name": "life-automation-skills", "category": "SKILL", "canonical_hint": null},
+    {"name": "exposure-audit", "category": "SECURITY_SKILL", "canonical_hint": null}
+  ],
+  "candidate_defaults": {
+    "identity_status": "UNVERIFIED",
+    "safety_status": "NOT_ASSESSED",
+    "license_status": "NOT_ASSESSED",
+    "maintainability_status": "NOT_ASSESSED",
+    "installation_status": "NOT_INSTALLED",
+    "authority_status": "NOT_GRANTED",
+    "observed_popularity_is_evidence_of_quality": false
+  },
+  "dispatch_contract": {
+    "required_intent_fields": [
+      "problem_statement",
+      "root_cause_hypothesis",
+      "desired_business_outcome",
+      "success_metric",
+      "execution_surface",
+      "authority_envelope"
+    ],
+    "candidate_features": [
+      "capability_fit",
+      "execution_surface_fit",
+      "authority_fit",
+      "evidence_strength",
+      "registry_overlap",
+      "security_risk",
+      "maintenance_health",
+      "license_compatibility",
+      "context_cost",
+      "latency_cost",
+      "reversibility",
+      "freshness"
+    ],
+    "decisions": ["REUSE", "ADAPT", "SANDBOX_PROBE", "OBSERVE", "DUPLICATE", "REJECT", "BLOCK"],
+    "hard_blocks": [
+      "MISSING_PROBLEM_STATEMENT",
+      "MISSING_SUCCESS_METRIC",
+      "IDENTITY_AMBIGUOUS_FOR_INSTALL",
+      "AUTHORITY_NOT_GRANTED",
+      "LICENSE_INCOMPATIBLE",
+      "UNBOUNDED_EXECUTION_SURFACE",
+      "UNRESOLVED_ARCHITECTURAL_CONFLICT"
+    ]
+  },
+  "binding_requirement": "Map these records into the canonical capability, observation, evidence relationship, authority, and execution-ledger models after repository inspection. Do not introduce a parallel production schema."
+}

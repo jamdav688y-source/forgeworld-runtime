@@ -1,0 +1,87 @@
+{
+  "mission_id": "FW-CAP-DISPATCH-004",
+  "run_id": "RUN-FW-CAP-DISPATCH-004-002-REVISION",
+  "authoritative_claims_integrity": {
+    "record_class": "AUTHORITATIVE_MISSION_SOURCE",
+    "scope": "Every claim this revision makes about the real, authoritative 42-candidate packet, checked against the evidence it claims to be based on.",
+    "checks": [
+      {
+        "claim": "The authoritative packet's sha256 hashes match exactly what the repository owner declared before this session ever read the files",
+        "evidence": "sha256sum computed independently in this session on capability_dispatch/intake/FW-CAP-DISPATCH-004.json and .md, compared byte-for-byte against the declared values BEFORE any parsing began",
+        "verdict": "TRACEABLE -- re-running sha256sum on the committed files reproduces the same digests"
+      },
+      {
+        "claim": "42 candidates were extracted, none fabricated, none dropped",
+        "evidence": "len(packet['capability_candidates']) == 42, computed directly from the parsed JSON, cross-checked against evidence/FW-CAP-DISPATCH-004/authoritative_dispatch_output.json's candidates array length and candidate_import_report.json's candidate_summary list length -- all three independently agree",
+        "verdict": "TRACEABLE -- re-parsing the committed JSON reproduces the same count and the same 42 names"
+      },
+      {
+        "claim": "candidate_count was DERIVED (42), not read from a declared field",
+        "evidence": "the authoritative packet has no 'candidate_count' key at all (confirmed: 'candidate_count' not in packet.keys()) -- authoritative_intake.py computes derived_candidate_count = len(candidates_raw) and states this derivation explicitly in the resulting SourceObservation.source_notes, rather than silently treating a derived value as if it had been declared",
+        "verdict": "TRACEABLE -- the absence of the field, and the derivation, are both independently checkable"
+      },
+      {
+        "claim": "Every canonical_hint's raw, as-observed value is preserved unmodified, distinct from its normalized form",
+        "evidence": "schema.py's CapabilityCandidate.canonical_hint is never reassigned after construction; canonical_hint_normalized and canonical_hint_normalization_method are separate fields computed by authoritative_intake._normalize_canonical_hint(), which returns (value, method) as a pure function of the raw input with no side effect on the raw field",
+        "verdict": "TRACEABLE -- for all 9 candidates with a hint, canonical_hint_raw != canonical_hint_normalized (scheme was added) while canonical_hint_raw exactly matches the source JSON's own 'canonical_hint' string, character for character"
+      },
+      {
+        "claim": "All 42 candidates resolved identity as UNAVAILABLE, not VERIFIED, and this is not a bug",
+        "evidence": "identity.FixtureIdentityResolver was constructed with an EMPTY dict ({}) for this run -- resolve_identity() looks up candidate['normalized_name'] in that dict, finds nothing for any of the 42, and returns the documented 'no fixture entry registered' UNAVAILABLE result every single time, by construction, not by a hidden failure path",
+        "verdict": "TRACEABLE -- re-running identity.FixtureIdentityResolver({}).resolve(candidate) for any of the 42 candidates reproduces UNAVAILABLE deterministically"
+      },
+      {
+        "claim": "Star counts and popularity signals from the authoritative source_observations never influenced any candidate's disposition",
+        "evidence": "the authoritative packet's source_observations[].notes field (which references star-count screenshots) is never read by authoritative_intake.ingest_authoritative_packet() when constructing CapabilityCandidate objects -- grep confirms 'source_observations_raw' is returned in the ingestion result dict for evidence-preservation purposes only, and is never passed into schema.new_capability_candidate() or any dispatch/overlap/identity function",
+        "verdict": "TRACEABLE -- structural absence confirmed by source inspection of authoritative_intake.py's ingest_authoritative_packet(), the same method used for the test_fixture claim below"
+      },
+      {
+        "claim": "The dispatch decision's NO_SUFFICIENT_CANDIDATE status for the illustrative mission_request correctly reflects that some required_capabilities have neither an existing registry match nor a verified candidate",
+        "evidence": "DEC-601c63567bdb's required_capabilities (8 categories) vs. covered (fewer than 8, per select_smallest_sufficient_set()'s covered set) -- the gap is independently reproducible by re-running select_smallest_sufficient_set() against the same 42 UNRESOLVED-overlap candidates and the same capabilities/registry.json",
+        "verdict": "TRACEABLE -- covered.issuperset(required_capabilities) evaluates False for this exact input, matching the reported status"
+      }
+    ],
+    "violations_found": [],
+    "overall_verdict": "No claims-integrity violations found against the authoritative packet. Every count, hash, derivation, and resolution traces to a specific, independently re-checkable object or source-code function."
+  },
+  "test_fixture_ingestion": {
+    "record_class": "TEST_FIXTURE",
+    "prohibited_as_mission_source_evidence": true,
+    "note": "Preserved verbatim from before this revision -- these checks are against the synthetic fixture only.",
+    "scope": "Every disposition and hard-block reason this run produced, checked against the evidence it claims to be based on.",
+    "checks": [
+      {
+        "claim": "CAP-828d3059ff33 (SYNTHETIC-python-wrapper-cli) is a FUNCTIONAL_DUPLICATE of 'python'",
+        "evidence": "OVL-7c4282d49071.shared_functions = ['automation','data_processing','scripting'], matched against capabilities/registry.json's 'python' entry's actual tags field, read live via capabilities.discover.load_registry() at analysis time, not hardcoded",
+        "verdict": "TRACEABLE -- re-running capabilities.discover.load_registry() reproduces the same tag set this claim cites"
+      },
+      {
+        "claim": "CAP-466f2d5fa7ad (SYNTHETIC-shortlink-mystery-tool) resolved AMBIGUOUS, not VERIFIED",
+        "evidence": "identity.py's structural shortened-URL override fired because canonical_hint's domain ('bit.ly') is in KNOWN_URL_SHORTENERS -- independently verifiable by inspecting the candidate's own canonical_hint field, not by trusting the resolver's stated confidence",
+        "verdict": "TRACEABLE -- the override is a pure function of the candidate's own data, reproducible without re-running the resolver"
+      },
+      {
+        "claim": "CAP-31cf4841902f (SYNTHETIC-unbounded-shell-agent) was BLOCKed for UNBOUNDED_EXECUTION_SURFACE",
+        "evidence": "its DispatchProfile explicitly declares shell_required=true, credential_required=true, network_required=true, reversibility='irreversible' -- schema.is_unbounded_execution_surface() is a pure boolean function of exactly these four fields, no hidden inputs",
+        "verdict": "TRACEABLE -- checkable by reading the DispatchProfile object alone"
+      },
+      {
+        "claim": "The gitleaks-clone candidate reached SANDBOX_PROBE",
+        "evidence": "identity_status=VERIFIED (IDE-835963a76804), overlap=UNIQUE_GAP (OVL-29008382c50a), authority_envelope=GRANTED_BOUNDED (governance.authority.evaluate_authority against POLICY-sandbox-probe-candidate-v1), all three VerificationResult dimensions PASSED, DispatchProfile.reversibility='reversible' -- every one of these five independent facts is a separately-constructed, separately-validated object, not a single unchecked assumption",
+        "verdict": "TRACEABLE -- five independent objects, each individually re-verifiable"
+      },
+      {
+        "claim": "The dispatch decision's confidence value is 0.9",
+        "evidence": "computed as the mean of the selected candidate's component_scores dict (not a single opaque number invented separately) -- component_scores itself is attached to the DispatchDecision's underlying evaluation, inspectable per-axis",
+        "verdict": "TRACEABLE, WITH A NOTED LIMITATION -- see execution_summary.md's 'Limitations' section: 'freshness' and several cost/latency axes are informational placeholders in this proof (synthetic candidates carry hand-authored, not measured, cost/latency estimates), so the confidence number is real arithmetic over real fields, but those fields' own values are themselves synthetic, not measured"
+      },
+      {
+        "claim": "Star-count observations never influenced any disposition",
+        "evidence": "grep across capability_dispatch/src/ for 'star' or 'popularity' as a structured field name: zero matches outside of source_notes free-text handling in ingest.py's docstrings and the fixture packet's own free-text notes",
+        "verdict": "TRACEABLE -- structural absence confirmed by source inspection, not merely asserted (see TestDispatch007DuplicateCapability::test_star_count_never_influences_disposition)"
+      }
+    ],
+    "violations_found": [],
+    "overall_verdict": "No claims-integrity violations found in this run. Every disposition and classification traces to a specific, independently re-checkable object or source-code function -- none rest on an unstated assumption or a value invented at report-writing time rather than computed during the run."
+  }
+}

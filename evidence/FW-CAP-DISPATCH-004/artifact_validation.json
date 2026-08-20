@@ -1,0 +1,64 @@
+{
+  "mission_id": "FW-CAP-DISPATCH-004",
+  "run_id": "RUN-FW-CAP-DISPATCH-004-002-REVISION",
+  "superseding_update_2026_08_20": {
+    "status": "AUTHORITATIVE_ARTIFACTS_RECEIVED_AND_INDEPENDENTLY_VERIFIED",
+    "commit": "611b41ef8cc4c1bd1837c054aa69a8183e17fe26",
+    "committed_by": "James Davis <jamdav688y@gmail.com>",
+    "paths": [
+      "capability_dispatch/intake/FW-CAP-DISPATCH-004.json",
+      "capability_dispatch/intake/FW-CAP-DISPATCH-004.md"
+    ],
+    "independent_verification": {
+      "method": "git fetch origin feature/fw-cap-dispatch-004; git merge --ff-only; sha256sum on both files",
+      "json_sha256_expected": "8252cf225ad9017c33f7bbadbcaba1d0e65e0a86a6231376a1b536f066798e1f",
+      "json_sha256_computed": "8252cf225ad9017c33f7bbadbcaba1d0e65e0a86a6231376a1b536f066798e1f",
+      "md_sha256_expected": "b696b375f3921b185017c912d3a3ce5583db71d57db5af53136c4350d358a07b",
+      "md_sha256_computed": "b696b375f3921b185017c912d3a3ce5583db71d57db5af53136c4350d358a07b",
+      "match": true
+    },
+    "candidate_count_declared_in_authoritative_md": "not numerically stated in the .md narrative; the .json's capability_candidates array is the authoritative count",
+    "candidate_count_extracted": 42,
+    "prior_synthetic_substitute_disposition": "retained under capability_dispatch/fixtures/, relabeled TEST_FIXTURE, PROHIBITED from serving as mission-source evidence from this revision forward -- see candidate_import_report.json's test_fixture_ingestion section for what it still legitimately serves: deterministic, offline, network-free test coverage.",
+    "note": "The synthetic substitute described below (the 'resolution' and 'candidate_import_validation_steps_defined_for_when_a_real_artifact_arrives' sections) is PRESERVED VERBATIM as an honest historical record of this mission's prior state -- it is not deleted or rewritten, only superseded. Everything from this point in the mission forward uses the authoritative packet as mission-source evidence."
+  },
+  "artifact_check": {
+    "requested_artifacts": ["FW-CAP-DISPATCH-004.json", "FW-CAP-DISPATCH-004.md"],
+    "search_performed": [
+      "find /home/user/forgeworld-runtime -iname '*FW-CAP-DISPATCH*'",
+      "find /root/.claude/uploads -iname '*FW-CAP-DISPATCH*' -o -iname '*dispatch*'",
+      "find /root /home /tmp -iname '*FW-CAP-DISPATCH*'",
+      "find / -xdev -iname '*FW-CAP-DISPATCH*'",
+      "find / -xdev -iname '*dispatch-004*'",
+      "review of every attachment in this conversation's uploads directory (3 PNG screenshots present, none named FW-CAP-DISPATCH-004.*, none containing JSON/Markdown content)"
+    ],
+    "result": "NOT_FOUND",
+    "disclosure": "Neither FW-CAP-DISPATCH-004.json nor FW-CAP-DISPATCH-004.md exists anywhere in this repository, this session's upload directory, this session's scratchpad, or the filesystem generally. No file with this name was attached to or pasted into the conversation. This mirrors the disclosed 1554.png/1555.png absence in the prior Perception Gateway mission (PR #5) -- the same honest-disclosure convention is followed here rather than fabricating a claim that the named files were used."
+  },
+  "resolution": {
+    "decision": "PROCEED_WITH_DISCLOSED_SYNTHETIC_SUBSTITUTE",
+    "rationale": [
+      "The mission's own governing objective is architectural: build the ingest/identity/overlap/dispatch/gate/test machinery so that WHEN a real FW-CAP-DISPATCH-004 packet arrives, it can be ingested and dispatched correctly. The machinery itself does not depend on the specific content of any one packet.",
+      "The mission brief itself describes the artifact's shape in prose (screenshots with changing star counts, shortened links, candidate tool/repo names) -- sufficient to construct a representative, clearly-labeled synthetic packet exercising every required epistemic state and disposition path.",
+      "Blocking the entire mission on a missing input file, when the file's *absence* is itself an easily-disclosed, non-blocking fact and the architecture is independently buildable and testable, would waste the mission's independent validation value for no governance benefit -- consistent with the mission's own instruction: 'complete all independent validation work' before considering BLOCKED_WITH_EVIDENCE.",
+      "Nothing about proceeding this way violates the mission's authority constraints: no third-party candidate (real or synthetic) is installed, cloned, executed, or granted authority at any point."
+    ],
+    "synthetic_fixture_location": "capability_dispatch/fixtures/FW-CAP-DISPATCH-004.synthetic.json",
+    "synthetic_fixture_labeling": "Every synthetic candidate's observed_name is prefixed 'SYNTHETIC-' and every record carries \"provenance\": \"synthetic_fixture_no_real_artifact_supplied\" so it can never be mistaken for a real observation in any downstream report or ledger entry.",
+    "what_this_does_NOT_resolve": "If a real FW-CAP-DISPATCH-004.json/.md is supplied in a future session, it must be run through capability_dispatch/src/ingest.py fresh -- nothing in this mission's synthetic run substitutes for, or pre-validates, that real content."
+  },
+  "candidate_import_validation_steps_defined_for_when_a_real_artifact_arrives": [
+    "1. JSON syntax validation (json.load, fail closed on parse error)",
+    "2. Required-field validation against capability_dispatch/schemas/candidate_observation.schema.json",
+    "3. Artifact-ID consistency validation (declared artifact_id matches the FW-CAP-DISPATCH-004 mission ID)",
+    "4. Source-hash format validation (64-char lowercase hex sha256, same HEX64 pattern as perception.src.common)",
+    "5. Candidate-count verification (declared count matches len(candidates))",
+    "6. Duplicate-name detection (case-insensitive observed_name collision check within one packet)",
+    "7. Category normalization review (observed_category preserved verbatim + a separately recorded normalized_category, never overwritten in place)",
+    "8. Canonical-hint format review (canonical_hint, when present, must be a well-formed URL or explicitly null -- never guessed)",
+    "9. Epistemic-state review (every candidate must start IDENTITY=UNVERIFIED, SAFETY=NOT_ASSESSED, LICENSE=NOT_ASSESSED, MAINTAINABILITY=NOT_ASSESSED, INSTALLATION=NOT_INSTALLED, AUTHORITY=NOT_GRANTED, PROMOTION=NOT_ELIGIBLE -- ingest.py raises if any candidate arrives pre-set to a stronger state)",
+    "10. Claims-integrity review (no free-text claim in the source packet is copied into a structured field without an explicit uncertainty/provenance marker)"
+  ],
+  "implemented_and_verified_against_the_synthetic_fixture": true,
+  "historical_record_note": "The 'resolution' and validation-steps sections above describe this mission's state BEFORE the 2026-08-20 revision documented in 'superseding_update_2026_08_20' at the top of this file. All 10 validation steps listed above were subsequently executed for real against the authoritative packet -- see candidate_import_report.json's authoritative_ingestion section for each step's actual pass/fail result on the real 42-candidate packet."
+}
