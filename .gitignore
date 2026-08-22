@@ -1,3 +1,4 @@
 capabilities/state.json
 __pycache__/
 *.pyc
+artifacts/pr-publication/
