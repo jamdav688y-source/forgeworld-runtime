@@ -14,7 +14,8 @@ machine at this moment:
 
 Command verification levels (returned as "evidence_level" for command
 checks only): PATH_FOUND, LAUNCH_VERIFIED, IDENTITY_VERIFIED,
-VERSION_VERIFIED, UNREACHABLE, TIMEOUT, IDENTITY_MISMATCH.
+VERSION_VERIFIED, VERSION_UNSUPPORTED, UNREACHABLE, TIMEOUT,
+IDENTITY_MISMATCH.
 
 A registry command check without a "verify" spec keeps the original,
 weaker path-only behavior (PATH_FOUND) unchanged -- not every command
@@ -107,7 +108,7 @@ def _probe_resolved(path, verify_spec):
             f"from output to check against minimum {min_version}: {output[:200]!r}"
         )
     if found_version < min_version_tuple:
-        return 0.0, "IDENTITY_VERIFIED", (
+        return 0.0, "VERSION_UNSUPPORTED", (
             f"'{path}' identity confirmed but version {found_version} is below "
             f"required minimum {min_version_tuple}: {output[:200]!r}"
         )

@@ -132,8 +132,10 @@ def test_version_below_minimum_is_not_version_verified(tmp_path):
     tool = _make_fake_tool(tmp_path, "Python 2.7.18", exit_code=0)
     confidence, level, evidence = discover._probe_resolved(str(tool), PYTHON_VERIFY_SPEC)
     assert level != "VERSION_VERIFIED"
-    assert level == "IDENTITY_VERIFIED"  # identity matched; version gate failed
+    assert level == "VERSION_UNSUPPORTED"  # distinct from IDENTITY_VERIFIED: identity matched, version gate failed
     assert confidence == 0.0
+    assert "(2, 7, 18)" in evidence  # detected version
+    assert "(3, 8, 0)" in evidence  # required minimum
 
 
 # 7. Paths containing spaces work.
