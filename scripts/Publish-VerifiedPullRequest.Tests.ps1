@@ -178,6 +178,34 @@ Describe 'Publish-VerifiedPullRequest orchestration' {
     }
 }
 
+Describe 'Get-PytestSummary parsing' {
+
+    Context 'Real pytest-style output' {
+        It 'parses a plain pytest summary line correctly' {
+            $r = Get-PytestSummary -Output "collected 15 items`n============================= 15 passed in 3.03s =============================="
+            $r.Passed | Should Be 15
+            $r.Failed | Should Be 0
+        }
+    }
+
+    Context 'Pester 3.4-style label-first summary lines' {
+        It 'does not misread "Passed: 17 Failed: 0" as 17 failures' {
+            $output = "Tests completed in 1.53s`nPassed: 17 Failed: 0 Skipped: 0 Pending: 0 Inconclusive: 0`n17 passed, 0 failed, 0 skipped"
+            $r = Get-PytestSummary -Output $output
+            $r.Passed | Should Be 17
+            $r.Failed | Should Be 0
+            $r.Skipped | Should Be 0
+        }
+
+        It 'correctly reports a genuine Pester failure count from the trailing summary line' {
+            $output = "Tests completed in 1.0s`nPassed: 15 Failed: 2 Skipped: 0 Pending: 0 Inconclusive: 0`n15 passed, 2 failed, 0 skipped"
+            $r = Get-PytestSummary -Output $output
+            $r.Passed | Should Be 15
+            $r.Failed | Should Be 2
+        }
+    }
+}
+
 Describe 'Static safety guarantees' {
 
     $scriptText = Get-Content "$PSScriptRoot\Publish-VerifiedPullRequest.ps1" -Raw

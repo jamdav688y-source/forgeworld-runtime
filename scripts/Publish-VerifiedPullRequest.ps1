@@ -148,12 +148,23 @@ function Invoke-GitPushBranch {
 }
 
 function Get-PytestSummary {
-    <# Parses a pytest console summary line into passed/failed/skipped totals. #>
+    <# Parses a pytest-style "N passed, N failed, N skipped" summary out of
+       test-command output. Takes the LAST match of each pattern rather than
+       the first: pytest's own summary line is always last, so this is a
+       no-op for real pytest output, but it matters for tools like Pester
+       3.4 whose own internal line reads "Passed: 17 Failed: 0 ..." (label
+       before number) -- a naive first-match search misreads that "17" as
+       17 failures. Preferring the last match favors this automation's own
+       trailing, deliberately pytest-shaped summary line over any noisier
+       upstream tool output that happens to precede it. #>
     param([Parameter(Mandatory)][string]$Output)
     $passed = 0; $failed = 0; $skipped = 0
-    if ($Output -match '(\d+)\s+passed') { $passed = [int]$Matches[1] }
-    if ($Output -match '(\d+)\s+failed') { $failed = [int]$Matches[1] }
-    if ($Output -match '(\d+)\s+skipped') { $skipped = [int]$Matches[1] }
+    $m = [regex]::Matches($Output, '(\d+)\s+passed')
+    if ($m.Count -gt 0) { $passed = [int]$m[$m.Count - 1].Groups[1].Value }
+    $m = [regex]::Matches($Output, '(\d+)\s+failed')
+    if ($m.Count -gt 0) { $failed = [int]$m[$m.Count - 1].Groups[1].Value }
+    $m = [regex]::Matches($Output, '(\d+)\s+skipped')
+    if ($m.Count -gt 0) { $skipped = [int]$m[$m.Count - 1].Groups[1].Value }
     [pscustomobject]@{ Passed = $passed; Failed = $failed; Skipped = $skipped }
 }
 
