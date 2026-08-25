@@ -4,19 +4,36 @@ Bounded, file-backed lifecycle tracking for missions moving through
 BRONZE_RECEIVED -> SILVER_STRUCTURED -> GOLD_VALIDATED, with REJECTED and
 QUARANTINED as explicit failure / malformed-input destinations.
 
-Every stage transition is an append-only ledger event, written under a
-per-mission, cross-process exclusive lock and durably committed via
-write-temp-then-atomic-rename. A mission's record is a cached projection
-of its ledger, never an independent source of truth -- reconstruct()
-rebuilds the same record purely by replaying the ledger through the same
-projection function the live path uses (_project_event).
+DURABILITY LAW (the reason this file is structured the way it is):
+
+    THE APPEND-ONLY EVENT HISTORY IS AUTHORITATIVE.
+    THE SNAPSHOT IS A DERIVED, REBUILDABLE PROJECTION.
+    SNAPSHOT FAILURE MUST NEVER ERASE, DUPLICATE OR CONTRADICT A
+    COMMITTED EVENT.
+
+Every mutation goes through EnvelopeStore._commit(), which, under a
+per-mission cross-process lock: reads and validates the *complete*
+ledger, reconstructs current state from it, validates and idempotency-
+checks the proposed transition purely against that reconstruction (never
+against the cached snapshot), and then has exactly one commit point --
+atomically replacing the whole ledger file with its old contents plus the
+one new event. Everything before that replace is uncommitted and has no
+effect if interrupted; everything after it is durably committed, even if
+the snapshot write that follows fails. The snapshot is always rebuilt
+from -- and, on every read, verified against -- the ledger; a missing,
+stale, or corrupted snapshot is silently self-healing. A corrupted
+*ledger* is not: it fails closed with a distinguishable integrity error,
+and no transition is attempted while that error stands.
 
 Validation is not promotion: reaching GOLD_VALIDATED only means explicit
-acceptance evidence was recorded. promotion_status only moves to PROMOTED
-through record_promotion_authority(), which delegates entirely to an
-injected AuthorityVerifier and fails closed -- with no verifier
-configured, on rejection, on a malformed result, or on a result that does
-not structurally name this exact mission and a promotion scope for it.
+acceptance evidence was recorded. record_promotion_authority() records a
+verified, append-only attestation that a named principal has been
+granted promotion scope for this exact mission -- but, deliberately and
+conservatively, does not itself flip promotion_status. This bounded
+increment does not implement an actual promotion action, only the
+evidentiary record that a human authority verified and attested to one;
+an actual promotion (or a future revocation) would need its own,
+separately governed, append-only event type, which is out of scope here.
 This module makes no judgment based on what a principal's name looks
 like: it does not, and cannot, authenticate anyone. It only enforces the
 external-verification interface and refuses to proceed without one.
@@ -36,7 +53,7 @@ import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable, Optional, Sequence
+from typing import Any, Callable, Iterable, Optional, Sequence
 
 try:
     import fcntl
@@ -60,6 +77,11 @@ LIFECYCLE_STAGES = (
 )
 
 NOT_PROMOTED = "NOT_PROMOTED"
+# PROMOTED is intentionally unreachable in this bounded increment: per
+# Phase 7's conservative resolution, recording a verified promotion
+# attestation does not itself promote anything. It is kept defined (not
+# deleted) as the documented target state a future, separately governed
+# promotion event type would set.
 PROMOTED = "PROMOTED"
 
 _STRUCTURED_METADATA_FIELDS = (
@@ -116,16 +138,27 @@ class MissingAttestationError(EnvelopeError):
     """The verified result carried no attestation_reference."""
 
 
-class IntegrityError(EnvelopeError):
-    """Base class for detected on-disk corruption."""
+class IdempotencyConflictError(EnvelopeError):
+    """A ledger event with this identifier already exists with different content."""
 
 
-class SnapshotIntegrityError(IntegrityError):
-    """A cached record snapshot is missing, unparsable, or malformed."""
+class AuthorityConflictError(IdempotencyConflictError):
+    """A different, already-recorded promotion attestation exists for this mission.
+
+    Promotion-authority attestations are append-only in this substrate:
+    the exact same verified attestation may be recorded again (idempotent
+    no-op), but a *different* principal, scope, mission, method, or
+    attestation_reference is refused outright -- AUTHORITY_CONFLICT.
+    Revocation or replacement is not implemented in this increment; it
+    would need its own, separately governed, append-only event type.
+    """
 
 
-class LedgerIntegrityError(IntegrityError):
-    """A ledger file contains a malformed, partial, or unparsable line."""
+class LedgerIntegrityError(EnvelopeError):
+    """LEDGER_INTEGRITY_ERROR: the authoritative ledger is malformed, partial,
+    or unparsable. Never silently skipped, and never recovered from the
+    snapshot -- the ledger is authoritative, so its own corruption fails
+    closed."""
 
 
 class LockTimeoutError(EnvelopeError):
@@ -163,7 +196,7 @@ def _now() -> str:
 
 
 # ---------------------------------------------------------------------------
-# REPAIR B: mission-id validation
+# mission-id validation (from FW-REPAIR-EVIDENCE-ENVELOPE-001)
 # ---------------------------------------------------------------------------
 
 def validate_mission_id(mission_id: Any) -> str:
@@ -200,7 +233,7 @@ def validate_mission_id(mission_id: Any) -> str:
 
 
 # ---------------------------------------------------------------------------
-# REPAIR A: external authority-verification interface
+# external authority-verification interface (from FW-REPAIR-EVIDENCE-ENVELOPE-001)
 # ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
@@ -279,7 +312,7 @@ def _validate_verified_authority(result: Any, mission_id: str, required_scope: s
 
 
 # ---------------------------------------------------------------------------
-# record projection (shared by the live write path and reconstruct())
+# record projection (shared by the live write path, reads, and reconstruct())
 # ---------------------------------------------------------------------------
 
 def _new_record(mission_id: str, mission_version: Any) -> dict:
@@ -306,8 +339,8 @@ def _new_record(mission_id: str, mission_version: Any) -> dict:
 
 def _project_event(record: dict, event: dict) -> dict:
     """Fold one ledger event into a record. The only place stage logic
-    lives -- used identically by the live write path and by reconstruct(),
-    so replaying history can never diverge from what actually happened."""
+    lives -- used identically by the write path, reads, and reconstruct(),
+    so no path can ever diverge from what the ledger actually says."""
     transition = event["transition"]
     detail = event.get("detail", {})
 
@@ -344,7 +377,12 @@ def _project_event(record: dict, event: dict) -> dict:
         record["lifecycle_stage"] = REJECTED
         record["unresolved_gaps"] = record["unresolved_gaps"] + [detail["reason"]]
     elif transition == "PROMOTION_AUTHORITY_RECORDED":
-        record["promotion_status"] = PROMOTED
+        # Deliberately does NOT set promotion_status. See Phase 7 / module
+        # docstring: recording a verified attestation is not itself a
+        # promotion. promotion_authority becomes the visible evidence that
+        # a human authority verified and attested to promoting this
+        # mission; an actual promotion is a separate, not-yet-implemented
+        # action.
         record["promotion_authority"] = {**detail, "recorded_at": event["timestamp"]}
     else:
         raise EnvelopeError(f"unknown transition in ledger: {transition!r}")
@@ -354,7 +392,7 @@ def _project_event(record: dict, event: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# REPAIR C: durable snapshot writes
+# durable, atomic single-file writes (ledger replacement and snapshot cache)
 # ---------------------------------------------------------------------------
 
 def _fsync_directory(directory: Path) -> None:
@@ -379,8 +417,11 @@ def _atomic_write_bytes(path: Path, data: bytes) -> None:
     """Write `data` to `path` durably and atomically: write to a sibling
     temp file in the same directory, fsync it, then os.replace it into
     place, so a reader never observes a partially written file. On any
-    failure before the replace, the temp file is removed and whatever was
-    previously at `path` is left completely untouched."""
+    failure before the replace, the temp file this call itself created is
+    removed (ownership is proven by construction: it is always this
+    call's own freshly minted tempfile.mkstemp() path, never anything
+    discovered by scanning the directory) and whatever was previously at
+    `path` is left completely untouched."""
     directory = path.parent
     fd, tmp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=str(directory))
     tmp_path = Path(tmp_name)
@@ -399,8 +440,17 @@ def _atomic_write_bytes(path: Path, data: bytes) -> None:
     _fsync_directory(directory)
 
 
+def _ledger_content_hash(events: list) -> str:
+    """A deterministic fingerprint of an exact, ordered event history."""
+    return sha256_bytes(_canonical([e["event_key"] for e in events]).encode())
+
+
+def _serialize_ledger(events: list) -> bytes:
+    return b"".join((json.dumps(e, sort_keys=True) + "\n").encode("utf-8") for e in events)
+
+
 # ---------------------------------------------------------------------------
-# REPAIR C: single-writer, cross-process ledger lock
+# single-writer, cross-process lock
 # ---------------------------------------------------------------------------
 
 class _FileLock:
@@ -417,16 +467,16 @@ class _FileLock:
     it, so an active writer's lock can never be deleted out from under it.
 
     Platform note: this relies on fcntl.flock, which is POSIX-only. Cross-
-    process ledger-writer exclusion is therefore not supported on
-    Windows; EnvelopeStore raises UnsupportedPlatformError there rather
-    than silently falling back to a mechanism that would not actually be
+    process writer exclusion is therefore not supported on Windows;
+    EnvelopeStore raises UnsupportedPlatformError there rather than
+    silently falling back to a mechanism that would not actually be
     cross-process safe.
     """
 
     def __init__(self, path: Path, timeout_seconds: float, poll_interval: float = 0.02):
         if fcntl is None:
             raise UnsupportedPlatformError(
-                "cross-process ledger locking requires POSIX fcntl.flock, "
+                "cross-process locking requires POSIX fcntl.flock, "
                 f"which is unavailable on {sys.platform!r}"
             )
         self.path = path
@@ -464,15 +514,34 @@ class _FileLock:
         return False
 
 
+def _default_fault_hook(point: str) -> None:
+    return None
+
+
 class EnvelopeStore:
     """File-backed store for mission-and-evidence envelopes.
 
-    Each mission gets a cached snapshot at records/<mission_id>.json,
-    written atomically, and an append-only event ledger at
-    ledger/<mission_id>.jsonl, written under a per-mission cross-process
-    lock. `authority_verifier`, if given, is the sole source of truth for
-    promotion authority; with none configured (the default), no mission
-    can ever be promoted.
+    The ledger at ledger/<mission_id>.jsonl is authoritative: every read
+    validates it and reconstructs current state from it. The snapshot at
+    records/<mission_id>.json is a derived cache carrying projection
+    metadata (last_event_id, event_count, a ledger content fingerprint,
+    schema_version) alongside the reconstructed record; it is compared
+    against a fresh ledger reconstruction on every read and silently
+    self-heals when missing, stale, or corrupted. Both files are written
+    via write-temp-then-atomic-rename, and every mutation is serialized
+    per mission_id via a cross-process advisory lock.
+
+    `authority_verifier`, if given, is the sole source of truth for
+    promotion-authority verification; with none configured (the
+    default), no attestation can ever be recorded.
+
+    `_fault_hook`, if given, is called at three points inside _commit
+    ("before_ledger_replace", "after_ledger_replace_before_snapshot",
+    "after_snapshot_replace") purely so tests can deterministically
+    simulate a failure at an exact commit boundary without timing-
+    dependent sleeps or killing real processes. It is a no-op by default
+    and is not part of the public contract -- production code must never
+    pass anything but the default.
     """
 
     def __init__(
@@ -480,6 +549,7 @@ class EnvelopeStore:
         root: Path,
         authority_verifier: Optional[AuthorityVerifier] = None,
         lock_timeout_seconds: float = 5.0,
+        _fault_hook: Optional[Callable[[str], None]] = None,
     ):
         self.root = Path(root)
         self.records_dir = self.root / "records"
@@ -488,8 +558,9 @@ class EnvelopeStore:
         self.ledger_dir.mkdir(parents=True, exist_ok=True)
         self.authority_verifier = authority_verifier
         self.lock_timeout_seconds = lock_timeout_seconds
+        self._fault_hook = _fault_hook or _default_fault_hook
 
-    # -- REPAIR B: path resolution never escapes the store root ---------
+    # -- path resolution never escapes the store root -------------------
     def _resolve_within_root(self, name: str, base_dir: Path) -> Path:
         candidate = (base_dir / name).resolve()
         root_resolved = self.root.resolve()
@@ -510,29 +581,12 @@ class EnvelopeStore:
     def _lock_path(self, mission_id: str) -> Path:
         return self._resolve_within_root(f"{mission_id}.lock", self.ledger_dir)
 
-    # -- storage helpers -----------------------------------------------
-    def _load(self, mission_id: str) -> Optional[dict]:
-        path = self._record_path(mission_id)
-        if not path.exists():
-            return None
-        try:
-            text = path.read_text(encoding="utf-8")
-        except OSError as exc:
-            raise SnapshotIntegrityError(f"snapshot {path} could not be read: {exc}") from exc
-        try:
-            record = json.loads(text)
-        except json.JSONDecodeError as exc:
-            raise SnapshotIntegrityError(f"snapshot {path} is not valid JSON: {exc}") from exc
-        if not isinstance(record, dict) or "execution_events" not in record or "mission_id" not in record:
-            raise SnapshotIntegrityError(f"snapshot {path} is missing required record fields")
-        return record
-
-    def _atomic_save(self, record: dict) -> None:
-        path = self._record_path(record["mission_id"])
-        data = json.dumps(record, indent=2, sort_keys=True).encode("utf-8")
-        _atomic_write_bytes(path, data)
-
+    # -- authoritative ledger: read + validate --------------------------
     def _read_ledger(self, mission_id: str) -> list:
+        """Read and validate the complete ledger. Raises LedgerIntegrityError
+        (never a bare parse exception, never a silent skip) on any partial
+        or malformed line -- this is the sole fail-closed gate for
+        authoritative history corruption."""
         path = self._ledger_path(mission_id)
         if not path.exists():
             return []
@@ -560,23 +614,7 @@ class EnvelopeStore:
                 events.append(event)
         return events
 
-    def _append_ledger_line(self, mission_id: str, event: dict) -> None:
-        """Append one event. Caller must already hold this mission's lock."""
-        line = (json.dumps(event, sort_keys=True) + "\n").encode("utf-8")
-        with open(self._ledger_path(mission_id), "ab") as f:
-            f.write(line)
-            f.flush()
-            os.fsync(f.fileno())
-
-    def get(self, mission_id: str) -> Optional[dict]:
-        mission_id = validate_mission_id(mission_id)
-        return self._load(mission_id)
-
-    def reconstruct(self, mission_id: str) -> Optional[dict]:
-        """Rebuild a mission's record purely by replaying its ledger,
-        independent of the cached snapshot."""
-        mission_id = validate_mission_id(mission_id)
-        events = self._read_ledger(mission_id)
+    def _reconstruct_from_events(self, mission_id: str, events: list) -> Optional[dict]:
         if not events:
             return None
         record = _new_record(mission_id, mission_version=None)
@@ -584,26 +622,141 @@ class EnvelopeStore:
             record = _project_event(record, event)
         return record
 
+    def _atomic_replace_ledger(self, mission_id: str, events: list) -> None:
+        """THE single commit point. Atomically replaces the mission's
+        entire ledger file with `events` serialized as complete JSONL.
+        Before this call returns successfully, none of `events` is
+        committed; after it returns successfully, all of them are -- even
+        if the derived snapshot projection that follows fails.
+
+        The physical file is replaced as a whole rather than appended to,
+        so a reader can never observe a partially written trailing line,
+        and the write is always of a complete, freshly-validated event
+        list (built from a validated read), so an existing event can
+        never be silently discarded, reordered, or duplicated by this
+        call. This whole-file-replace approach is appropriate for this
+        bounded, small, single-mission-per-file local substrate; it is
+        not a design suited to an unbounded production ledger, where
+        rewriting the entire history on every event would not scale --
+        that would need a genuine write-ahead log or a segmented/
+        compacted ledger instead.
+        """
+        self._atomic_replace_ledger_bytes(mission_id, _serialize_ledger(events))
+
+    def _atomic_replace_ledger_bytes(self, mission_id: str, data: bytes) -> None:
+        _atomic_write_bytes(self._ledger_path(mission_id), data)
+
+    # -- derived snapshot cache: metadata, load, write, staleness --------
+    def _projection_metadata(self, mission_id: str, events: list) -> dict:
+        return {
+            "mission_id": mission_id,
+            "last_event_id": events[-1]["event_id"] if events else None,
+            "event_count": len(events),
+            "ledger_content_hash": _ledger_content_hash(events),
+            "schema_version": SCHEMA_VERSION,
+        }
+
+    def _load_snapshot_wrapper(self, mission_id: str) -> Optional[dict]:
+        """Load the cached snapshot wrapper. Any problem reading or
+        parsing it (missing, corrupted, truncated, wrong shape) is
+        treated as "absent" rather than raised: unlike the ledger, the
+        snapshot is a rebuildable derived cache, so its own corruption is
+        never fatal -- callers simply rebuild it from the ledger."""
+        path = self._record_path(mission_id)
+        if not path.exists():
+            return None
+        try:
+            wrapper = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None
+        if not isinstance(wrapper, dict) or "record" not in wrapper or "projection_metadata" not in wrapper:
+            return None
+        return wrapper
+
+    def _write_derived_snapshot(self, mission_id: str, events: list, record: dict) -> None:
+        wrapper = {
+            "projection_metadata": self._projection_metadata(mission_id, events),
+            "record": record,
+        }
+        data = json.dumps(wrapper, indent=2, sort_keys=True).encode("utf-8")
+        _atomic_write_bytes(self._record_path(mission_id), data)
+
+    # -- public reads ------------------------------------------------------
+    def get(self, mission_id: str) -> Optional[dict]:
+        """Return this mission's current state, always reconstructed from
+        and verified against the authoritative ledger. The cached
+        snapshot is consulted only as a hint and is never trusted: it is
+        compared against a fresh reconstruction and opportunistically
+        repaired in place (atomically) whenever it is missing, stale, or
+        inconsistent. Fails closed (LedgerIntegrityError) if the ledger
+        itself is corrupt; never falls back to snapshot content in that
+        case."""
+        mission_id = validate_mission_id(mission_id)
+        events = self._read_ledger(mission_id)
+        record = self._reconstruct_from_events(mission_id, events)
+        if record is None:
+            return None
+
+        expected_meta = self._projection_metadata(mission_id, events)
+        wrapper = self._load_snapshot_wrapper(mission_id)
+        stale = (
+            wrapper is None
+            or wrapper.get("projection_metadata") != expected_meta
+            or wrapper.get("record") != record
+        )
+        if stale:
+            try:
+                self._write_derived_snapshot(mission_id, events, record)
+            except OSError:
+                pass  # best-effort repair; the correct data is still returned below
+        return record
+
+    def reconstruct(self, mission_id: str) -> Optional[dict]:
+        """Rebuild a mission's record purely by replaying its ledger --
+        the same authoritative source get() verifies against, exposed
+        directly with zero snapshot interaction (no read, no write)."""
+        mission_id = validate_mission_id(mission_id)
+        events = self._read_ledger(mission_id)
+        return self._reconstruct_from_events(mission_id, events)
+
     # -- shared, lock-protected commit path -------------------------------
-    def _commit(self, mission_id: str, build_event) -> dict:
-        """Acquire this mission's single-writer, cross-process lock, then
-        atomically: load the current record fresh, ask build_event(record)
-        for the event to apply (it validates against live state and raises
-        on any invalid transition), project it, durably append it to the
-        ledger, and atomically snapshot the result. Idempotent: if the
-        built event is identical to the last recorded one, nothing new is
-        written and the existing record is returned unchanged."""
+    def _commit(self, mission_id: str, make_event: Callable[[Optional[dict], list], dict]) -> dict:
+        """Acquire this mission's single-writer, cross-process lock, then:
+
+          1. Read and validate the complete authoritative ledger.
+          2. Reconstruct current state from it.
+          3/5. Call make_event(record, events), which validates the
+               proposed transition against that reconstruction and
+               determines idempotency from the ledger itself (never the
+               snapshot), returning the event to apply -- or raising.
+          6/7. Build the complete next ledger and commit it atomically.
+               This is the one commit point: before it returns, nothing
+               is committed; after, the event is committed regardless of
+               what happens next.
+          8/9. Re-read the newly committed ledger (proving what is
+               actually durable, not just what was computed in memory),
+               reconstruct from it, and write the derived snapshot.
+         10.   (lock released by the `with` block on any exit, including
+               an exception from any of the above.)
+        """
         lock_path = self._lock_path(mission_id)
         with _FileLock(lock_path, timeout_seconds=self.lock_timeout_seconds):
-            record = self._load(mission_id)
-            event = build_event(record)
-            if record is not None and record["execution_events"]:
-                if record["execution_events"][-1]["event_key"] == event["event_key"]:
-                    return record  # identical replay: no new event, no duplicate
-            record = _project_event(record if record is not None else _new_record(mission_id, None), event)
-            self._append_ledger_line(mission_id, event)
-            self._atomic_save(record)
-            return record
+            events = self._read_ledger(mission_id)
+            record = self._reconstruct_from_events(mission_id, events)
+            event = make_event(record, events)
+
+            if any(e["event_key"] == event["event_key"] for e in events):
+                return record  # identical event already committed: idempotent no-op
+
+            self._fault_hook("before_ledger_replace")
+            self._atomic_replace_ledger(mission_id, events + [event])
+            self._fault_hook("after_ledger_replace_before_snapshot")
+
+            committed_events = self._read_ledger(mission_id)
+            committed_record = self._reconstruct_from_events(mission_id, committed_events)
+            self._write_derived_snapshot(mission_id, committed_events, committed_record)
+            self._fault_hook("after_snapshot_replace")
+            return committed_record
 
     # -- transitions -------------------------------------------------------
     def receive_bronze(
@@ -668,17 +821,16 @@ class EnvelopeStore:
             "detail": detail,
         }
 
-        def build_event(record: Optional[dict]) -> dict:
-            if record is not None and record["lifecycle_stage"] is not None:
-                already = record["execution_events"] and record["execution_events"][-1]["event_key"] == key
-                if not already:
-                    raise MissionConflictError(
-                        f"mission_id {mission_id!r} already has stage {record['lifecycle_stage']!r}; "
-                        "cannot re-receive as BRONZE with different content"
-                    )
+        def make_event(record: Optional[dict], events: list) -> dict:
+            already = any(e["event_key"] == key for e in events)
+            if not already and record is not None and record["lifecycle_stage"] is not None:
+                raise MissionConflictError(
+                    f"mission_id {mission_id!r} already has stage {record['lifecycle_stage']!r}; "
+                    "cannot re-receive as BRONZE with different content"
+                )
             return event
 
-        return self._commit(mission_id, build_event)
+        return self._commit(mission_id, make_event)
 
     def quarantine(
         self, mission_id: str, mission_version: Any, reason: str, raw_input: Any = None
@@ -694,10 +846,10 @@ class EnvelopeStore:
             "detail": detail,
         }
 
-        def build_event(record: Optional[dict]) -> dict:
+        def make_event(record: Optional[dict], events: list) -> dict:
             return event
 
-        return self._commit(mission_id, build_event)
+        return self._commit(mission_id, make_event)
 
     def structure_silver(self, mission_id: str, structured_metadata: dict) -> dict:
         mission_id = validate_mission_id(mission_id)
@@ -711,18 +863,19 @@ class EnvelopeStore:
             "detail": detail,
         }
 
-        def build_event(record: Optional[dict]) -> dict:
-            if record is None:
-                raise InvalidTransitionError(f"no envelope found for mission_id {mission_id!r}")
-            already = record["execution_events"] and record["execution_events"][-1]["event_key"] == key
-            if not already and record["lifecycle_stage"] != BRONZE_RECEIVED:
-                raise InvalidTransitionError(
-                    f"mission {mission_id!r} is at {record['lifecycle_stage']!r}; "
-                    f"{SILVER_STRUCTURED} requires {BRONZE_RECEIVED}"
-                )
+        def make_event(record: Optional[dict], events: list) -> dict:
+            already = any(e["event_key"] == key for e in events)
+            if not already:
+                if record is None:
+                    raise InvalidTransitionError(f"no envelope found for mission_id {mission_id!r}")
+                if record["lifecycle_stage"] != BRONZE_RECEIVED:
+                    raise InvalidTransitionError(
+                        f"mission {mission_id!r} is at {record['lifecycle_stage']!r}; "
+                        f"{SILVER_STRUCTURED} requires {BRONZE_RECEIVED}"
+                    )
             return event
 
-        return self._commit(mission_id, build_event)
+        return self._commit(mission_id, make_event)
 
     def validate_gold(
         self, mission_id: str, acceptance_tests: list, evidence_artifacts: list
@@ -744,11 +897,11 @@ class EnvelopeStore:
             "resulting_stage": resulting_stage,
         }
 
-        def build_event(record: Optional[dict]) -> dict:
-            if record is None:
-                raise InvalidTransitionError(f"no envelope found for mission_id {mission_id!r}")
-            already = record["execution_events"] and record["execution_events"][-1]["event_key"] == key
+        def make_event(record: Optional[dict], events: list) -> dict:
+            already = any(e["event_key"] == key for e in events)
             if not already:
+                if record is None:
+                    raise InvalidTransitionError(f"no envelope found for mission_id {mission_id!r}")
                 if record["lifecycle_stage"] != SILVER_STRUCTURED:
                     raise InvalidTransitionError(
                         f"mission {mission_id!r} is at {record['lifecycle_stage']!r}; "
@@ -761,7 +914,7 @@ class EnvelopeStore:
                     )
             return event
 
-        return self._commit(mission_id, build_event)
+        return self._commit(mission_id, make_event)
 
     def reject(self, mission_id: str, reason: str) -> dict:
         mission_id = validate_mission_id(mission_id)
@@ -775,31 +928,42 @@ class EnvelopeStore:
             "detail": detail,
         }
 
-        def build_event(record: Optional[dict]) -> dict:
-            if record is None:
-                raise InvalidTransitionError(f"no envelope found for mission_id {mission_id!r}")
-            already = record["execution_events"] and record["execution_events"][-1]["event_key"] == key
-            if not already and record["lifecycle_stage"] not in (BRONZE_RECEIVED, SILVER_STRUCTURED):
-                raise InvalidTransitionError(
-                    f"mission {mission_id!r} is at {record['lifecycle_stage']!r}; "
-                    f"{REJECTED} is only reachable from {BRONZE_RECEIVED} or {SILVER_STRUCTURED}"
-                )
+        def make_event(record: Optional[dict], events: list) -> dict:
+            already = any(e["event_key"] == key for e in events)
+            if not already:
+                if record is None:
+                    raise InvalidTransitionError(f"no envelope found for mission_id {mission_id!r}")
+                if record["lifecycle_stage"] not in (BRONZE_RECEIVED, SILVER_STRUCTURED):
+                    raise InvalidTransitionError(
+                        f"mission {mission_id!r} is at {record['lifecycle_stage']!r}; "
+                        f"{REJECTED} is only reachable from {BRONZE_RECEIVED} or {SILVER_STRUCTURED}"
+                    )
             return event
 
-        return self._commit(mission_id, build_event)
+        return self._commit(mission_id, make_event)
 
     def record_promotion_authority(self, mission_id: str, statement: str) -> dict:
-        """Record promotion authority for `mission_id`.
+        """Record a verified, append-only promotion-authority attestation
+        for `mission_id`.
 
         This never inspects any actor name to decide anything -- it has no
         opinion on what a "human-looking" or "machine-looking" identifier
-        is. The only thing that can authorize a promotion is a
+        is. The only thing that can produce an attestation is a
         VerifiedAuthority returned by the injected AuthorityVerifier, and
         that result must structurally name this exact mission and a
         promotion scope for it. Every other outcome -- no verifier
         configured, an explicit rejection, a malformed result, the wrong
         scope, a result naming a different mission, or a missing
         attestation -- fails closed.
+
+        Once an attestation is recorded, it is immutable: recording the
+        exact same one again is an idempotent no-op; attempting to record
+        a *different* one for the same mission raises AuthorityConflictError
+        (AUTHORITY_CONFLICT). There is no revocation or replacement in
+        this increment.
+
+        Deliberately does not itself change promotion_status -- see the
+        module docstring and Phase 7.
         """
         mission_id = validate_mission_id(mission_id)
 
@@ -837,15 +1001,25 @@ class EnvelopeStore:
             "detail": detail,
         }
 
-        def build_event(record: Optional[dict]) -> dict:
+        def make_event(record: Optional[dict], events: list) -> dict:
+            existing = next(
+                (e for e in events if e["transition"] == "PROMOTION_AUTHORITY_RECORDED"), None
+            )
+            if existing is not None:
+                if existing["event_key"] != key:
+                    raise AuthorityConflictError(
+                        f"mission {mission_id!r} already has a different recorded promotion "
+                        "attestation; promotion authority is append-only and cannot be replaced "
+                        "in this increment (AUTHORITY_CONFLICT)"
+                    )
+                return event  # identical attestation replayed: idempotent, handled by _commit
             if record is None:
                 raise InvalidTransitionError(f"no envelope found for mission_id {mission_id!r}")
-            already = record["execution_events"] and record["execution_events"][-1]["event_key"] == key
-            if not already and record["lifecycle_stage"] != GOLD_VALIDATED:
+            if record["lifecycle_stage"] != GOLD_VALIDATED:
                 raise InvalidTransitionError(
                     f"mission {mission_id!r} is at {record['lifecycle_stage']!r}; "
                     f"promotion requires {GOLD_VALIDATED}"
                 )
             return event
 
-        return self._commit(mission_id, build_event)
+        return self._commit(mission_id, make_event)

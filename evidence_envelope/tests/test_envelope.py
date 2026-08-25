@@ -1,15 +1,18 @@
 """Tests for the mission-and-evidence envelope substrate.
 
-Covers the original bounded lifecycle contract (FW-MISSION-EVIDENCE-ENVELOPE-001)
-plus the corrective hardening from FW-REPAIR-EVIDENCE-ENVELOPE-001:
-external, fail-closed promotion-authority verification (no name-based
-heuristics), canonical mission-id validation, and durable/locked writes.
+Covers the original bounded lifecycle contract (FW-MISSION-EVIDENCE-ENVELOPE-001),
+the first corrective hardening (FW-REPAIR-EVIDENCE-ENVELOPE-001: external
+fail-closed promotion-authority verification, canonical mission-id
+validation, durable/locked writes), and the commit-protocol correction
+(FW-REPAIR-EVIDENCE-COMMIT-PROTOCOL-002: the ledger is authoritative, the
+snapshot is a derived, self-healing projection, and promotion-authority
+attestations are append-only).
 
 Each EnvelopeStore is rooted in a pytest tmp_path, so nothing here ever
 touches a real repository file -- including the two operational ledgers
-(capabilities/history.jsonl, router/decisions.jsonl), which the last
-"original contract" test in this file explicitly checks remain
-byte-for-byte unchanged.
+(capabilities/history.jsonl, router/decisions.jsonl), which the
+"original contract" ledger-integrity test in this file explicitly checks
+remain byte-for-byte unchanged.
 """
 import dataclasses
 import fcntl
@@ -78,6 +81,33 @@ def _valid_authority(mission_id, principal_id="qa-approver-01", attestation="tes
         verified_at=envelope._now(),
         attestation_reference=attestation,
     )
+
+
+class _FaultInjector:
+    """TEST-ONLY internal seam. Raises exactly once, when EnvelopeStore._commit
+    reaches `trigger_point`, then goes quiet -- this is how the commit-
+    protocol tests below deterministically simulate a crash at an exact
+    boundary (before the ledger is replaced / after the ledger is
+    replaced but before the snapshot is / after both), per the
+    instruction to use a controlled internal test seam rather than
+    timing-dependent sleeps or unreliable process termination.
+    """
+
+    def __init__(self, trigger_point):
+        self.trigger_point = trigger_point
+        self.fired = False
+
+    def __call__(self, point):
+        if point == self.trigger_point and not self.fired:
+            self.fired = True
+            raise RuntimeError(f"injected failure at {point}")
+
+
+def _mutate_snapshot_metadata(store, mission_id, **overrides):
+    path = store._record_path(mission_id)
+    wrapper = json.loads(path.read_text())
+    wrapper["projection_metadata"].update(overrides)
+    path.write_text(json.dumps(wrapper))
 
 
 # =====================================================================
@@ -184,7 +214,8 @@ def test_gold_does_not_change_promotion_status_automatically(store, tmp_path):
     assert record["promotion_authority"] is None
 
 
-# 8. Repeated identical transitions do not create duplicate events.
+# 8. Repeated identical transitions do not create duplicate events. (also
+# covers required test "16. Identical event-ID replay is idempotent.")
 def test_repeated_identical_transitions_do_not_duplicate_events(store, tmp_path):
     artifact = _write(tmp_path / "artifact.txt", "content")
 
@@ -253,10 +284,12 @@ def test_failed_acceptance_evidence_routes_to_rejected(store, tmp_path):
 
 
 # =====================================================================
-# REPAIR A: external, fail-closed promotion-authority verification
+# External, fail-closed promotion-authority verification
+# (FW-REPAIR-EVIDENCE-ENVELOPE-001, adjusted for Phase 7 of
+# FW-REPAIR-EVIDENCE-COMMIT-PROTOCOL-002: recording a verified
+# attestation no longer itself flips promotion_status.)
 # =====================================================================
 
-# 1. No verifier means promotion recording is rejected.
 def test_no_verifier_rejects_promotion(store, tmp_path):
     _gold_mission(store, tmp_path, "AUTH-1")
     with pytest.raises(envelope.AuthorityVerifierRequiredError):
@@ -264,7 +297,6 @@ def test_no_verifier_rejects_promotion(store, tmp_path):
     assert store.get("AUTH-1")["promotion_status"] == envelope.NOT_PROMOTED
 
 
-# 2. An actor named "James" without verification is rejected.
 def test_unverified_named_actor_is_rejected(store, tmp_path):
     _gold_mission(store, tmp_path, "AUTH-2")
     # No verifier is configured. Naming "James" in the statement carries
@@ -274,8 +306,6 @@ def test_unverified_named_actor_is_rejected(store, tmp_path):
     assert store.get("AUTH-2")["promotion_status"] == envelope.NOT_PROMOTED
 
 
-# 3. Mixed-case and Unicode machine-like names cannot bypass verification
-#    (because there is no name-based check left to bypass).
 def test_no_name_based_authority_heuristic_exists():
     assert not hasattr(envelope, "_DISALLOWED_AUTHORITY_ACTORS")
 
@@ -298,11 +328,10 @@ def test_verification_outcome_is_independent_of_principal_name_shape(store, tmp_
         authority_verifier=NonProductionTestAuthorityVerifier(_valid_authority(mission_id, principal_id)),
     )
     record = verifier_store.record_promotion_authority(mission_id, statement="structurally verified")
-    assert record["promotion_status"] == envelope.PROMOTED
     assert record["promotion_authority"]["principal_id"] == principal_id
+    assert record["promotion_status"] == envelope.NOT_PROMOTED  # recording != promoting
 
 
-# 4. A verified principal with the wrong scope is rejected.
 def test_wrong_scope_is_rejected(store, tmp_path):
     mission_id = "AUTH-4"
     _gold_mission(store, tmp_path, mission_id)
@@ -318,10 +347,9 @@ def test_wrong_scope_is_rejected(store, tmp_path):
     )
     with pytest.raises(envelope.AuthorityScopeError):
         verifier_store.record_promotion_authority(mission_id, statement="approved")
-    assert store.get(mission_id)["promotion_status"] == envelope.NOT_PROMOTED
+    assert store.get(mission_id)["promotion_authority"] is None
 
 
-# 5. A verifier result for another mission is rejected.
 def test_scope_for_another_mission_is_rejected(store, tmp_path):
     mission_id = "AUTH-5"
     _gold_mission(store, tmp_path, mission_id)
@@ -337,10 +365,9 @@ def test_scope_for_another_mission_is_rejected(store, tmp_path):
     )
     with pytest.raises(envelope.AuthorityScopeError):
         verifier_store.record_promotion_authority(mission_id, statement="approved")
-    assert store.get(mission_id)["promotion_status"] == envelope.NOT_PROMOTED
+    assert store.get(mission_id)["promotion_authority"] is None
 
 
-# 6. Missing attestation_reference is rejected.
 def test_missing_attestation_reference_is_rejected(store, tmp_path):
     mission_id = "AUTH-6"
     _gold_mission(store, tmp_path, mission_id)
@@ -356,10 +383,9 @@ def test_missing_attestation_reference_is_rejected(store, tmp_path):
     )
     with pytest.raises(envelope.MissingAttestationError):
         verifier_store.record_promotion_authority(mission_id, statement="approved")
-    assert store.get(mission_id)["promotion_status"] == envelope.NOT_PROMOTED
+    assert store.get(mission_id)["promotion_authority"] is None
 
 
-# 7. A valid test attestation with correct mission and scope is accepted.
 def test_valid_attestation_with_correct_mission_and_scope_is_accepted(store, tmp_path):
     mission_id = "AUTH-7"
     _gold_mission(store, tmp_path, mission_id)
@@ -368,11 +394,10 @@ def test_valid_attestation_with_correct_mission_and_scope_is_accepted(store, tmp
         authority_verifier=NonProductionTestAuthorityVerifier(_valid_authority(mission_id)),
     )
     record = verifier_store.record_promotion_authority(mission_id, statement="approved for release")
-    assert record["promotion_status"] == envelope.PROMOTED
     assert record["promotion_authority"]["attestation_reference"] == "test-attestation-ref-0001"
+    assert record["promotion_status"] == envelope.NOT_PROMOTED
 
 
-# 8. Stored evidence describes the verification method without storing secrets.
 def test_stored_promotion_evidence_has_no_secret_shaped_fields(store, tmp_path):
     mission_id = "AUTH-8"
     _gold_mission(store, tmp_path, mission_id)
@@ -390,7 +415,6 @@ def test_stored_promotion_evidence_has_no_secret_shaped_fields(store, tmp_path):
     assert "token" not in serialized
     assert "password" not in serialized
 
-    # VerifiedAuthority itself has no field capable of carrying a secret.
     field_names = {f.name for f in dataclasses.fields(envelope.VerifiedAuthority)}
     assert field_names == {
         "principal_id", "authority_scope", "verification_method",
@@ -406,7 +430,7 @@ def test_malformed_verifier_result_is_rejected(store, tmp_path):
     )
     with pytest.raises(envelope.MalformedVerificationResultError):
         verifier_store.record_promotion_authority(mission_id, statement="approved")
-    assert store.get(mission_id)["promotion_status"] == envelope.NOT_PROMOTED
+    assert store.get(mission_id)["promotion_authority"] is None
 
 
 def test_explicit_rejection_from_verifier_is_rejected(store, tmp_path):
@@ -417,7 +441,7 @@ def test_explicit_rejection_from_verifier_is_rejected(store, tmp_path):
     )
     with pytest.raises(envelope.AuthorityVerificationRejectedError):
         verifier_store.record_promotion_authority(mission_id, statement="approved")
-    assert store.get(mission_id)["promotion_status"] == envelope.NOT_PROMOTED
+    assert store.get(mission_id)["promotion_authority"] is None
 
 
 def test_promotion_authority_requires_gold(store, tmp_path):
@@ -431,11 +455,67 @@ def test_promotion_authority_requires_gold(store, tmp_path):
         verifier_store.record_promotion_authority("AUTH-11", statement="approved")
 
 
+# --- Phase 7: promotion-authority immutability -----------------------
+
+# 18. Exact promotion-attestation replay is idempotent.
+def test_exact_promotion_attestation_replay_is_idempotent(store, tmp_path):
+    mission_id = "PROMO-18"
+    _gold_mission(store, tmp_path, mission_id)
+    verifier_store = envelope.EnvelopeStore(
+        store.root, authority_verifier=NonProductionTestAuthorityVerifier(_valid_authority(mission_id))
+    )
+    first = verifier_store.record_promotion_authority(mission_id, statement="approved")
+    second = verifier_store.record_promotion_authority(mission_id, statement="approved")
+    assert first == second
+    events = store._read_ledger(mission_id)
+    assert sum(1 for e in events if e["transition"] == "PROMOTION_AUTHORITY_RECORDED") == 1
+
+
+# 17 & 19. Same event identifier with different content -> IDEMPOTENCY_CONFLICT
+# / AUTHORITY_CONFLICT.
+def test_different_promotion_attestation_returns_authority_conflict(store, tmp_path):
+    mission_id = "PROMO-19"
+    _gold_mission(store, tmp_path, mission_id)
+    verifier_store_a = envelope.EnvelopeStore(
+        store.root,
+        authority_verifier=NonProductionTestAuthorityVerifier(
+            _valid_authority(mission_id, principal_id="alice", attestation="ref-alice")
+        ),
+    )
+    verifier_store_a.record_promotion_authority(mission_id, statement="approved by alice")
+
+    verifier_store_b = envelope.EnvelopeStore(
+        store.root,
+        authority_verifier=NonProductionTestAuthorityVerifier(
+            _valid_authority(mission_id, principal_id="bob", attestation="ref-bob")
+        ),
+    )
+    with pytest.raises(envelope.AuthorityConflictError):
+        verifier_store_b.record_promotion_authority(mission_id, statement="approved by bob")
+    # AuthorityConflictError IS a general ledger-based idempotency conflict.
+    with pytest.raises(envelope.IdempotencyConflictError):
+        verifier_store_b.record_promotion_authority(mission_id, statement="approved by bob")
+
+    record = store.get(mission_id)
+    assert record["promotion_authority"]["principal_id"] == "alice"  # untouched, append-only held
+
+
+# 20. Promotion status remains unchanged after authority recording.
+def test_promotion_status_remains_unchanged_after_authority_recording(store, tmp_path):
+    mission_id = "PROMO-20"
+    _gold_mission(store, tmp_path, mission_id)
+    verifier_store = envelope.EnvelopeStore(
+        store.root, authority_verifier=NonProductionTestAuthorityVerifier(_valid_authority(mission_id))
+    )
+    record = verifier_store.record_promotion_authority(mission_id, statement="approved")
+    assert record["promotion_status"] == envelope.NOT_PROMOTED
+    assert record["promotion_authority"] is not None
+
+
 # =====================================================================
-# REPAIR B: mission-identifier safety
+# Mission-identifier safety (FW-REPAIR-EVIDENCE-ENVELOPE-001, unchanged)
 # =====================================================================
 
-# 9. Valid mission IDs work.
 @pytest.mark.parametrize("mission_id", ["M-9x", "mission.001", "abc_123", "A", "9-ok"])
 def test_valid_mission_ids_work(store, tmp_path, mission_id):
     artifact = _write(tmp_path / f"artifact-{mission_id}.txt", "content")
@@ -443,31 +523,26 @@ def test_valid_mission_ids_work(store, tmp_path, mission_id):
     assert record["lifecycle_stage"] == envelope.BRONZE_RECEIVED
 
 
-# 10. Slash traversal is rejected.
 def test_slash_traversal_is_rejected(store):
     with pytest.raises(envelope.InvalidMissionIdError):
         store.receive_bronze("a/b", "1", ["x"])
 
 
-# 11. Backslash traversal is rejected.
 def test_backslash_traversal_is_rejected(store):
     with pytest.raises(envelope.InvalidMissionIdError):
         store.receive_bronze("a\\b", "1", ["x"])
 
 
-# 12. ".." is rejected.
 def test_dotdot_is_rejected(store):
     with pytest.raises(envelope.InvalidMissionIdError):
         store.receive_bronze("a..b", "1", ["x"])
 
 
-# 13. Absolute paths are rejected.
 def test_absolute_path_is_rejected(store):
     with pytest.raises(envelope.InvalidMissionIdError):
         store.receive_bronze("/etc/passwd", "1", ["x"])
 
 
-# 14. Windows drive paths are rejected.
 def test_windows_drive_path_is_rejected(store):
     with pytest.raises(envelope.InvalidMissionIdError):
         store.receive_bronze("C:\\evil", "1", ["x"])
@@ -475,7 +550,6 @@ def test_windows_drive_path_is_rejected(store):
         store.receive_bronze("C:/evil", "1", ["x"])
 
 
-# 15. Control characters are rejected.
 def test_control_characters_are_rejected(store):
     with pytest.raises(envelope.InvalidMissionIdError):
         store.receive_bronze("abc\x00def", "1", ["x"])
@@ -483,7 +557,6 @@ def test_control_characters_are_rejected(store):
         store.receive_bronze("abc\ndef", "1", ["x"])
 
 
-# 16. Unicode confusable identifiers are rejected.
 def test_unicode_confusable_identifiers_are_rejected(store):
     with pytest.raises(envelope.InvalidMissionIdError):
         store.receive_bronze("miss\u0430ion", "1", ["x"])  # Cyrillic а
@@ -491,13 +564,11 @@ def test_unicode_confusable_identifiers_are_rejected(store):
         store.receive_bronze("e\u0301lite", "1", ["x"])  # combining accent, NFC-unstable
 
 
-# 17. Overlength identifiers are rejected.
 def test_overlength_identifiers_are_rejected(store):
     with pytest.raises(envelope.InvalidMissionIdError):
         store.receive_bronze("M" * 200, "1", ["x"])
 
 
-# 18. No operation escapes the store root.
 def test_no_operation_escapes_the_store_root(store, tmp_path):
     hostile_ids = [
         "../escape", "..\\escape", "/abs/escape", "a/b", "a\\b",
@@ -524,17 +595,15 @@ def test_no_operation_escapes_the_store_root(store, tmp_path):
 
 
 def test_resolved_path_containment_is_enforced_directly(store):
-    # Defense-in-depth: the internal path builders themselves refuse to
-    # hand back anything outside store.root, independent of the regex.
     assert store._record_path("safe-id").is_relative_to(store.root.resolve())
     assert store._ledger_path("safe-id").is_relative_to(store.root.resolve())
 
 
 # =====================================================================
-# REPAIR C: durable snapshot writes and cross-process writer coordination
+# Commit protocol: the ledger is authoritative, the snapshot is a
+# derived, self-healing projection (FW-REPAIR-EVIDENCE-COMMIT-PROTOCOL-002)
 # =====================================================================
 
-# 19. Snapshot replacement is atomic.
 def test_snapshot_replacement_is_atomic(store, tmp_path):
     artifact = _write(tmp_path / "art19.txt", "content")
     store.receive_bronze("DUR-19", "1", [str(artifact)])
@@ -542,39 +611,240 @@ def test_snapshot_replacement_is_atomic(store, tmp_path):
         store.quarantine("DUR-19-noop", "1", reason=f"probe-{i}")
     store.structure_silver("DUR-19", {"cognitive_roles_required": ["r"]})
 
-    leftovers = list(store.records_dir.glob(".*tmp*"))
-    assert leftovers == []
+    assert list(store.records_dir.glob(".*tmp*")) == []
+    assert list(store.ledger_dir.glob(".*tmp*")) == []
     record = store.get("DUR-19")
     assert record["lifecycle_stage"] == envelope.SILVER_STRUCTURED
 
 
-# 20. A simulated interrupted snapshot write does not corrupt the last valid snapshot.
-def test_interrupted_snapshot_write_does_not_corrupt_last_valid_snapshot(store, tmp_path, monkeypatch):
-    artifact = _write(tmp_path / "art20.txt", "content")
-    store.receive_bronze("DUR-20", "1", [str(artifact)])
-    good_record = store.get("DUR-20")
+# 1. Failure before ledger replace leaves ledger and snapshot unchanged.
+def test_failure_before_ledger_replace_leaves_ledger_and_snapshot_unchanged(store, tmp_path):
+    mission_id = "FLT-1"
+    artifact = _write(tmp_path / "flt1.txt", "content")
+    store.receive_bronze(mission_id, "1", [str(artifact)])
+    ledger_before = store._ledger_path(mission_id).read_bytes()
+    snapshot_before = store._record_path(mission_id).read_bytes()
 
-    real_fsync = os.fsync
-    call_count = {"n": 0}
+    faulty_store = envelope.EnvelopeStore(store.root, _fault_hook=_FaultInjector("before_ledger_replace"))
+    with pytest.raises(RuntimeError, match="injected failure"):
+        faulty_store.structure_silver(mission_id, {"cognitive_roles_required": ["r"]})
 
-    def flaky_fsync(fd):
-        call_count["n"] += 1
-        if call_count["n"] == 2:  # 1st call = ledger append fsync; 2nd = snapshot temp-file fsync
-            raise OSError("simulated crash during snapshot fsync")
-        return real_fsync(fd)
+    assert store._ledger_path(mission_id).read_bytes() == ledger_before
+    assert store._record_path(mission_id).read_bytes() == snapshot_before
+    assert store.get(mission_id)["lifecycle_stage"] == envelope.BRONZE_RECEIVED
 
-    monkeypatch.setattr(envelope.os, "fsync", flaky_fsync)
-    try:
-        with pytest.raises(OSError):
-            store.structure_silver("DUR-20", {"cognitive_roles_required": ["r"]})
-    finally:
-        monkeypatch.setattr(envelope.os, "fsync", real_fsync)
 
-    reloaded = store.get("DUR-20")
-    assert reloaded == good_record
-    assert reloaded["lifecycle_stage"] == envelope.BRONZE_RECEIVED
-    leftovers = list(store.records_dir.glob(".*tmp*"))
-    assert leftovers == []
+# 2. Retry after pre-commit failure records exactly one event.
+def test_retry_after_pre_commit_failure_records_exactly_one_event(store, tmp_path):
+    mission_id = "FLT-2"
+    artifact = _write(tmp_path / "flt2.txt", "content")
+    store.receive_bronze(mission_id, "1", [str(artifact)])
+
+    faulty_store = envelope.EnvelopeStore(store.root, _fault_hook=_FaultInjector("before_ledger_replace"))
+    with pytest.raises(RuntimeError):
+        faulty_store.structure_silver(mission_id, {"cognitive_roles_required": ["r"]})
+
+    record = faulty_store.structure_silver(mission_id, {"cognitive_roles_required": ["r"]})
+    assert record["lifecycle_stage"] == envelope.SILVER_STRUCTURED
+    events = store._read_ledger(mission_id)
+    assert len(events) == 2  # BRONZE + exactly one SILVER, no duplicate
+
+
+# 3. Failure after ledger replace but before snapshot replace leaves a
+#    committed event with a stale snapshot.
+def test_failure_after_ledger_replace_before_snapshot_leaves_committed_event_with_stale_snapshot(store, tmp_path):
+    mission_id = "FLT-3"
+    artifact = _write(tmp_path / "flt3.txt", "content")
+    store.receive_bronze(mission_id, "1", [str(artifact)])
+    snapshot_before = store._record_path(mission_id).read_bytes()
+
+    faulty_store = envelope.EnvelopeStore(
+        store.root, _fault_hook=_FaultInjector("after_ledger_replace_before_snapshot")
+    )
+    with pytest.raises(RuntimeError, match="injected failure"):
+        faulty_store.structure_silver(mission_id, {"cognitive_roles_required": ["r"]})
+
+    events = store._read_ledger(mission_id)
+    assert len(events) == 2
+    assert events[-1]["transition"] == "SILVER_STRUCTURED"
+    assert store._record_path(mission_id).read_bytes() == snapshot_before  # still stale
+
+
+# 4. Reload after that failure reconstructs the committed state from the ledger.
+def test_reload_after_post_ledger_failure_reconstructs_committed_state(store, tmp_path):
+    mission_id = "FLT-4"
+    artifact = _write(tmp_path / "flt4.txt", "content")
+    store.receive_bronze(mission_id, "1", [str(artifact)])
+
+    faulty_store = envelope.EnvelopeStore(
+        store.root, _fault_hook=_FaultInjector("after_ledger_replace_before_snapshot")
+    )
+    with pytest.raises(RuntimeError):
+        faulty_store.structure_silver(mission_id, {"cognitive_roles_required": ["r"]})
+
+    reloaded = store.get(mission_id)
+    assert reloaded["lifecycle_stage"] == envelope.SILVER_STRUCTURED
+    assert store.reconstruct(mission_id) == reloaded
+
+
+# 5. Reload repairs the stale snapshot atomically.
+def test_reload_repairs_the_stale_snapshot_on_disk(store, tmp_path):
+    mission_id = "FLT-5"
+    artifact = _write(tmp_path / "flt5.txt", "content")
+    store.receive_bronze(mission_id, "1", [str(artifact)])
+
+    faulty_store = envelope.EnvelopeStore(
+        store.root, _fault_hook=_FaultInjector("after_ledger_replace_before_snapshot")
+    )
+    with pytest.raises(RuntimeError):
+        faulty_store.structure_silver(mission_id, {"cognitive_roles_required": ["r"]})
+
+    store.get(mission_id)  # triggers the repair as a side effect
+
+    wrapper = json.loads(store._record_path(mission_id).read_text())
+    events = store._read_ledger(mission_id)
+    assert wrapper["record"]["lifecycle_stage"] == envelope.SILVER_STRUCTURED
+    assert wrapper["projection_metadata"]["event_count"] == len(events)
+    assert wrapper["projection_metadata"]["last_event_id"] == events[-1]["event_id"]
+    assert wrapper["projection_metadata"]["ledger_content_hash"] == envelope._ledger_content_hash(events)
+
+
+# 6. Retry after that failure does not duplicate the committed event.
+def test_retry_after_post_ledger_failure_does_not_duplicate_event(store, tmp_path):
+    mission_id = "FLT-6"
+    artifact = _write(tmp_path / "flt6.txt", "content")
+    store.receive_bronze(mission_id, "1", [str(artifact)])
+
+    faulty_store = envelope.EnvelopeStore(
+        store.root, _fault_hook=_FaultInjector("after_ledger_replace_before_snapshot")
+    )
+    with pytest.raises(RuntimeError):
+        faulty_store.structure_silver(mission_id, {"cognitive_roles_required": ["r"]})
+
+    record = faulty_store.structure_silver(mission_id, {"cognitive_roles_required": ["r"]})
+    events = store._read_ledger(mission_id)
+    assert len(events) == 2
+    assert record["lifecycle_stage"] == envelope.SILVER_STRUCTURED
+
+
+# 7. Snapshot deletion does not lose state.
+def test_snapshot_deletion_does_not_lose_state(store, tmp_path):
+    mission_id = "FLT-7"
+    artifact = _write(tmp_path / "flt7.txt", "content")
+    store.receive_bronze(mission_id, "1", [str(artifact)])
+    store.structure_silver(mission_id, {"cognitive_roles_required": ["r"]})
+
+    store._record_path(mission_id).unlink()
+    record = store.get(mission_id)
+    assert record["lifecycle_stage"] == envelope.SILVER_STRUCTURED
+    assert store._record_path(mission_id).exists()  # self-healed
+
+
+# 8. Snapshot corruption does not override valid ledger history.
+def test_snapshot_corruption_does_not_override_valid_ledger_history(store, tmp_path):
+    mission_id = "FLT-8"
+    artifact = _write(tmp_path / "flt8.txt", "content")
+    store.receive_bronze(mission_id, "1", [str(artifact)])
+    store._record_path(mission_id).write_text(
+        '{"record": {"lifecycle_stage": "GOLD_VALIDATED"}, "not": valid json'
+    )
+
+    record = store.get(mission_id)
+    assert record["lifecycle_stage"] == envelope.BRONZE_RECEIVED  # ledger truth, not the forged snapshot
+
+
+# 9. Snapshot with wrong last_event_id is detected and rebuilt.
+def test_snapshot_with_wrong_last_event_id_is_detected_and_rebuilt(store, tmp_path):
+    mission_id = "FLT-9"
+    artifact = _write(tmp_path / "flt9.txt", "content")
+    store.receive_bronze(mission_id, "1", [str(artifact)])
+    _mutate_snapshot_metadata(store, mission_id, last_event_id="forged-event-id")
+
+    store.get(mission_id)
+    events = store._read_ledger(mission_id)
+    wrapper = json.loads(store._record_path(mission_id).read_text())
+    assert wrapper["projection_metadata"]["last_event_id"] == events[-1]["event_id"]
+
+
+# 10. Snapshot with wrong event_count is detected and rebuilt.
+def test_snapshot_with_wrong_event_count_is_detected_and_rebuilt(store, tmp_path):
+    mission_id = "FLT-10"
+    artifact = _write(tmp_path / "flt10.txt", "content")
+    store.receive_bronze(mission_id, "1", [str(artifact)])
+    _mutate_snapshot_metadata(store, mission_id, event_count=999)
+
+    store.get(mission_id)
+    events = store._read_ledger(mission_id)
+    wrapper = json.loads(store._record_path(mission_id).read_text())
+    assert wrapper["projection_metadata"]["event_count"] == len(events)
+
+
+# 11. Snapshot with wrong ledger hash is detected and rebuilt.
+def test_snapshot_with_wrong_ledger_hash_is_detected_and_rebuilt(store, tmp_path):
+    mission_id = "FLT-11"
+    artifact = _write(tmp_path / "flt11.txt", "content")
+    store.receive_bronze(mission_id, "1", [str(artifact)])
+    _mutate_snapshot_metadata(store, mission_id, ledger_content_hash="0" * 64)
+
+    store.get(mission_id)
+    events = store._read_ledger(mission_id)
+    wrapper = json.loads(store._record_path(mission_id).read_text())
+    assert wrapper["projection_metadata"]["ledger_content_hash"] == envelope._ledger_content_hash(events)
+
+
+# 12. Partial final ledger record raises LEDGER_INTEGRITY_ERROR.
+def test_partial_final_ledger_record_raises_integrity_error(store, tmp_path):
+    mission_id = "FLT-12"
+    artifact = _write(tmp_path / "flt12.txt", "content")
+    store.receive_bronze(mission_id, "1", [str(artifact)])
+    ledger_path = store._ledger_path(mission_id)
+    with open(ledger_path, "a", encoding="utf-8") as f:
+        f.write('{"transition": "SILVER_STRUCTURED", "event_key"')  # no closing brace, no newline
+
+    with pytest.raises(envelope.LedgerIntegrityError):
+        store.reconstruct(mission_id)
+    with pytest.raises(envelope.LedgerIntegrityError):
+        store.get(mission_id)
+
+
+# 13. Corrupted middle ledger record raises LEDGER_INTEGRITY_ERROR.
+def test_corrupted_middle_ledger_record_raises_integrity_error(store, tmp_path):
+    mission_id = "FLT-13"
+    artifact = _write(tmp_path / "flt13.txt", "content")
+    store.receive_bronze(mission_id, "1", [str(artifact)])
+    store.structure_silver(mission_id, {"cognitive_roles_required": ["r"]})
+    store.validate_gold(
+        mission_id,
+        acceptance_tests=[{"name": "smoke_test", "passed": True}],
+        evidence_artifacts=[{"type": "log", "ref": "smoke_test.log"}],
+    )
+    ledger_path = store._ledger_path(mission_id)
+    lines = ledger_path.read_text().splitlines(keepends=True)
+    assert len(lines) == 3
+    lines[1] = "{not valid json at all}\n"
+    ledger_path.write_text("".join(lines))
+
+    with pytest.raises(envelope.LedgerIntegrityError):
+        store.reconstruct(mission_id)
+
+
+# 14. No transition proceeds after ledger-integrity failure.
+def test_no_transition_proceeds_after_ledger_integrity_failure(store, tmp_path):
+    mission_id = "FLT-14"
+    artifact = _write(tmp_path / "flt14.txt", "content")
+    store.receive_bronze(mission_id, "1", [str(artifact)])
+    ledger_path = store._ledger_path(mission_id)
+    ledger_path.write_text('{"transition": "BRONZE_RECEIVED"')  # corrupt: no closing, no newline
+
+    with pytest.raises(envelope.LedgerIntegrityError):
+        store.structure_silver(mission_id, {"cognitive_roles_required": ["r"]})
+    assert ledger_path.read_text() == '{"transition": "BRONZE_RECEIVED"'  # untouched, not "fixed up"
+
+    # The lock was released properly (not left stuck): an unrelated
+    # mission works fine right after.
+    other_artifact = _write(tmp_path / "flt14b.txt", "content")
+    other = store.receive_bronze("FLT-14B", "1", [str(other_artifact)])
+    assert other["lifecycle_stage"] == envelope.BRONZE_RECEIVED
 
 
 def _mp_worker_append_quarantines(root, mission_id, worker_id, count):
@@ -583,9 +853,9 @@ def _mp_worker_append_quarantines(root, mission_id, worker_id, count):
         s.quarantine(mission_id, "1", reason=f"probe-from-{worker_id}-{i}")
 
 
-# 21. Two concurrent process writers cannot interleave ledger records.
+# 15. Concurrent writers remain serialized.
 @POSIX_ONLY
-def test_concurrent_process_writers_do_not_interleave_ledger_records(tmp_path):
+def test_concurrent_process_writers_remain_serialized(tmp_path):
     root = tmp_path / "mp_store"
     store = envelope.EnvelopeStore(root)
     mission_id = "DUR-21"
@@ -609,7 +879,6 @@ def test_concurrent_process_writers_do_not_interleave_ledger_records(tmp_path):
     assert len(reasons) == workers * per_worker  # all distinct: none lost, none merged
 
 
-# 22. Lock timeout fails explicitly.
 @POSIX_ONLY
 def test_lock_timeout_fails_explicitly(tmp_path):
     store = envelope.EnvelopeStore(tmp_path / "lock_store", lock_timeout_seconds=0.2)
@@ -617,10 +886,6 @@ def test_lock_timeout_fails_explicitly(tmp_path):
     lock_path = store._lock_path(mission_id)
     lock_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # An independent open file description on the same lock file, held
-    # exclusively -- flock locks are per open-file-description, so this
-    # reliably simulates another writer holding the lock without needing
-    # a genuinely separate OS process.
     external_fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR, 0o644)
     fcntl.flock(external_fd, fcntl.LOCK_EX)
     try:
@@ -633,21 +898,42 @@ def test_lock_timeout_fails_explicitly(tmp_path):
         os.close(external_fd)
 
 
-# 23. A partial ledger line causes an integrity error.
-def test_partial_ledger_line_causes_integrity_error(store, tmp_path):
-    artifact = _write(tmp_path / "art23.txt", "content")
-    store.receive_bronze("DUR-23", "1", [str(artifact)])
-    ledger_path = store._ledger_path("DUR-23")
-    with open(ledger_path, "a", encoding="utf-8") as f:
-        f.write('{"transition": "SILVER_STRUCTURED", "event_key"')  # no closing brace, no newline
+# 21. Historical event order and contents remain unchanged.
+def test_historical_event_order_and_contents_remain_unchanged(store, tmp_path):
+    mission_id = "FLT-21"
+    artifact = _write(tmp_path / "flt21.txt", "content")
+    store.receive_bronze(mission_id, "1", [str(artifact)])
+    store.structure_silver(mission_id, {"cognitive_roles_required": ["r"]})
+    before = store._read_ledger(mission_id)
 
-    with pytest.raises(envelope.LedgerIntegrityError):
-        store.reconstruct("DUR-23")
-    with pytest.raises(envelope.LedgerIntegrityError):
-        store._read_ledger("DUR-23")
+    store.validate_gold(
+        mission_id,
+        acceptance_tests=[{"name": "smoke_test", "passed": True}],
+        evidence_artifacts=[{"type": "log", "ref": "smoke_test.log"}],
+    )
+    after = store._read_ledger(mission_id)
+
+    assert after[: len(before)] == before
+    assert len(after) == len(before) + 1
 
 
-# 24. Reconstruction remains byte-equivalent to the valid live record.
+# 22. Reconstruction remains deterministic and equivalent across fresh store instances.
+def test_reconstruction_is_deterministic_across_fresh_store_instances(store, tmp_path):
+    mission_id = "FLT-22"
+    artifact = _write(tmp_path / "flt22.txt", "content")
+    store.receive_bronze(mission_id, "1", [str(artifact)])
+    store.structure_silver(mission_id, {"cognitive_roles_required": ["r"]})
+    store.validate_gold(
+        mission_id,
+        acceptance_tests=[{"name": "smoke_test", "passed": True}],
+        evidence_artifacts=[{"type": "log", "ref": "smoke_test.log"}],
+    )
+
+    fresh_store = envelope.EnvelopeStore(store.root)
+    assert fresh_store.reconstruct(mission_id) == store.reconstruct(mission_id)
+    assert fresh_store.get(mission_id) == store.get(mission_id)
+
+
 def test_reconstruction_matches_live_record_through_full_lifecycle_including_promotion(store, tmp_path):
     mission_id = "DUR-24"
     artifact = _write(tmp_path / "art24.txt", "content")
@@ -666,21 +952,6 @@ def test_reconstruction_matches_live_record_through_full_lifecycle_including_pro
     reconstructed = store.reconstruct(mission_id)
 
     assert reconstructed == live
-    assert reconstructed["promotion_status"] == envelope.PROMOTED
+    assert reconstructed["promotion_authority"] is not None
+    assert reconstructed["promotion_status"] == envelope.NOT_PROMOTED  # recording != promoting
     assert len(reconstructed["execution_events"]) == 4
-
-
-def test_corrupted_snapshot_raises_integrity_error(store, tmp_path):
-    artifact = _write(tmp_path / "art-corrupt.txt", "content")
-    store.receive_bronze("DUR-CORRUPT", "1", [str(artifact)])
-    record_path = store._record_path("DUR-CORRUPT")
-    record_path.write_text("{not valid json")
-
-    with pytest.raises(envelope.SnapshotIntegrityError):
-        store.get("DUR-CORRUPT")
-
-
-# 25. All previous lifecycle and hash-integrity tests continue passing:
-# see the "original lifecycle / hash-integrity contract" section above --
-# every one of those 11 functions is preserved verbatim in this same file
-# and is collected and run alongside the tests in this section.
