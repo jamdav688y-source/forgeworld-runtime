@@ -26,6 +26,7 @@ HISTORY_PATH = CAPABILITIES_DIR / "history.jsonl"
 DECISIONS_PATH = ROUTER_DIR / "decisions.jsonl"
 
 sys.path.insert(0, str(CAPABILITIES_DIR))
+sys.path.insert(0, str(ROUTER_DIR))
 import discover  # noqa: E402
 import architecture_router  # noqa: E402
 
