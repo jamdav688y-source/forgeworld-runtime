@@ -27,6 +27,7 @@ DECISIONS_PATH = ROUTER_DIR / "decisions.jsonl"
 
 sys.path.insert(0, str(CAPABILITIES_DIR))
 import discover  # noqa: E402
+import architecture_router  # noqa: E402
 
 CONFIDENCE_WEIGHTS = {
     "reachability": 0.35,
@@ -136,11 +137,22 @@ def build_tradeoff(selected, runner_up):
     )
 
 
-def route(objective, required_tags, mission_id=None):
+def route(objective, required_tags, mission_id=None, architecture_context=None):
     registry = load_registry()
     reachability_state = discover.probe_all()
     discover.write_state(reachability_state)
     history = load_history()
+    architecture_assessment = (
+        architecture_router.assess_architecture(
+            architecture_router.MissionArchitectureContext(**architecture_context)
+        )
+        if architecture_context is not None
+        else {
+            "status": "not_assessed_missing_context",
+            "execution_authorized": False,
+            "principle": "least_complex_safe_architecture",
+        }
+    )
 
     scored = [
         score_capability(cap, required_tags, reachability_state, history)
@@ -161,6 +173,7 @@ def route(objective, required_tags, mission_id=None):
         "objective": objective,
         "required_tags": required_tags,
         "mission_class": mission_class(required_tags),
+        "architecture_assessment": architecture_assessment,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "status": status,
         "selected_capability": selected["capability_id"] if selected else None,
@@ -196,10 +209,53 @@ def main():
     parser.add_argument("--objective", required=True, help="What the mission is trying to accomplish.")
     parser.add_argument("--tags", default="", help="Comma-separated required capability tags.")
     parser.add_argument("--mission-id", default=None)
+    parser.add_argument("--grounding-required", action="store_true")
+    parser.add_argument("--tool-actions", action="store_true")
+    parser.add_argument("--persistent-memory", action="store_true")
+    parser.add_argument("--parallel-specialists", action="store_true")
+    parser.add_argument("--event-triggered", action="store_true")
+    parser.add_argument("--self-correction", action="store_true")
+    parser.add_argument("--consequential-actions", action="store_true")
+    parser.add_argument("--regulated-or-sensitive", action="store_true")
+    parser.add_argument("--multi-tenant", action="store_true")
+    parser.add_argument("--enterprise-scale", action="store_true")
+    parser.add_argument("--risk", choices=["low", "medium", "high", "critical"], default="low")
+    parser.add_argument(
+        "--evidence-level",
+        choices=["none", "hypothesis", "prototype", "validated", "operational"],
+        default="none",
+    )
+    parser.add_argument("--requested-level", type=int, choices=range(1, 7), default=None)
+    parser.add_argument(
+        "--controls",
+        default="",
+        help="Comma-separated controls such as human_approval,validation,recovery.",
+    )
     args = parser.parse_args()
 
     required_tags = [t.strip() for t in args.tags.split(",") if t.strip()]
-    decision = route(args.objective, required_tags, args.mission_id)
+    architecture_context = {
+        "grounding_required": args.grounding_required,
+        "tool_actions": args.tool_actions,
+        "persistent_memory": args.persistent_memory,
+        "parallel_specialists": args.parallel_specialists,
+        "event_triggered": args.event_triggered,
+        "self_correction": args.self_correction,
+        "consequential_actions": args.consequential_actions,
+        "regulated_or_sensitive": args.regulated_or_sensitive,
+        "multi_tenant": args.multi_tenant,
+        "enterprise_scale": args.enterprise_scale,
+        "risk": args.risk,
+        "evidence_level": args.evidence_level,
+        "requested_level": args.requested_level,
+        "controls": [c.strip() for c in args.controls.split(",") if c.strip()],
+    }
+    decision = route(
+        args.objective,
+        required_tags,
+        args.mission_id,
+        architecture_context=architecture_context,
+    )
     json.dump(decision, sys.stdout, indent=2)
     print()
 
