@@ -1,0 +1,225 @@
+{
+  "checkpoint_id": "whatsapp-membrane-checkpoint-1",
+  "created_at": "2026-08-18T19:11:17Z",
+  "purpose": "Evidence-bearing freeze of PR #4 state before promotion-grade evidence packaging. No behavior modified in this step.",
+  "git": {
+    "branch": "claude/forgeworld-whatsapp-membrane-sj47yn",
+    "head_commit": "4638c86b89190171d64aca50bdb2603ccfbac08e",
+    "remote_tracking_commit": "4638c86b89190171d64aca50bdb2603ccfbac08e",
+    "ahead_behind_count": "0\t0",
+    "working_tree_status": "clean",
+    "recent_commits": [],
+    "pull_request": {
+      "number": 4,
+      "url": "https://github.com/jamdav688y-source/forgeworld-runtime/pull/4",
+      "base": "main",
+      "head": "claude/forgeworld-whatsapp-membrane-sj47yn",
+      "state_at_checkpoint": "open, not merged, mergeable_state=clean"
+    }
+  },
+  "file_inventory": {
+    "root": "whatsapp/",
+    "total_files": 54,
+    "files": [
+      "whatsapp/README.md",
+      "whatsapp/__init__.py",
+      "whatsapp/config.json",
+      "whatsapp/fixtures/README.md",
+      "whatsapp/fixtures/webhook_prompt_injection.json",
+      "whatsapp/fixtures/webhook_sensitive_data.json",
+      "whatsapp/fixtures/webhook_status_delivered.json",
+      "whatsapp/fixtures/webhook_stopword.json",
+      "whatsapp/fixtures/webhook_unsupported_type.json",
+      "whatsapp/fixtures/webhook_valid_text.json",
+      "whatsapp/governance/00_DISCOVERY_REPORT.md",
+      "whatsapp/governance/01_PLATFORM_POLICY_EVIDENCE.md",
+      "whatsapp/governance/02_ADR.md",
+      "whatsapp/governance/03_THREAT_MODEL.md",
+      "whatsapp/governance/04_PRIVACY_RETENTION_MODEL.md",
+      "whatsapp/governance/05_AUTHORITY_MATRIX.md",
+      "whatsapp/ledgers/.gitkeep",
+      "whatsapp/ledgers/README.md",
+      "whatsapp/reports/claims_integrity_report.md",
+      "whatsapp/reports/evidence_package.md",
+      "whatsapp/reports/next_right_move.md",
+      "whatsapp/reports/pre_merge_certification.md",
+      "whatsapp/runbook/DEPLOYMENT_ROLLBACK.md",
+      "whatsapp/runbook/INCIDENT_EMERGENCY_STOP.md",
+      "whatsapp/runbook/OPERATIONS.md",
+      "whatsapp/schemas/conversation_event.schema.json",
+      "whatsapp/scripts/forge-whatsapp",
+      "whatsapp/src/__init__.py",
+      "whatsapp/src/approval.py",
+      "whatsapp/src/authority.py",
+      "whatsapp/src/classify.py",
+      "whatsapp/src/cli.py",
+      "whatsapp/src/consent.py",
+      "whatsapp/src/draft.py",
+      "whatsapp/src/ledger.py",
+      "whatsapp/src/modes.py",
+      "whatsapp/src/normalize.py",
+      "whatsapp/src/outbound.py",
+      "whatsapp/src/pipeline.py",
+      "whatsapp/src/reconcile.py",
+      "whatsapp/src/schema.py",
+      "whatsapp/src/server.py",
+      "whatsapp/src/webhook_adapter.py",
+      "whatsapp/tests/__init__.py",
+      "whatsapp/tests/base.py",
+      "whatsapp/tests/test_adversarial.py",
+      "whatsapp/tests/test_authority.py",
+      "whatsapp/tests/test_classify.py",
+      "whatsapp/tests/test_consent.py",
+      "whatsapp/tests/test_draft.py",
+      "whatsapp/tests/test_e2e_sandbox.py",
+      "whatsapp/tests/test_outbound.py",
+      "whatsapp/tests/test_reconcile.py",
+      "whatsapp/tests/test_webhook_adapter.py"
+    ]
+  },
+  "governance_critical_file_hashes": {
+    "algorithm": "sha256",
+    "files": [
+      {
+        "path": "whatsapp/config.json",
+        "sha256": "af1d7f06c6bb0dacf6cd9292f17d5d83d191f58d5c1c51084685d39a389518f4",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/schemas/conversation_event.schema.json",
+        "sha256": "7ecd325ab2fd190f7844de6c35a43b2a6f692f0f4cdfb88af5ec52d0c2b9a537",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/governance/00_DISCOVERY_REPORT.md",
+        "sha256": "3e89fbd3ebb584477a4f0b26178fb1fca4989dc1c0b5063bf541524ea82edf7a",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/governance/01_PLATFORM_POLICY_EVIDENCE.md",
+        "sha256": "6b3e7add7a15aecc4ad1c63087defe4968cead589d91ec80899f705f0e1dd405",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/governance/02_ADR.md",
+        "sha256": "d33b25501ddcedcc6af6240b886a783c39882e462a3da8a08955b20893ce7783",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/governance/03_THREAT_MODEL.md",
+        "sha256": "2b4861129ee050badc4d24dddda8454b6f035393e80f83c6015ddf76f0530d48",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/governance/04_PRIVACY_RETENTION_MODEL.md",
+        "sha256": "e928e28f54fb42e0dc72c6d3051ccbc571a0fa8915e93e0c7dbe1a5a31015e5e",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/governance/05_AUTHORITY_MATRIX.md",
+        "sha256": "91ab5329cea4b56c8f9118bcbb45c79564f02cdac047c6792267e2f302720a7a",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/src/authority.py",
+        "sha256": "22ab3b697e88ce6e90569251652344da2a7e309bf9639d82d79e72c711495eb0",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/src/modes.py",
+        "sha256": "cb09d7648fb971d084c84595b853cce0da21433f2e6b6bc93ef31f2ac368a91a",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/src/outbound.py",
+        "sha256": "09ae38b7f6140f14056d853f6799c1d388c329eb538ad35184274ca81a942236",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/src/ledger.py",
+        "sha256": "985dddff209bca165b6c477db97d21ab0f5fe9f33a02fd5a93e0f6ece2301f44",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/src/normalize.py",
+        "sha256": "77757154309dffce3ead23030a0fdda26e99d164d1a15a797883942d48a240fa",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/src/webhook_adapter.py",
+        "sha256": "75ad0635b7705ba03f618b688c0a7f67369852958a06041a8b51cf749fd3b134",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/src/approval.py",
+        "sha256": "395111a349fe0e2e85050b5d0ea63890c2e5f2f1171eb7723e1d7aa21d240ec9",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/src/consent.py",
+        "sha256": "5d8b83da78248ab002cf5a38168e0a22a506f991aad975f2c72ceafcd33983d9",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/src/schema.py",
+        "sha256": "437134d6b7f75f01ccd81f0333616d227f88bb760c022254fea4e88ee24f1623",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/src/classify.py",
+        "sha256": "c6d7291144022e2aca7fac833c2cccb7556f923d86b30cdaed2bc509eb71ed6c",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/src/draft.py",
+        "sha256": "b1de8bebb2e369830bae41feef255bd43b772d9d694c2187359dfda1a2950984",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/src/pipeline.py",
+        "sha256": "74adc7282bba9287aa9ae69238abea64670cb1bac712103ce22733ea77addf9b",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/src/reconcile.py",
+        "sha256": "7dfdc38cf3d5f8fbebdcf68e685d68bedcc54aa37c9504c4187c8cad63d7a4f3",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/src/cli.py",
+        "sha256": "54c9c1fe317738d570c5cd12860e51c8416d47a8f06d8a52ba25db5fccbda6bd",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/src/server.py",
+        "sha256": "a0e41e3acb657362f0eabf1e6565b58ee4505b38a861f63070859b77810d9cb6",
+        "status": "present"
+      },
+      {
+        "path": ".github/workflows/whatsapp-tests.yml",
+        "sha256": "33315a97d159b04c1a190c690ea36e16cadd61517f47ea4916e9c773b1483e47",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/reports/claims_integrity_report.md",
+        "sha256": "d695262aa894cbc9a1b1e42d6a94ddb902654f4b5cfa980517a773cffd0591bf",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/reports/evidence_package.md",
+        "sha256": "9f9835a482e7c586fb3f78724cae852e9b5c96036d68ce171d6c7d3f60004752",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/reports/next_right_move.md",
+        "sha256": "3b41b81aa1c5aae4fa8bb694c4ccd0e6e42f746d19406f7db973d45bd0bead98",
+        "status": "present"
+      },
+      {
+        "path": "whatsapp/reports/pre_merge_certification.md",
+        "sha256": "0278be4afffb5ad96e83b60c3078db5567af3df89cc959279cf1cf0676ce3ca1",
+        "status": "present"
+      }
+    ]
+  }
+}

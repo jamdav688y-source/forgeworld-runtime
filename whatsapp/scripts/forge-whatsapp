@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Portable entrypoint for the WhatsApp membrane CLI (works on phone/Termux and desktop).
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+cd "$REPO_ROOT"
+exec python3 -m whatsapp.src.cli "$@"

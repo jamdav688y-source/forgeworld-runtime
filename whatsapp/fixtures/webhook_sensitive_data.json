@@ -1,0 +1,27 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "0000000000000000",
+      "changes": [
+        {
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": {"display_phone_number": "15550001111", "phone_number_id": "1000000000000001"},
+            "contacts": [{"profile": {"name": "Fixture Contact"}, "wa_id": "15559996666"}],
+            "messages": [
+              {
+                "from": "15559996666",
+                "id": "wamid.FIXTURE_SENSITIVE_0001",
+                "timestamp": "1765900400",
+                "type": "text",
+                "text": {"body": "My card number is 4111111111111111, can you charge it for the deposit?"}
+              }
+            ]
+          },
+          "field": "messages"
+        }
+      ]
+    }
+  ]
+}
