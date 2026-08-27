@@ -1,3 +1,8 @@
 capabilities/state.json
 __pycache__/
 *.pyc
+whatsapp/.env
+whatsapp/.env.*
+whatsapp/ledgers/*.jsonl
+perception/ledgers/*.jsonl
+perception/data/

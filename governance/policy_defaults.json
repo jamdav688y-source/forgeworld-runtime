@@ -1,0 +1,126 @@
+{
+  "schema_version": "1.0.0",
+  "_purpose": "Seed authority-policy fixtures. These are examples/defaults, not a claim that ForgeWorld already had production-grade permission rules for these capabilities -- it did not; only capabilities/registry.json (reachability) and prose governance/*.txt existed before this mission. Every decision here is deliberately conservative: no policy in this file grants an autonomous agent broader authority than the NRM incident already demonstrated (branch-write yes, tag-publish no).",
+  "policies": [
+    {
+      "policy_id": "POLICY-write-branch-v1",
+      "capability": "WRITE_BRANCH",
+      "scope": {"resource": "repository", "target": "*", "ref_pattern": "refs/heads/*"},
+      "trust_boundary": "REMOTE_BRANCH",
+      "decision": "ALLOWED_BOUNDED",
+      "constraints": {"force_push": false},
+      "reason": "Observed evidence (NRM incident): a non-force branch push succeeded with session credentials. Bounded to non-force pushes; which specific branches are additionally protected (e.g. main) is enforced by the remote's own branch-protection rules, not duplicated here -- see docs/governance/AUTHORITY_MODEL.md for why this policy does not re-implement that as a second, possibly-inconsistent local rule.",
+      "evidence_required": ["OBSERVED"]
+    },
+    {
+      "policy_id": "POLICY-create-tag-v1",
+      "capability": "CREATE_TAG",
+      "scope": {"resource": "repository", "target": "*", "ref_pattern": "refs/tags/*"},
+      "trust_boundary": "GIT_COMMIT",
+      "decision": "ALLOWED_LOCAL",
+      "constraints": {"crosses_external_boundary": false},
+      "reason": "Creating an annotated/lightweight tag object in the local repository never touches the remote; no external trust boundary is crossed.",
+      "evidence_required": []
+    },
+    {
+      "policy_id": "POLICY-push-tag-v1",
+      "capability": "PUSH_TAG",
+      "scope": {"resource": "repository", "target": "*", "ref_pattern": "refs/tags/*"},
+      "trust_boundary": "REMOTE_TAG",
+      "decision": "REQUIRES_APPROVAL",
+      "constraints": {"crosses_external_boundary": true},
+      "reason": "Direct observed evidence: `git push origin NRM-v0.1-CLASSROOM` returned HTTP 403 on the same remote and credentials that had just accepted a branch push. Publishing a tag ref is a distinct, more restricted operation on this remote. See docs/evidence/NRM_TAG_403_CASE.md.",
+      "evidence_required": ["VALIDATED"]
+    },
+    {
+      "policy_id": "POLICY-deploy-v1",
+      "capability": "DEPLOY",
+      "scope": {"resource": "deployment_platform", "target": "*"},
+      "trust_boundary": "DEPLOYMENT_PLATFORM",
+      "decision": "REQUIRES_APPROVAL",
+      "constraints": {},
+      "reason": "Fixture default. No deployment platform integration currently exists in this repository; conservative default until one is defined and a human sets explicit policy.",
+      "evidence_required": ["VALIDATED"]
+    },
+    {
+      "policy_id": "POLICY-promote-release-v1",
+      "capability": "PROMOTE_RELEASE",
+      "scope": {"resource": "release", "target": "*"},
+      "trust_boundary": "PRODUCTION",
+      "decision": "HUMAN_ONLY",
+      "constraints": {},
+      "reason": "Promotion is defined (see promotion.py) as independent of execution success. No amount of passing build/test/device evidence may substitute for a human promotion decision. Matches this mission's explicit instruction: promotion remains human-controlled.",
+      "evidence_required": ["VALIDATED"]
+    },
+    {
+      "policy_id": "POLICY-send-external-message-v1",
+      "capability": "SEND_EXTERNAL_MESSAGE",
+      "scope": {"resource": "communication_channel", "target": "*"},
+      "trust_boundary": "EXTERNAL_COMMUNICATION",
+      "decision": "ALLOWED_BOUNDED",
+      "constraints": {"approved_channels": [], "max_recipients": 0},
+      "reason": "Fixture default. Bounded to an explicit allow-list that starts empty -- no channel is pre-approved by this mission. A human must populate approved_channels before any autonomous send is possible.",
+      "evidence_required": []
+    },
+    {
+      "policy_id": "POLICY-spend-funds-v1",
+      "capability": "SPEND_FUNDS",
+      "scope": {"resource": "financial_account", "target": "*"},
+      "trust_boundary": "FINANCIAL",
+      "decision": "ALLOWED_BOUNDED",
+      "constraints": {"max_amount": 0, "currency": "USD"},
+      "reason": "Fixture default matching the mission's Support-agent example (\"may execute refunds <= threshold, must escalate above threshold\"). max_amount defaults to 0 -- effectively no autonomous spend authority -- until a human sets a nonzero bounded threshold.",
+      "evidence_required": ["VALIDATED"]
+    },
+    {
+      "policy_id": "POLICY-delete-record-v1",
+      "capability": "DELETE_RECORD",
+      "scope": {"resource": "data_record", "target": "*"},
+      "trust_boundary": "LOCAL_FILE",
+      "decision": "REQUIRES_APPROVAL",
+      "constraints": {},
+      "reason": "Fixture default. Deletion is not reversible by this runtime's existing tooling (no soft-delete/undo primitive found), so it defaults to requiring approval.",
+      "evidence_required": []
+    },
+    {
+      "policy_id": "POLICY-modify-governance-v1",
+      "capability": "MODIFY_GOVERNANCE",
+      "scope": {"resource": "governance_policy", "target": "*"},
+      "trust_boundary": "GOVERNANCE",
+      "decision": "HUMAN_ONLY",
+      "constraints": {},
+      "reason": "Self-protection rule required by this mission (section 16): no agent may edit authority rules to grant itself or any other agent broader authority during execution. See delegation.guard_self_escalation().",
+      "evidence_required": []
+    },
+    {
+      "policy_id": "POLICY-authorize-agent-v1",
+      "capability": "AUTHORIZE_AGENT",
+      "scope": {"resource": "agent_registry", "target": "*"},
+      "trust_boundary": "GOVERNANCE",
+      "decision": "HUMAN_ONLY",
+      "constraints": {},
+      "reason": "Agent creation is not authority creation (mission section 15). Granting authority to a new or existing agent is itself an authority-modifying act and inherits MODIFY_GOVERNANCE's HUMAN_ONLY posture.",
+      "evidence_required": []
+    },
+    {
+      "policy_id": "POLICY-change-production-configuration-v1",
+      "capability": "CHANGE_PRODUCTION_CONFIGURATION",
+      "scope": {"resource": "production_configuration", "target": "*"},
+      "trust_boundary": "PRODUCTION",
+      "decision": "HUMAN_ONLY",
+      "constraints": {},
+      "reason": "Fixture default. Same blast-radius tier as PROMOTE_RELEASE and PRODUCTION trust boundary; no autonomous path exists in this repository today, so none is created here.",
+      "evidence_required": ["VALIDATED"]
+    },
+    {
+      "policy_id": "POLICY-promote-knowledge-v1",
+      "capability": "PROMOTE_KNOWLEDGE",
+      "scope": {"resource": "knowledge_vault", "target": "*"},
+      "trust_boundary": "GOVERNANCE",
+      "decision": "HUMAN_ONLY",
+      "constraints": {},
+      "reason": "Added for FORGEWORLD PERCEPTION GATEWAY PROOF 001: a CapabilityProposal (perception/src/schema.py) may never self-promote into the Knowledge Vault -- 'models may propose relationships but may not validate them' is a mission constraint, and this policy is what makes evaluate_authority() actually deny an agent-actor attempt at PROMOTE_KNOWLEDGE rather than the rule existing only in prose. Same blast-radius posture as PROMOTE_RELEASE: no autonomous path exists.",
+      "evidence_required": ["SUPPORTED"]
+    }
+  ]
+}

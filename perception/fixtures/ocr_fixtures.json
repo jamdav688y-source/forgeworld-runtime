@@ -1,0 +1,17 @@
+{
+  "bec6aac880d86669f459f8f6280da9faa492cf246800fdc25fb3b180ec1efeec": {
+    "text": "Pocket Cortex\nWhatsApp Intelligence Membrane",
+    "confidence": 0.92,
+    "_note": "sha256 of perception/fixtures/screenshot_1554.png (synthetic stand-in -- see README.md)"
+  },
+  "0b843804c78b69f94bb567e920b594a3bd6ed597e187d9ba42cfbe361de63279": {
+    "text": "Pocket Cortex\nWhatsApp Intelligence Membrane",
+    "confidence": 0.90,
+    "_note": "sha256 of perception/fixtures/screenshot_1555.png -- same recognizable text as 1554 (near-duplicate screenshot of the same screen), confidence deliberately slightly different to simulate a second, independent OCR pass rather than a cached identical result"
+  },
+  "304c5014fb567574817eddb09f3e84ce5f7b42a2015ebc477fdfbd86b9405d05": {
+    "text": "GitHub — forgeworld-runtime",
+    "confidence": 0.88,
+    "_note": "sha256 of perception/fixtures/screenshot_different.png -- genuinely different screen content"
+  }
+}
