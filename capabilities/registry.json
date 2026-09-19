@@ -97,6 +97,51 @@
       "check": {"type": "manual"},
       "tags": ["structured_data", "database", "record_management", "reporting"],
       "cost": {"dollar": 0.1, "latency": 0.2, "tokens": 0.0, "attention": 0.4, "complexity": 0.3}
+    },
+    {
+      "id": "forgeworld_mobile_research",
+      "kind": "capability_pipeline",
+      "provider": "local",
+      "purpose": "Offline-first, local capture pipeline for phone-originated screenshots and observations: discovers, OCRs (Tesseract), deterministically classifies, indexes (SQLite FTS5), summarizes (deterministic extractive, non-LLM), and packages source-grounded prompts for downstream tools. Produces evidence for other capabilities to consume; does not itself qualify, validate, or act on that evidence.",
+      "inputs": [
+        {"type": "screenshot_image", "source": "config/source_paths.json enabled directories", "description": "Phone/desktop screenshot image files discovered under approved local paths."},
+        {"type": "operator_directive", "source": "local UI (127.0.0.1:5055)", "description": "Source enable/disable, scan trigger, search query, prompt-mode selection -- all local, no remote input."}
+      ],
+      "outputs": [
+        {"type": "ocr_extraction", "description": "Raw + operator-corrected OCR text with full lineage (PASS/EMPTY/FAILED/TIMEOUT)."},
+        {"type": "classification", "description": "Rule-based tags/entities, each with rule_id + rationale + confidence -- not verified truth."},
+        {"type": "extractive_summary", "description": "Deterministic SYSTEM_EXTRACTIVE_SUMMARY text; never a model-generated interpretation."},
+        {"type": "prompt_package", "description": "Source-grounded prompt text for external tools (Codex/Claude Code/ChatGPT/etc); never itself transmitted anywhere by this capability."}
+      ],
+      "check": {
+        "type": "command",
+        "value": "tesseract",
+        "verify": {
+          "args": ["--version"],
+          "timeout_seconds": 5,
+          "expect_identity": "tesseract \\d+\\.\\d+"
+        }
+      },
+      "tags": ["screenshot_ingestion", "customer_capture", "ocr", "local_first", "search", "evidence_capture", "prompt_construction", "offline_research"],
+      "cost": {"dollar": 0.0, "latency": 0.3, "tokens": 0.0, "attention": 0.4, "complexity": 0.35},
+      "locality": "local_only",
+      "dependencies": {
+        "probed_by_this_capability_check": ["tesseract"],
+        "declared_not_probed": [
+          "python3 (already registered as capability 'python'; not re-probed here)",
+          "pip packages: Flask, Pillow, pytesseract, watchdog, python-dateutil, requests (forgeworld-mobile-research/requirements.txt)",
+          "sqlite3 (Python stdlib)"
+        ],
+        "note": "The registry check schema supports exactly one probe per capability. tesseract is probed because it is the dependency most likely to be absent and least implied by any other registered capability; python3 and the pip packages are declared here for completeness but are not independently verified by this entry's check."
+      },
+      "external_effects": "None over the network by default -- cloud_uploads_enabled is false in config/settings.json and no network check is declared for this capability. Writes only to the local filesystem under forgeworld-mobile-research/runtime/ (database, previews, exports, ocr, logs). Registering this capability does not start its Flask server (127.0.0.1:5055); reachability is judged by the tesseract probe alone, never by contacting the app.",
+      "failure_state": "If tesseract is unreachable (not on PATH, fails to launch, or identity/version mismatch), discover.py reports reachability_confidence=0.0 with an honest evidence_level (UNREACHABLE/TIMEOUT/IDENTITY_MISMATCH). The router will not select this capability while unreachable; a mission requiring its tags is queued (status=queued_no_reachable_capability) per the router's existing Failure Law, never silently rerouted or assumed to have run.",
+      "evidence_provenance": "All outputs are evidence/input, not conclusions. A captured screenshot or observation (e.g. a LinkedIn post, a customer message) is, by itself, never a lead, a customer, commercial intent, or execution authority -- promoting it to any of those is a separate, explicit, human- or governance-authorized decision made outside this capability. Outputs are compatible with evidence_envelope as an evidence SOURCE (e.g. as an input_reference/evidence_reference on a mission or trajectory record), never as an evidence VALIDATOR or promotion authority. Unknown information stays UNKNOWN; summaries are always labeled SYSTEM_EXTRACTIVE_SUMMARY.",
+      "validation_state": {
+        "registered": true,
+        "device_validated": false,
+        "note": "Built and tested in a Linux dev container (Python 3.11, Tesseract 5.3); on-device Termux/Android behavior is implemented per spec but UNVERIFIED -- see forgeworld-mobile-research/KNOWN_LIMITATIONS.md and VALIDATION_REPORT.md. Registration in this file is not a claim that the phone deployment has been validated."
+      }
     }
   ]
 }
