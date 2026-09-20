@@ -18,12 +18,12 @@ from pathlib import Path
 from unittest import mock
 
 CAPABILITIES_DIR = Path(__file__).resolve().parent.parent
-ROUTER_DIR = CAPABILITIES_DIR.parent / "router"
-sys.path.insert(0, str(CAPABILITIES_DIR))
-sys.path.insert(0, str(ROUTER_DIR))
+REPO_ROOT = CAPABILITIES_DIR.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
-import discover  # noqa: E402
-import mission_router  # noqa: E402
+from capabilities import discover  # noqa: E402
+from router import mission_router  # noqa: E402
 
 CAP_ID = "forgeworld_mobile_research"
 

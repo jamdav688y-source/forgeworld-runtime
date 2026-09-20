@@ -21,7 +21,15 @@
       "id": "local_llm",
       "kind": "ai_agent",
       "provider": "local",
-      "check": {"type": "command", "value": "ollama"},
+      "check": {
+        "type": "command",
+        "value": "ollama",
+        "verify": {
+          "args": ["--version"],
+          "timeout_seconds": 5,
+          "expect_identity": "ollama"
+        }
+      },
       "tags": ["offline_inference", "privacy_sensitive", "low_cost_inference", "drafting"],
       "cost": {"dollar": 0.05, "latency": 0.5, "tokens": 0.1, "attention": 0.4, "complexity": 0.5}
     },
