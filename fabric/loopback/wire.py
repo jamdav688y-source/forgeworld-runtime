@@ -43,12 +43,18 @@ def send_message(conn, kind: str, payload: dict) -> None:
     conn.send_bytes(json.dumps({"kind": kind, "payload": payload}).encode("utf-8"))
 
 
-def recv_message(conn, timeout: float = 10.0):
+def recv_message(conn, timeout: float = 10.0, max_bytes: Optional[int] = None):
     """Returns (kind, payload_dict, error). error is None on success and
     is one of the honest failure reasons this mission requires when it
     is not: a bounded wait that finds nothing is TIMEOUT, a closed
     connection is EOF, and undecodable/incomplete bytes are MALFORMED/
-    TRUNCATED."""
+    TRUNCATED.
+
+    `max_bytes`, when given, is passed straight through to
+    Connection.recv_bytes(maxlength=...) -- the stdlib's own explicit
+    message-size bound. Default None preserves the original unbounded
+    behavior exactly (existing loopback tests/callers are unaffected);
+    a LAN-facing listener (fabric/tcp/) always sets this."""
     try:
         ready = conn.poll(timeout)
     except OSError as exc:
@@ -56,10 +62,12 @@ def recv_message(conn, timeout: float = 10.0):
     if not ready:
         return None, None, f"TIMEOUT: no message received within {timeout}s"
     try:
-        raw = conn.recv_bytes()
+        raw = conn.recv_bytes(maxlength=max_bytes) if max_bytes is not None else conn.recv_bytes()
     except EOFError:
         return None, None, "EOF: the remote process closed the connection"
     except OSError as exc:
+        if max_bytes is not None:
+            return None, None, f"MESSAGE_TOO_LARGE: message exceeded the {max_bytes}-byte limit ({exc})"
         return None, None, f"transport error while receiving: {exc}"
     if not raw:
         return None, None, "TRUNCATED: received an empty message"
@@ -136,6 +144,7 @@ def capability_request_to_wire(req: "fi.RemoteCapabilityRequest") -> dict:
         "capability_id": req.capability_id, "authority_context": authority_to_wire(req.authority_context),
         "correlation_id": req.correlation_id, "causation_id": req.causation_id,
         "timeout_seconds": req.timeout_seconds, "requested_at": req.requested_at,
+        "integrity_tag": req.integrity_tag, "integrity_key_id": req.integrity_key_id,
     }
 
 
@@ -150,6 +159,7 @@ def safe_capability_request_from_wire(d: dict):
             capability_id=d["capability_id"], authority_context=authority,
             correlation_id=d["correlation_id"], causation_id=d["causation_id"],
             timeout_seconds=d["timeout_seconds"], requested_at=d.get("requested_at", fi._now()),
+            integrity_tag=d.get("integrity_tag"), integrity_key_id=d.get("integrity_key_id"),
         ), None
     except (KeyError, TypeError) as exc:
         return None, f"MALFORMED capability_request: {exc!r}"

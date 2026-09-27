@@ -27,6 +27,7 @@ import sys
 import time
 from multiprocessing import connection
 from pathlib import Path
+from typing import Optional
 
 _ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_ROOT) not in sys.path:
@@ -49,7 +50,7 @@ def _handle_artifact_envelope(payload: dict, node_id: str, local_transport: InMe
     return outcome
 
 
-def _handle_capability_request(payload: dict, node_id: str, local_transport, lineage_store, artifact_index):
+def _handle_capability_request(payload: dict, node_id: str, local_transport, lineage_store, artifact_index, replay_guard, integrity_key, key_store):
     request, reason = wire.safe_capability_request_from_wire(payload)
     if request is None:
         # Cannot build a proper (result, receipt) pair without a valid
@@ -63,6 +64,7 @@ def _handle_capability_request(payload: dict, node_id: str, local_transport, lin
         return (result, receipt), None
     result, receipt = fi.process_remote_capability_request(
         request, local_transport, lineage_store=lineage_store, artifact_index=artifact_index,
+        replay_guard=replay_guard, integrity_key=integrity_key, key_store=key_store,
     )
     return (result, receipt), None
 
@@ -82,9 +84,12 @@ class _AlwaysIncompleteTestCapability:
 
 
 def run_server(address: str, family: str, authkey: bytes, node_id: str, lineage_dir: str,
-               max_messages: int = 100, idle_timeout: float = 15.0) -> None:
+               max_messages: int = 100, idle_timeout: float = 15.0, integrity_key: Optional[bytes] = None,
+               key_store_dir: Optional[str] = None) -> None:
     lineage_store = LineageStore(Path(lineage_dir))
     artifact_index = fi.FabricArtifactIndex()
+    replay_guard = fi.RequestReplayGuard(Path(lineage_dir))
+    key_store = fi.LocalKeyStore(Path(key_store_dir)) if key_store_dir else None
     local_transport = InMemoryFabricTransport(registered_nodes=(node_id,))
     fi.register_capability(_AlwaysIncompleteTestCapability())
 
@@ -122,7 +127,9 @@ def run_server(address: str, family: str, authkey: bytes, node_id: str, lineage_
                 outcome = _handle_artifact_envelope(payload, node_id, local_transport)
                 wire.send_message(conn, "ARTIFACT_ENVELOPE_ACK", outcome)
             elif kind == "CAPABILITY_REQUEST":
-                pair, framing_error = _handle_capability_request(payload, node_id, local_transport, lineage_store, artifact_index)
+                pair, framing_error = _handle_capability_request(
+                    payload, node_id, local_transport, lineage_store, artifact_index, replay_guard, integrity_key, key_store,
+                )
                 if pair is None:
                     wire.send_message(conn, "CAPABILITY_RESPONSE_ERROR", {"reason": framing_error})
                 else:
@@ -144,12 +151,25 @@ def main() -> None:
     parser.add_argument("--lineage-dir", required=True)
     parser.add_argument("--max-messages", type=int, default=100)
     parser.add_argument("--idle-timeout", type=float, default=15.0)
+    parser.add_argument(
+        "--integrity-key", default=None,
+        help="hex-encoded HMAC key (MISSION: FW-MESSAGE-INTEGRITY-CONTRACT-001, legacy path). "
+             "Ignored if --key-store-dir is also given. Test-only key material -- omit for no "
+             "integrity verification (default, backward compatible).",
+    )
+    parser.add_argument(
+        "--key-store-dir", default=None,
+        help="directory for a LocalKeyStore (MISSION: FW-LOCAL-KEY-PROVISIONING-CONTRACT-001). "
+             "Takes precedence over --integrity-key when given.",
+    )
     args = parser.parse_args()
 
     run_server(
         address=args.address, family=args.family, authkey=bytes.fromhex(args.authkey),
         node_id=args.node_id, lineage_dir=args.lineage_dir,
         max_messages=args.max_messages, idle_timeout=args.idle_timeout,
+        integrity_key=bytes.fromhex(args.integrity_key) if args.integrity_key else None,
+        key_store_dir=args.key_store_dir,
     )
 
 

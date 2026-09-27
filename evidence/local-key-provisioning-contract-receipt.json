@@ -1,0 +1,127 @@
+{
+  "mission_id": "FW-LOCAL-KEY-PROVISIONING-CONTRACT-001",
+  "parent_mission": "FW-MESSAGE-INTEGRITY-CONTRACT-001",
+  "program": "FORGEWORLD-CONTINUITY-FABRIC-001",
+  "generated_at": "2026-09-26T00:00:00Z",
+  "generated_by": "Claude Sonnet 5, session_01ViNRAq3jGa9MJfVH3eL21o",
+  "starting_head": "6e00f0b0f47f3515cf1080ee59938c6f3f35765c",
+  "ending_head": "6e00f0b0f47f3515cf1080ee59938c6f3f35765c",
+  "branch": "claude/eager-mayer-n45ddd",
+  "starting_worktree": [
+    {"path": "fabric/interface.py", "state": "modified", "origin": "prior authority-expiry/replay/integrity missions' deltas, pre-existing for this mission"},
+    {"path": "fabric/loopback/pc_node_server.py", "state": "modified", "origin": "prior replay/integrity missions' wiring, pre-existing for this mission"},
+    {"path": "fabric/loopback/wire.py", "state": "modified", "origin": "pre-existing, predates all authority-expiry/replay/integrity/key missions"},
+    {"path": "fabric/tcp/", "state": "untracked", "origin": "pre-existing"},
+    {"path": "architecture/", "state": "untracked", "origin": "pre-existing"},
+    {"path": "evidence/", "state": "untracked directory", "origin": "pre-existing, contains six earlier missions' receipts"},
+    {"path": "fabric/tests/test_authority_expiry*.py, test_message_identity_replay*.py, test_message_integrity*.py", "state": "untracked", "origin": "prior missions' deltas"}
+  ],
+
+  "secret_exposure_audit": {
+    "method": "Before construction, searched all git-tracked and untracked test/evidence files for hardcoded secret-shaped byte literals (grep for byte-string literals near the word 'key', for os.urandom/secrets.token_bytes usage patterns) and inspected every prior evidence/*.json receipt for literal key bytes.",
+    "finding": "No production secret material found anywhere. fabric/tests/test_message_integrity.py (prior mission, untracked) contains one hardcoded dummy byte-string TEST_KEY = b'test-only-integrity-key-not-for-production-use' -- clearly labeled non-production placeholder text, not exploitable material, present only in an untracked test fixture, not in any evidence receipt, log, or serialized wire message. All other prior test files generate key/authkey material via os.urandom() at test run time, never persisted beyond the test process. No evidence/*.json receipt from any prior mission contains literal key bytes -- every 'key'-related field is descriptive prose (design rationale, findings), never a secret value. No STOP condition (BLOCKED_WITH_SECRET_MATERIAL_LEAK) was triggered.",
+    "cli_argument_visibility_note": "The prior mission's --integrity-key CLI argument (still supported here as a legacy path) places key material into the process command line, which is visible to other local users via /proc/<pid>/cmdline on POSIX systems in a genuinely multi-user environment -- not exploited in this single-user sandbox, but a real class of exposure for that legacy mechanism. This finding directly motivated THIS mission's own key_store design: --key-store-dir passes only a DIRECTORY PATH (never secret bytes) as a CLI argument; secret material itself is read from a file with 0o600 permissions, never placed on any command line.",
+    "this_missions_own_files": "Re-audited after construction: no hardcoded secret byte-string literals in any new file; all secret material in tests is generated via secrets.token_bytes(32) (production-path primitive) or is read back from LocalKeyStore.resolve_key() (never printed, logged, or serialized -- only used locally to call sign_request())."
+  },
+
+  "existing_key_primitives": "None found. Searched fabric/interface.py, fabric/loopback/, fabric/tcp/, evidence_envelope/envelope.py, and every production .py file for key/key_id/secret/authkey/credential/token/keystore/keyring/rotation/revoke/revocation/provision/trust/identity/device/peer. The only real matches were: (1) multiprocessing.connection's authkey (connection-establishment secret, not a lifecycle-managed key, already documented as a distinct concern in the prior integrity mission's receipt); (2) evidence_envelope/envelope.py's OWN explicit docstring stating 'there is no revocation or replacement' in its mission-lifecycle machinery; (3) prose mentions of a future 'identity provider' and 'future revocation' as explicitly out-of-scope placeholders. No key_id, keystore, keyring, rotation, or revocation CODE existed anywhere before this mission.",
+  "key_model": "fabric.interface.LocalKeyStore: metadata (key_id, algorithm, created_at, status, supersedes, revoked_at, reason) is durable JSONL, reusing evidence_envelope.envelope's exact _FileLock/_atomic_write_bytes/_serialize_ledger/LedgerIntegrityError discipline (a fifth application of that pattern, after LineageStore, TrajectoryStore, RequestReplayGuard, and the key-metadata ledger itself). Three lifecycle states only: ACTIVE, RETIRED, REVOKED -- no broader taxonomy introduced.",
+  "key_id_contract": "integrity_key_id: Optional[str] = None, a new trailing optional field on RemoteCapabilityRequest (same backward-compatible pattern integrity_tag itself used in the prior mission -- no incompatible migration required, confirmed by every prior test file continuing to pass unmodified). The key_id is NOT secret and IS included on the wire (fabric.loopback.wire.capability_request_to_wire()/safe_capability_request_from_wire()); the key MATERIAL never is. integrity_key_id is deliberately NOT part of canonical_request_fields()'s HMAC-covered input -- an attacker swapping key_id without possessing any secret cannot produce a combination (new key_id, old tag) that verify_request_integrity() accepts against the newly-named key's actual secret, so omitting it from the signed content is safe by construction, not an oversight.",
+  "generation_primitive": "secrets.token_bytes(32) (stdlib, cryptographically secure) -- never derived from a username, device name, timestamp, or password; no KDF invented. key_bytes may be supplied explicitly to provision_key() ONLY for deterministic unit testing of the store's own logic; every end-to-end/transport test uses store-generated random material.",
+  "storage_model": "Two-part LOCAL filesystem storage under one root directory: (1) key_metadata.jsonl + key_metadata.lock -- non-secret lifecycle ledger, world-readable-by-default (same as LineageStore's own ledger; contains no secret bytes so this is not a new exposure). (2) secrets/<key_id>.secret -- ONE PLAIN FILE PER KEY, written atomically via envelope._atomic_write_bytes then chmod'd 0o600 immediately after; the containing secrets/ directory is chmod'd 0o700 at store construction (best-effort, POSIX only).",
+  "storage_security_limitations": "Plaintext key material at rest, protected ONLY by POSIX file permission bits -- NOT an OS keychain/keyring, NOT a hardware security module or secure enclave, NOT encrypted at rest. Anyone with filesystem read access as the same user (or root) can read a secret file directly. chmod is a no-op (best-effort, silently ignored) on platforms without POSIX permission bits (e.g. Windows), matching the exact same documented limitation evidence_envelope.envelope._FileLock already carries for its own POSIX-only fcntl locking. This is explicitly a LOCAL PROOF primitive, never claimed as production key management.",
+
+  "active_key_result": "CAP_COMPLETED, executes exactly once (proven in-process, loopback subprocess, and TCP subprocess; loopback/TCP tests additionally assert the secret bytes and their hex encoding are absent from the serialized wire request).",
+  "unknown_key_result": "CAP_FAILED, zero execution (a syntactically valid but never-provisioned key_id) -- proven in-process and over both transports.",
+  "malformed_key_result": "CAP_FAILED, zero execution (a key_id that fails envelope.validate_mission_id's format contract, and separately, a request with integrity_key_id entirely absent) -- proven in-process.",
+  "revoked_key_result": "CAP_FAILED, zero execution, even though the HMAC is mathematically correct under the key's own (still known-to-the-test) secret bytes -- proven in-process, over both transports, and confirmed to survive a real second-subprocess restart (revoke before restart, still rejected after).",
+  "rotation_result": "HARD CUTOVER, not a bounded compatibility window (an explicit, documented design decision, not a silent default): provision_key(supersedes=k1) atomically marks k1 RETIRED and k2 ACTIVE under one lock. A request signed with k2 (the new key) after rotation is accepted; the SAME logical request signed with k1 (the old key) before rotation, if delivered after rotation completes, is rejected -- proven in-process and over both real transports. RETIRED and REVOKED remain independently observable via status_of() and the metadata ledger even though both currently produce the identical fail-closed execution outcome (documented as a deliberate simplification, not an oversight -- see limitations).",
+  "process_restart_result": "PROVEN with a REAL second OS subprocess for both transports (not simulated in-process only, though in-process proxies are also included for completeness): an ACTIVE key provisioned before a server subprocess starts remains usable by a server subprocess reading the same --key-store-dir; a key revoked between two subprocess lifetimes remains REVOKED (and its secret unresolvable) when a second, genuinely separate subprocess is started against the identical directory.",
+
+  "authority_interaction": "Proven orthogonal in every direction required by Section 13: ACTIVE key + expired authority -> CAP_UNAUTHORIZED (not CAP_FAILED -- integrity passed, a DIFFERENT gate denied); ACTIVE key + invalid/empty authority -> zero execution via the existing, unmodified authority_permits() gate; REVOKED key + otherwise-valid authority -> CAP_FAILED, zero execution, before authority is ever evaluated. Key acceptance and execution authority remain two separate, non-substitutable gates.",
+  "replay_interaction": "A genuinely valid, unmutated resend is still recognized and suppressed (CAP_DUPLICATE_COMPLETED) when key_store and replay_guard are configured together (TestValidDuplicateWithKeyStorePreservesReplaySemantics). The harder case (Section 12/matrix item 14): a request that completed successfully while its key was ACTIVE, replayed IDENTICALLY (same bytes, same tag) after that key is later REVOKED, is rejected as CAP_FAILED -- NOT returned as CAP_DUPLICATE_COMPLETED -- because integrity/key-resolution is verified on EVERY delivery, not only the first, and now runs strictly before replay_guard is ever consulted. This is a deliberate, documented policy choice: 'historical disposition retrieval' still requires the presented message to currently verify under a currently-ACTIVE key; a revoked key can retroactively make even an already-completed request's exact replay unrecoverable through this path. Zero additional execution either way -- the distinction is only in which rejection reason is returned.",
+  "integrity_interaction": "key_store is a NEW, independent precedence branch in process_remote_capability_request(): when supplied it takes precedence over the prior mission's raw integrity_key parameter, which remains fully functional and unmodified for backward compatibility (every prior integrity test, unedited, still passes). The two mechanisms are mutually exclusive per call, never combined.",
+  "tcp_allowlist_observation": "Re-examined per Section 20: fabric/tcp/pc_node_server.py's pre-existing capability_id allowlist check still sits outside process_remote_capability_request(), unchanged by this mission. This mission's own transport tests deliberately avoided that specific field (using artifact_id/key_id mutations instead, as the prior mission's tests already did for the analogous integrity case), so no NEW instance of the observation was produced. Classification: (A) only equivalent fail-closed behavior -- both the TCP allowlist's CAP_UNSUPPORTED and this mission's CAP_FAILED are zero-execution outcomes; no information leak or trust-boundary violation was found (no distinguishable capability was gained by an attacker from knowing which rejection reason came back, since both require the same fail-closed non-execution). Recorded as a candidate defect for a future consistency pass, not repaired here, per explicit instruction not to expand scope.",
+
+  "production_files_changed": [
+    {"path": "fabric/interface.py", "change": "added 'import os' and 'import secrets'; added integrity_key_id: Optional[str] = None field to RemoteCapabilityRequest; added KEY_STATUS_ACTIVE/RETIRED/REVOKED constants, KeyProvisioningError, and the LocalKeyStore class (provision_key, revoke_key, status_of, resolve_key, active_key_for_signing helper); extended sign_request() with an optional key_id parameter; added optional key_store parameter to process_remote_capability_request() with a new precedence-first verification branch. 625 lines changed total across this file's full cumulative history (authority-expiry + replay + integrity + this mission); this mission's own share is the key-lifecycle-specific additions described here."},
+    {"path": "fabric/loopback/wire.py", "change": "capability_request_to_wire()/safe_capability_request_from_wire() now also carry integrity_key_id (non-secret). 2 lines."},
+    {"path": "fabric/loopback/pc_node_server.py", "change": "added --key-store-dir CLI arg (optional, takes precedence over --integrity-key); constructs fi.LocalKeyStore(Path(key_store_dir)) when given and threads key_store through run_server()/_handle_capability_request() into process_remote_capability_request(). ~15 lines."},
+    {"path": "fabric/tcp/pc_node_server.py", "change": "identical --key-store-dir wiring to the loopback server (untracked in git; presence verified directly via grep)."}
+  ],
+  "tests_added": {
+    "files": [
+      "fabric/tests/test_local_key_provisioning.py (24 tests, in-process: pure LocalKeyStore lifecycle primitives, plus the full 14-item adversarial matrix against process_remote_capability_request())",
+      "fabric/tests/test_local_key_provisioning_loopback.py (5 tests: active/unknown/revoked/rotation/real-two-process-restart, over AF_UNIX)",
+      "fabric/tests/test_local_key_provisioning_tcp.py (5 tests: same over localhost TCP)"
+    ],
+    "total": 34,
+    "existing_test_files_modified": "none"
+  },
+  "full_regression_result": {
+    "run_method": "python3 -m unittest <module>, one suite per subprocess, this session, in the mission-specified order",
+    "suites": [
+      {"path": "fabric/tests/test_local_key_provisioning.py", "result": "24/24 pass (new)"},
+      {"path": "fabric/tests/test_local_key_provisioning_loopback.py", "result": "5/5 pass (new)"},
+      {"path": "fabric/tests/test_local_key_provisioning_tcp.py", "result": "5/5 pass (new)"},
+      {"path": "fabric/tests/test_message_integrity.py", "result": "15/15 pass"},
+      {"path": "fabric/tests/test_message_integrity_loopback.py", "result": "5/5 pass"},
+      {"path": "fabric/tests/test_message_integrity_tcp.py", "result": "5/5 pass"},
+      {"path": "fabric/tests/test_message_identity_replay.py", "result": "9/9 pass"},
+      {"path": "fabric/tests/test_message_identity_replay_loopback.py", "result": "2/2 pass"},
+      {"path": "fabric/tests/test_message_identity_replay_tcp.py", "result": "2/2 pass"},
+      {"path": "fabric/tests/test_authority_expiry.py", "result": "16/16 pass"},
+      {"path": "fabric/tests/test_authority_expiry_e2e.py", "result": "6/6 pass"},
+      {"path": "fabric/tests/test_authority_expiry_loopback.py", "result": "8/8 pass"},
+      {"path": "fabric/tests/test_authority_expiry_tcp.py", "result": "5/5 pass"},
+      {"path": "fabric/tests/test_fabric_contract.py", "result": "19/19 pass"},
+      {"path": "fabric/tests/test_fabric_loopback.py", "result": "17/17 pass"},
+      {"path": "fabric/tcp/tests/test_fabric_tcp.py", "result": "12/12 pass"},
+      {"path": "capabilities/tests/test_forgeworld_mobile_research_capability.py", "result": "14/14 pass"},
+      {"path": "local_inference/tests/test_local_inference.py", "result": "18/18 pass"},
+      {"path": "artifact_handoff/tests/test_artifact_handoff.py", "result": "21/21 pass"},
+      {"path": "artifact_handoff/tests/test_lineage_store.py", "result": "12/12 pass"},
+      {"path": "content_readers/tests/test_content_readers.py", "result": "25/25 pass"},
+      {"path": "tests/test_namespace_stabilization.py", "result": "8/8 pass"}
+    ],
+    "total": "253/253 pass, 0 fail",
+    "baseline_comparison": "Prior evidence-backed baseline was 219/219. This run reproduces all 219 unchanged plus 34 new key-provisioning tests = 253, zero regressions, zero unexplained failures.",
+    "unrunnable_in_this_sandbox": [
+      "capabilities/tests/test_discover.py",
+      "evidence_envelope/tests/test_envelope.py",
+      "evidence_envelope/tests/test_trajectory.py",
+      "forgeworld-mobile-research/tests/*.py"
+    ],
+    "unrunnable_reason": "pytest not installed in this sandbox; unchanged from all prior missions"
+  },
+
+  "counterevidence": "None found against the core claim. Confirmed one deliberate design simplification rather than a bug: RETIRED and REVOKED currently share identical fail-closed execution behavior (resolve_key() returns None for both), distinguished only in the audit-layer metadata, not in runtime behavior -- explicitly documented as a choice, not discovered as a defect.",
+  "limitations": [
+    "No bounded compatibility window for rotation: a message signed with the immediately-previous key and delivered even microseconds after rotation is rejected. A future microphase could add a time-boxed grace period for RETIRED specifically (never for REVOKED) if operational experience shows hard cutover is too strict for real phone/PC clock skew and delivery latency.",
+    "Plaintext-at-rest key storage (POSIX file permissions only) -- explicitly not an OS keychain, HSM, or encrypted store. Recorded, not solved, per this mission's own storage-security-limitations requirement.",
+    "No key distribution/pairing mechanism: this mission proves a key can be generated, persisted, resolved, rotated, and revoked LOCALLY. How a real phone and a real PC would ever come to share the SAME secret bytes in the first place (out-of-band pairing, QR code, manual entry, or otherwise) is entirely unaddressed and is the natural next prerequisite before any physical-device integrity work.",
+    "TCP-allowlist ordering observation (Section 20) re-examined, not repaired -- classified as equivalent fail-closed behavior across both rejection paths, not a new defect, per the explicit instruction not to expand scope to repair it.",
+    "active_key_for_signing() assumes at most one 'current' ACTIVE key per rotation chain is meaningful for a sender; a store with multiple, UNRELATED ACTIVE keys (no supersedes chain linking them) will return only the most-recently-provisioned one to a naive caller -- adequate for this mission's local single-key-lineage proof, not evaluated for a multi-key concurrent-active scenario."
+  ],
+  "key_management_gap": "Key distribution/pairing between two real, physically separate devices remains entirely unaddressed -- named as the explicit prerequisite before physical Android<->PC key-provisioning work.",
+  "peer_identity_gap": "Unaddressed by design (explicit prohibition this mission). A key_id names a KEY; it carries no semantic identity (no PHONE_JAMES/PC_JAMES/TRUSTED_DEVICE-style binding exists anywhere in this store).",
+  "transport_encryption_gap": "Unaddressed (out of scope, unchanged from the prior mission). All wire traffic, including the non-secret key_id and integrity_tag, remains plaintext.",
+  "crash_window_b_status": "Unchanged, still open, not addressed per explicit instruction: a receiver crash between successful provider.invoke() and durable disposition persistence remains an unresolved risk, orthogonal to key lifecycle.",
+
+  "rollback": {
+    "scope": "This microphase's delta: fabric/interface.py (LocalKeyStore + wiring), fabric/loopback/wire.py (integrity_key_id carry-through), fabric/loopback/pc_node_server.py and fabric/tcp/pc_node_server.py (--key-store-dir wiring), plus three new test files.",
+    "exact_reversal": "git checkout -- fabric/interface.py fabric/loopback/wire.py fabric/loopback/pc_node_server.py   # reverts to the FW-MESSAGE-INTEGRITY-CONTRACT-001 state. fabric/tcp/pc_node_server.py is untracked -- manually remove the --key-store-dir argument, the key_store parameter/plumbing, and the run_server() default, or restore from this receipt's recorded change description. rm fabric/tests/test_local_key_provisioning.py fabric/tests/test_local_key_provisioning_loopback.py fabric/tests/test_local_key_provisioning_tcp.py",
+    "verification": "git diff --stat shows fabric/interface.py at 625 insertions/net across its full cumulative history; fabric/loopback/wire.py at 16 changed lines (unchanged from the prior mission's own +2-line addition plus this mission's own +2, both already reflected); fabric/loopback/pc_node_server.py grew from 17 to 26 changed lines (this mission's --key-store-dir plumbing)."
+  },
+  "resulting_capability_claim": {
+    "claim": "LOCAL_INTEGRITY_KEY_LIFECYCLE_PROVEN -- ForgeWorld can locally generate (secrets.token_bytes), provision (durable ACTIVE metadata + a 0o600 secret file), identify (a non-secret key_id, safely carried on the wire), persist (JSONL metadata ledger surviving a real process restart), resolve (fail-closed on unknown/malformed/retired/revoked key_id), rotate (a documented hard-cutover policy, old key immediately unusable, new key immediately usable), and revoke (durably distinct from retirement in the audit trail, immediately fail-closed in execution) message-integrity keys, entirely locally, without the secret key material ever being serialized into a RemoteCapabilityRequest, a wire message, a RemoteCapabilityResult, a FabricReceipt, or a RequestReplayGuard disposition record.",
+    "explicitly_not_claimed": [
+      "peer identity", "device identity", "human identity",
+      "secure enclave storage", "production key management", "PKI",
+      "non-repudiation", "LAN security", "physical-device trust"
+    ],
+    "promoted": false
+  },
+  "commit_status": "NOT COMMITTED",
+  "push_status": "NOT PUSHED"
+}

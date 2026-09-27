@@ -1,0 +1,121 @@
+{
+  "mission_id": "FW-AUTHORITY-EXPIRY-TRANSPORT-PROOF-001",
+  "parent_mission": "FW-AUTHORITY-EXPIRY-E2E-001",
+  "program": "FORGEWORLD-CONTINUITY-FABRIC-001",
+  "generated_at": "2026-09-26T00:00:00Z",
+  "generated_by": "Claude Sonnet 5, session_01ViNRAq3jGa9MJfVH3eL21o",
+  "starting_head": "6e00f0b0f47f3515cf1080ee59938c6f3f35765c",
+  "ending_head": "6e00f0b0f47f3515cf1080ee59938c6f3f35765c",
+  "branch": "claude/eager-mayer-n45ddd",
+  "starting_worktree": [
+    {"path": "fabric/interface.py", "state": "modified", "origin": "FW-AUTHORITY-EXPIRY-ENFORCEMENT-001's delta, pre-existing for this mission"},
+    {"path": "fabric/loopback/wire.py", "state": "modified", "origin": "pre-existing, predates all authority-expiry missions"},
+    {"path": "fabric/tcp/", "state": "untracked", "origin": "pre-existing, predates all authority-expiry missions"},
+    {"path": "architecture/", "state": "untracked", "origin": "pre-existing"},
+    {"path": "evidence/", "state": "untracked directory", "origin": "pre-existing, contains recovery-receipt.json, authority-expiry-enforcement-receipt.json, authority-expiry-e2e-receipt.json from earlier missions"},
+    {"path": "fabric/tests/test_authority_expiry.py", "state": "untracked", "origin": "FW-AUTHORITY-EXPIRY-ENFORCEMENT-001's delta"},
+    {"path": "fabric/tests/test_authority_expiry_e2e.py", "state": "untracked", "origin": "FW-AUTHORITY-EXPIRY-E2E-001's delta"}
+  ],
+  "production_code_changed": false,
+  "call_path_observed": {
+    "loopback": "fabric/loopback/pc_node_server.py::_handle_capability_request() calls wire.safe_capability_request_from_wire(payload) then fi.process_remote_capability_request(request, local_transport, lineage_store=lineage_store, artifact_index=artifact_index) -- the same unmodified function proven at every prior layer.",
+    "tcp": "fabric/tcp/pc_node_server.py::_handle_capability_request() has one EXTRA defense-in-depth check (request.capability_id != ALLOWED_CAPABILITY_ID -> CAP_UNSUPPORTED before dispatch) not present in loopback, then calls the identical fi.process_remote_capability_request(...). Both transports share fabric.loopback.wire for serialization verbatim -- fabric/tcp/ imports it directly, does not reimplement it."
+  },
+  "loopback": {
+    "transport_path": "fabric.loopback.transport.LoopbackClientTransport (AF_UNIX on this Linux sandbox; AF_PIPE on Windows per make_loopback_address) <-> a genuinely separate OS subprocess (subprocess.Popen) running fabric/loopback/pc_node_server.py unmodified.",
+    "serialization_path": "fabric.loopback.wire.capability_request_to_wire()/safe_capability_request_from_wire(), authority_to_wire()/safe_authority_from_wire() -- plain JSON over multiprocessing.connection's own message framing (one send_bytes() = one message).",
+    "expired_result": "CAP_UNAUTHORIZED (fabric.tests.test_authority_expiry_loopback.TestExpiredAuthorityOverLoopback). authority_context.expires_at = '2020-01-01T00:00:00Z'.",
+    "expired_executor_invocations": "0, proven via the server subprocess's own on-disk LineageStore: 0 records after the denied request (ah_interface.handoff(), which writes lineage, only runs after authority_permits() succeeds, strictly before provider.invoke()).",
+    "future_result": "CAP_COMPLETED, structured_result['text_content'] equals the exact real payload sent (fabric.tests.test_authority_expiry_loopback.TestFutureAuthorityOverLoopback). LineageStore shows exactly 1 record matching the artifact's sha256 -- direct evidence of exactly one real content_read execution.",
+    "none_result": "CAP_COMPLETED, structured_result content verified identical to pre-expiry-enforcement behavior (fabric.tests.test_authority_expiry_loopback.TestNoneExpiryOverLoopback).",
+    "malformed_result": "CAP_UNAUTHORIZED, 0 lineage records (fabric.tests.test_authority_expiry_loopback.TestMalformedExpiryOverLoopback). A malformed expires_at string ('not-a-timestamp') survives JSON serialization unmutated (proven directly by TestAuthorityWireRoundTripPreservesGovernanceFields::test_malformed_expiry_string_survives_round_trip_unmutated) and reaches the real server process exactly as constructed -- not a synthetic bypass.",
+    "authority_roundtrip_result": "PROVEN at the pure wire layer (no subprocess needed to isolate this step): actor_id, granted_capability_ids, granted_by, and expires_at (including a past timestamp, None, and a malformed string) all survive wire.authority_to_wire() -> json.dumps() -> json.loads() -> wire.safe_authority_from_wire() byte-for-byte / value-for-value identical to the original. 3/3 tests pass.",
+    "also_verified": "future expiry does not bypass the pre-existing capability allowlist check: a future (non-expired) grant for a DIFFERENT capability_id than requested is still CAP_UNAUTHORIZED with 0 lineage writes (TestExpiryDoesNotWeakenAllowlistOverLoopback)."
+  },
+  "tcp": {
+    "bind_address": "127.0.0.1 (loopback interface only)",
+    "port_strategy": "--port 0 -> OS-assigned ephemeral port, read back from the server's own PC_NODE_LISTENING stdout line (identical convention to fabric/tcp/tests/test_fabric_tcp.py's own _SpawnedTCPServer). No LAN interface bound; fabric/tcp/pc_node_server.py's own main() independently refuses 0.0.0.0/::/empty regardless.",
+    "transport_path": "fabric.loopback.transport.LoopbackClientTransport, family='AF_INET' (the SAME client class the loopback proof uses, per the architecture's 'transport is an adapter' claim) <-> a genuinely separate OS subprocess running fabric/tcp/pc_node_server.py unmodified, a real TCP socket, real three-way handshake, real multiprocessing.connection authkey challenge.",
+    "serialization_path": "identical to loopback -- fabric/tcp/pc_node_server.py imports fabric.loopback.wire directly and does not reimplement serialization.",
+    "expired_result": "CAP_UNAUTHORIZED (fabric.tests.test_authority_expiry_tcp.TestExpiredAuthorityOverTCP).",
+    "expired_executor_invocations": "0, proven via the same on-disk LineageStore technique as loopback.",
+    "future_result": "CAP_COMPLETED, structured_result['text_content'] equals the real payload sent, LineageStore shows exactly 1 record (fabric.tests.test_authority_expiry_tcp.TestFutureAuthorityOverTCP).",
+    "none_result": "CAP_COMPLETED, behavior preserved (fabric.tests.test_authority_expiry_tcp.TestNoneExpiryOverTCP).",
+    "malformed_result": "CAP_UNAUTHORIZED, 0 lineage records (fabric.tests.test_authority_expiry_tcp.TestMalformedExpiryOverTCP).",
+    "authority_roundtrip_result": "Not re-tested independently for TCP -- fabric/tcp/pc_node_server.py imports the exact same fabric.loopback.wire module (not a copy, not a reimplementation), so the loopback file's TestAuthorityWireRoundTripPreservesGovernanceFields already covers the identical code path TCP uses. Re-running an identical unit test under a different filename would not add evidence.",
+    "teardown_result": "Every _SpawnedTCPServer.terminate() call completed cleanly: process terminated (or killed after a bounded wait), stdout/stderr pipes closed, temporary lineage directory removed. No listener or process remained after any test. No port was left bound (ephemeral OS-assigned ports are released with the process); no LAN interface was ever touched."
+  },
+  "tests_added": {
+    "files": [
+      "fabric/tests/test_authority_expiry_loopback.py (8 tests: 3 wire-roundtrip + 5 transport-level)",
+      "fabric/tests/test_authority_expiry_tcp.py (5 tests, transport-level only -- wire-roundtrip already covered by the loopback file since both transports share the identical wire module)"
+    ],
+    "total": 13,
+    "existing_test_files_modified": "none"
+  },
+  "narrow_results": {
+    "test_authority_expiry_loopback.py": "8/8 pass",
+    "test_authority_expiry_tcp.py": "5/5 pass"
+  },
+  "direct_authority_test_result": "16/16 pass (fabric/tests/test_authority_expiry.py, unmodified, re-run not re-authored)",
+  "local_orchestration_e2e_result": "6/6 pass (fabric/tests/test_authority_expiry_e2e.py, unmodified, re-run not re-authored)",
+  "full_regression_result": {
+    "run_method": "python3 -m unittest <module>, one suite per subprocess, this session, in the mission-specified order",
+    "suites": [
+      {"path": "fabric/tests/test_fabric_loopback.py", "result": "17/17 pass"},
+      {"path": "fabric/tcp/tests/test_fabric_tcp.py", "result": "12/12 pass"},
+      {"path": "fabric/tests/test_authority_expiry_loopback.py", "result": "8/8 pass (new this mission)"},
+      {"path": "fabric/tests/test_authority_expiry_tcp.py", "result": "5/5 pass (new this mission)"},
+      {"path": "fabric/tests/test_authority_expiry.py", "result": "16/16 pass"},
+      {"path": "fabric/tests/test_authority_expiry_e2e.py", "result": "6/6 pass"},
+      {"path": "fabric/tests/test_fabric_contract.py", "result": "19/19 pass"},
+      {"path": "capabilities/tests/test_forgeworld_mobile_research_capability.py", "result": "14/14 pass"},
+      {"path": "local_inference/tests/test_local_inference.py", "result": "18/18 pass"},
+      {"path": "artifact_handoff/tests/test_artifact_handoff.py", "result": "21/21 pass"},
+      {"path": "artifact_handoff/tests/test_lineage_store.py", "result": "12/12 pass"},
+      {"path": "content_readers/tests/test_content_readers.py", "result": "25/25 pass"},
+      {"path": "tests/test_namespace_stabilization.py", "result": "8/8 pass"}
+    ],
+    "total": "181/181 pass, 0 fail",
+    "baseline_comparison": "Prior evidence-backed baseline was 168/168. This run reproduces all 168 unchanged plus 13 new transport-governance tests = 181, zero regressions, zero unexplained failures.",
+    "unrunnable_in_this_sandbox": [
+      "capabilities/tests/test_discover.py",
+      "evidence_envelope/tests/test_envelope.py",
+      "evidence_envelope/tests/test_trajectory.py",
+      "forgeworld-mobile-research/tests/*.py"
+    ],
+    "unrunnable_reason": "pytest not installed in this sandbox; unchanged from all prior missions"
+  },
+  "counterevidence": "None. Both transports enforce the identical governance rule identically, because both dispatch into the identical unmodified process_remote_capability_request() and share the identical unmodified wire serialization module. No defect found in either transport.",
+  "limitations": [
+    "Exact-boundary (evaluation_time == expires_at) is not re-proven at the transport layer -- neither pc_node_server.py exposes a clock-injection seam, and adding one would be a production modification outside this mission's preferred zero-change outcome. It remains proven only at the authority_permits() unit layer (fabric/tests/test_authority_expiry.py::TestExactBoundaryIsRejected).",
+    "The TCP proof is loopback-bound (127.0.0.1) in this sandbox only. No physical Android/Termux phone was involved and no LAN interface was exercised. FW-FABRIC-DEVICE-BOUNDARY-001's own prior evidence already documents that fabric/tcp/ has never been exercised on real Windows or against a physical device.",
+    "The lineage-store-based zero-execution proxy proves 'authority passed and handoff() was reached', one step short of literally instrumenting provider.invoke() itself. Combined with the structured_result content check (which can only be produced by content_read's real invoke() actually running), this is treated as equivalent-strength evidence to the in-process spy counter used in FW-AUTHORITY-EXPIRY-E2E-001, but it is not a byte-identical invocation counter -- recorded as a methodological difference, not a gap in the conclusion.",
+    "TCP's authority-roundtrip was not independently re-tested under a separate filename since it reuses the identical fabric.loopback.wire module the loopback file already tests directly; this is a deliberate non-duplication, not an oversight."
+  ],
+  "newly_discovered_gaps": [
+    "No message identity/nonce, replay protection, cryptographic integrity, peer identity proof beyond the shared multiprocessing.connection authkey challenge, sequence/order guarantees, idempotency, duplicate suppression, transport-level encryption, or capability-receipt correlation beyond correlation_id/causation_id exist in either transport. These are pre-existing architectural gaps (consistent with architecture/transport-map.md and architecture/sentinel-map.md's prior observations), not introduced or worsened by this mission, and are recorded here per Section 14 for the later phone<->PC trust-boundary microphases -- not repaired under this authorization."
+  ],
+  "rollback": {
+    "scope": "This microphase's sole delta: two new files, fabric/tests/test_authority_expiry_loopback.py and fabric/tests/test_authority_expiry_tcp.py. No production file was touched.",
+    "exact_reversal": "rm fabric/tests/test_authority_expiry_loopback.py fabric/tests/test_authority_expiry_tcp.py",
+    "verification": "git diff --stat shows fabric/interface.py's diff unchanged from before this mission started; fabric/loopback/wire.py's diff unchanged; no other pre-existing path touched."
+  },
+  "resulting_capability_claim": {
+    "claim": "AUTHORITY_EXPIRY_GOVERNANCE_PROVEN_ACROSS_LOCAL_TRANSPORTS -- within the tested local ForgeWorld loopback (AF_UNIX/AF_PIPE) and localhost TCP (AF_INET, 127.0.0.1) substrates, expiry-bearing AuthorityContext state (actor_id, granted_capability_ids, expires_at) survives serialization and a real process-boundary transport hop unmutated, and expired or malformed authority cannot reach capability execution through either transport's real server process.",
+    "explicitly_not_claimed": [
+      "physical Android<->PC proof",
+      "LAN security",
+      "internet security",
+      "cryptographic identity",
+      "replay resistance",
+      "production readiness",
+      "general distributed-system security",
+      "ForgeSentinel completion",
+      "exact-expiry-boundary proven at the transport layer (only at the authority_permits() unit layer)"
+    ],
+    "promoted": false
+  },
+  "commit_status": "NOT COMMITTED",
+  "push_status": "NOT PUSHED"
+}

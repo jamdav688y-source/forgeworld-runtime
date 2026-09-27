@@ -1,0 +1,124 @@
+{
+  "mission_id": "FORGEWORLD-CONTINUITY-FABRIC-001",
+  "phase": "PHASE_0_RECOVERY",
+  "generated_at": "2026-09-26T00:00:00Z",
+  "generated_by": "Claude Sonnet 5, session_01ViNRAq3jGa9MJfVH3eL21o",
+  "repository": {
+    "root": "/home/user/forgeworld-runtime",
+    "remote": "https://github.com/jamdav688y-source/forgeworld-runtime",
+    "branch": "claude/eager-mayer-n45ddd",
+    "head": "6e00f0b0f47f3515cf1080ee59938c6f3f35765c",
+    "head_subject": "ForgeWorld local fabric substrate checkpoint",
+    "ahead_of_origin_by": 1,
+    "worktree_status": [
+      {"path": "fabric/loopback/wire.py", "state": "modified"},
+      {"path": "fabric/tcp/", "state": "untracked"}
+    ]
+  },
+  "windows_checkout_evidence": {
+    "reported_branch": "feature/fw-oc-authority-kernel-001",
+    "reported_head": "aaa0bef",
+    "reported_dirty_paths": [
+      "business/cognitive_domain/routing.py",
+      "business/tests/test_cognitive_domain.py",
+      "business/relationship_intake.py"
+    ],
+    "lineage_check": "Both the reported branch name and the reported HEAD short-SHA were searched for across all 27 fetched origin branches (local + remote-tracking) and found in neither. Not independently verifiable from this session; not guessed at.",
+    "fabric_tcp_present_on_windows": false
+  },
+  "test_evidence": {
+    "run_at": "this session, immediately before writing Phase-0 outputs",
+    "suites": [
+      {"path": "capabilities/tests/test_forgeworld_mobile_research_capability.py", "result": "14/14 pass"},
+      {"path": "local_inference/tests/test_local_inference.py", "result": "18/18 pass"},
+      {"path": "artifact_handoff/tests/test_artifact_handoff.py", "result": "21/21 pass"},
+      {"path": "artifact_handoff/tests/test_lineage_store.py", "result": "12/12 pass"},
+      {"path": "content_readers/tests/test_content_readers.py", "result": "25/25 pass"},
+      {"path": "tests/test_namespace_stabilization.py", "result": "8/8 pass"},
+      {"path": "fabric/tests/test_fabric_contract.py", "result": "19/19 pass"},
+      {"path": "fabric/tests/test_fabric_loopback.py", "result": "17/17 pass"},
+      {"path": "fabric/tcp/tests/test_fabric_tcp.py", "result": "12/12 pass"}
+    ],
+    "total": "146/146 pass, 0 fail",
+    "unrunnable_in_this_sandbox": [
+      "capabilities/tests/test_discover.py",
+      "evidence_envelope/tests/test_envelope.py",
+      "evidence_envelope/tests/test_trajectory.py",
+      "forgeworld-mobile-research/tests/*.py"
+    ],
+    "unrunnable_reason": "pytest not installed; forgeworld-mobile-research additionally requires flask/PIL/pytesseract, none installed",
+    "stray_write_audit": "no diff on capabilities/state.json or router/decisions.jsonl after full run; no orphan processes; no leaked temp resources"
+  },
+  "discovered_primitives": [
+    {"id": "PermanentMemory", "classification": "PARTIAL", "evidence": "artifact_handoff/lineage_store.py (12/12 pass); evidence_envelope/envelope.py (native tests unrunnable, primitives proven transitively); no memory-type taxonomy anywhere"},
+    {"id": "ContextCompiler", "classification": "MISSING", "evidence": "no matching code found"},
+    {"id": "IdentityFabric", "classification": "PARTIAL", "evidence": "fabric/interface.py::NodeIdentity, PC_NODE/PHONE_NODE only, proven via 48 fabric tests"},
+    {"id": "EventFabric", "classification": "MISSING", "evidence": "no typed event log; raw materials (JSONL logs, FabricReceipt correlation/causation) exist but unintegrated"},
+    {"id": "CapabilityGraph", "classification": "PARTIAL", "evidence": "capabilities/registry.json + discover.py, 14/14 pass; flat registry, no lifecycle state, no edges"},
+    {"id": "CapabilityResolver", "classification": "PROVEN_WORKING", "evidence": "router/mission_router.py::score_capability()/route(); artifact_handoff::route_to_capability(); 21/21 + 19/19 pass; single-capability resolution only"},
+    {"id": "SkillRegistry", "classification": "PARTIAL", "evidence": "content_readers.READERS (25/25 pass), fabric.CAPABILITIES (48 fabric tests); minimal id->callable dicts, no version/schema"},
+    {"id": "WorkflowCompiler", "classification": "MISSING", "evidence": "no multi-capability composition from an objective exists"},
+    {"id": "CapabilityRecombinationEngine", "classification": "MISSING", "evidence": "manual recombination exists (fabric.capabilities.ContentReadCapability); no automated engine"},
+    {"id": "ForgeSentinel", "classification": "MISSING", "evidence": "zero adversarial-risk-analysis code; domain-narrow defenses exist in artifact_handoff and fabric/tcp but share no vocabulary"},
+    {"id": "GovernanceEngine", "classification": "PARTIAL", "evidence": "evidence_envelope BRONZE/SILVER/GOLD + record_promotion_authority (native tests unrunnable); fabric.authority_permits (proven, 48 tests); unintegrated"},
+    {"id": "AuthorityVerifier", "classification": "PARTIAL", "evidence": "evidence_envelope.AuthorityVerificationRequest/VerifiedAuthority contract shape only, no concrete verifier; fabric.authority_permits is concrete but minimal (exact allowlist match, no expiry)"},
+    {"id": "ExecutionFabric", "classification": "PARTIAL", "evidence": "local_inference.run_inference (18/18), content_readers.read_content (25/25), fabric.process_remote_capability_request (48 fabric tests); three separate surfaces, GPT/Codex/Claude Code not wired as invokable providers"},
+    {"id": "EvidenceLedger", "classification": "PARTIAL", "evidence": "four separate ledgers: evidence_envelope, lineage_store (12/12), trajectory, FabricReceipt; each proven for its own domain, none unified"},
+    {"id": "CapabilityPromotionGate", "classification": "MISSING", "evidence": "no capability in registry.json has a lifecycle_state field; evidence_envelope's mission-promotion pattern is a proven template, not applied to capabilities"},
+    {"id": "DeviceTransport", "classification": "PARTIAL", "evidence": "fabric/loopback (17/17, same-machine), fabric/tcp (12/12, sandbox-loopback-bound only); physical phone<->PC application-level round trip NOT demonstrated; forgeworld-mobile-research unconnected to fabric"},
+    {"id": "Synchronization/Reconciliation", "classification": "PARTIAL", "evidence": "one-off manual procedure produced (archive+SHA256 manifest+guarded PowerShell) in prior mission; not reusable infrastructure; completion on Windows unconfirmed"},
+    {"id": "ProviderRegistry", "classification": "PARTIAL", "evidence": "capabilities/registry.json (reachability only) and local_inference.LocalInferenceProvider (invocation-capable) are separate, unintegrated registries"},
+    {"id": "Relationship/CommercialState", "classification": "MISSING", "evidence": "no state-machine code anywhere; relationships/ and reputation/ (root) are stale text logs with zero code"},
+    {"id": "HumanApprovalInterface", "classification": "MISSING", "evidence": "no interactive approval surface; evidence_envelope.record_promotion_authority and fabric.AuthorityContext.granted_by only record that approval occurred, do not collect it"}
+  ],
+  "duplicate_or_parallel_implementations": [
+    {
+      "concept": "capability listing",
+      "implementations": ["capabilities/registry.json", "local_inference.LocalInferenceProvider Protocol", "content_readers.READERS", "fabric.CAPABILITIES"],
+      "conflict": false,
+      "note": "disjoint code paths today; unrecombined, a genuine future recombination candidate, not a present hazard"
+    },
+    {
+      "concept": "durable evidence ledger",
+      "implementations": ["evidence_envelope.EnvelopeStore", "artifact_handoff.LineageStore", "evidence_envelope.TrajectoryStore", "fabric.FabricReceipt"],
+      "conflict": false,
+      "note": "same discipline (evidence_envelope's atomic-write/file-lock primitives) reused three times deliberately; not accidental duplication"
+    },
+    {
+      "concept": "RPG/narrative scaffolding vs. real code-backed substrate",
+      "implementations": ["memory/, relationships/, reputation/, events/, consequences/, npc*, quests/, world/, factions/ (root, text-only)", "capabilities/, evidence_envelope/, artifact_handoff/, fabric/, content_readers/, local_inference/ (real, tested)"],
+      "conflict": false,
+      "note": "stale, not duplicate -- zero code reads or writes the narrative-scaffolding paths; flagged as a governance risk only if a future agent or human mistakes them for live state"
+    }
+  ],
+  "governance_risks": [
+    {
+      "id": "authority-expiry-unenforced",
+      "severity": "disclosed, live, unremediated",
+      "description": "fabric.interface.authority_permits() never evaluates AuthorityContext.expires_at; an expired grant currently still passes",
+      "invariant_violated": "Historical authorization MUST NOT silently become current authority (mission Section 1)"
+    },
+    {
+      "id": "loopback-test-hook-unconditional",
+      "severity": "low, disclosed, unremediated",
+      "description": "fabric/loopback/pc_node_server.py's TEST_HOOK (die/sleep_ms) is reachable by anyone who can open the authenticated connection, gated only by transport authkey, never by AuthorityContext",
+      "mitigation_present_elsewhere": "fabric/tcp/pc_node_server.py (the network-facing sibling) has no such hook"
+    },
+    {
+      "id": "echo-mock-unconditional-registration",
+      "severity": "low, disclosed, unremediated",
+      "description": "fabric/capabilities.py registers echo_mock unconditionally on import; the TCP server explicitly removes it after import, the loopback server does not"
+    }
+  ],
+  "unresolved_uncertainties": [
+    "Whether the Windows checkout's branch/HEAD (feature/fw-oc-authority-kernel-001 @ aaa0bef) is an unpushed local branch, a different remote/fork, or something else -- not resolvable from this session without Windows-side git remote -v and git log output.",
+    "Whether the physical Windows reconciliation (archive application, prior mission) has actually been completed.",
+    "Whether fabric/tcp behaves correctly on real Windows (AF_INET is documented as cross-platform-identical in Python's multiprocessing.connection, but has only been exercised in this Linux sandbox).",
+    "Whether forgeworld-mobile-research's own test suite (VALIDATION_REPORT.md's claim of prior validation in a different container) would still pass today -- unverified by this session, dependencies not installed here."
+  ],
+  "recommended_next_microphase": {
+    "title": "FW-AUTHORITY-EXPIRY-ENFORCEMENT-001",
+    "rationale": "Smallest, most directly justified next step: closes a disclosed, live violation of the mission's own non-negotiable invariant (Section 1), touches exactly one existing function (fabric.interface.authority_permits), requires no new architecture, and is fully covered by deterministic adversarial tests. Awaiting operator authorization per Section 16 -- not started.",
+    "not_yet_authorized": true
+  }
+}

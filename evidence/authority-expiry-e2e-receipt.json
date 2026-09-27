@@ -1,0 +1,101 @@
+{
+  "mission_id": "FW-AUTHORITY-EXPIRY-E2E-001",
+  "parent_mission": "FW-AUTHORITY-EXPIRY-ENFORCEMENT-001",
+  "program": "FORGEWORLD-CONTINUITY-FABRIC-001",
+  "generated_at": "2026-09-26T00:00:00Z",
+  "generated_by": "Claude Sonnet 5, session_01ViNRAq3jGa9MJfVH3eL21o",
+  "starting_head": "6e00f0b0f47f3515cf1080ee59938c6f3f35765c",
+  "ending_head": "6e00f0b0f47f3515cf1080ee59938c6f3f35765c",
+  "branch": "claude/eager-mayer-n45ddd",
+  "head_unchanged": true,
+  "starting_worktree": [
+    {"path": "fabric/interface.py", "state": "modified", "origin": "FW-AUTHORITY-EXPIRY-ENFORCEMENT-001's delta, pre-existing for this mission"},
+    {"path": "fabric/loopback/wire.py", "state": "modified", "origin": "pre-existing, predates both missions"},
+    {"path": "fabric/tcp/", "state": "untracked", "origin": "pre-existing, predates both missions"},
+    {"path": "architecture/", "state": "untracked", "origin": "pre-existing, predates both missions"},
+    {"path": "evidence/", "state": "untracked", "origin": "pre-existing directory, contains recovery-receipt.json and authority-expiry-enforcement-receipt.json from earlier missions"},
+    {"path": "fabric/tests/test_authority_expiry.py", "state": "untracked", "origin": "FW-AUTHORITY-EXPIRY-ENFORCEMENT-001's delta, pre-existing for this mission"}
+  ],
+  "production_code_changed": false,
+  "test_files_changed": [
+    {"path": "fabric/tests/test_authority_expiry_e2e.py", "change": "new file, 6 tests, added only -- fabric/tests/test_fabric_contract.py and fabric/tests/test_authority_expiry.py were not modified"}
+  ],
+  "call_path_observed": {
+    "entry_point": "fabric.interface.process_remote_capability_request(request, transport, *, lineage_store=None, artifact_index=None)",
+    "sequence": [
+      "1. transport.pull(destination_node_id) -- retrieve pending envelopes; non-matching artifact_ids are redelivered so they are not lost",
+      "2. if no envelope matches request.artifact_id -> return CAP_FAILED (no execution possible, no capability looked up yet)",
+      "3. validate_envelope(env) -- independent hash re-verification; failure -> CAP_FAILED",
+      "4. optional artifact_index.check_and_record() -- duplicate detection; conflict -> CAP_DUPLICATE_CONFLICT",
+      "5. authority_permits(request.authority_context, request.capability_id) -- THE SOLE AUTHORITY GATE. False -> return CAP_UNAUTHORIZED immediately. This is strictly before step 6 and step 7 in source order and in every observed execution.",
+      "6. CAPABILITIES.get(request.capability_id) -- capability lookup; only reached if step 5 returned True",
+      "7. ah_interface.handoff() -- provenance/classification pipeline; only reached if step 6 found a provider",
+      "8. provider.invoke(manifest_dict, payload) -- THE ONLY LINE IN THIS FUNCTION THAT EXECUTES A CAPABILITY. Only reached after steps 5, 6, 7 all succeed."
+    ],
+    "authority_call_sites_in_this_function": 1,
+    "alternate_execution_paths_found": "none -- provider.invoke() is called from exactly one place in process_remote_capability_request(), and that call is unreachable unless authority_permits() returned True at step 5"
+  },
+  "authority_gate_observed": "fabric/interface.py, single call: `if not authority_permits(request.authority_context, request.capability_id): return _result_and_receipt(request, status=CAP_UNAUTHORIZED, ...)`. Evaluated with two positional arguments only -- evaluation_time is not supplied by this call site, so it uses authority_permits()'s default (datetime.now(timezone.utc), real wall clock).",
+  "execution_boundary_observed": "provider.invoke(manifest.to_dict(), bytes(env.payload)) inside a try/except that converts any exception to CAP_FAILED. This is the only capability-execution boundary in the function; confirmed by direct invocation-count instrumentation via a spy provider (_SpyCapabilityProvider) registered under a unique, test-scoped capability_id and deregistered in tearDown to avoid contaminating fi.CAPABILITIES for any other test file.",
+  "expired_authority_result": "CAP_UNAUTHORIZED (fabric.tests.test_authority_expiry_e2e.TestExpiredAuthorityBlocksExecution). authority_context.expires_at = '2020-01-01T00:00:00Z' (fixed past timestamp; real UTC wall-clock is always after it).",
+  "executor_invocation_count_on_expired_authority": 0,
+  "future_authority_result": "CAP_COMPLETED (fabric.tests.test_authority_expiry_e2e.TestFutureAuthorityPermitsExecution). authority_context.expires_at = '2099-01-01T00:00:00Z'; spy provider invocation_count == 1, proving expiry enforcement does not incorrectly block valid, non-expired, otherwise-authorized requests.",
+  "none_expiry_result": "CAP_COMPLETED (fabric.tests.test_authority_expiry_e2e.TestNoneExpiryPreservesExistingExecution). authority_context.expires_at = None; spy provider invocation_count == 1, matching pre-expiry-enforcement behavior exactly.",
+  "boundary_time_result_or_limitation": "LIMITATION, recorded rather than worked around: process_remote_capability_request() calls authority_permits() with only two positional arguments (context, capability_id) -- it does not expose evaluation_time for injection, and this mission's scope (test-only, zero production changes preferred and achieved) prohibits adding a clock-injection seam to production code. The exact-boundary invariant (evaluation_time == expires_at -> denied) is NOT re-proven at this end-to-end layer; it remains proven only at the authority_permits() unit level (fabric/tests/test_authority_expiry.py::TestExactBoundaryIsRejected, 2/2 passing, unchanged this mission). No unrealistic fixture (e.g. monkeypatching datetime.now globally) was introduced to force this seam, per Section 6's explicit instruction not to fabricate an unrealistic test fixture merely to satisfy this requirement.",
+  "malformed_expiry_result_or_limitation": "CAP_UNAUTHORIZED, executor invocation_count == 0 (fabric.tests.test_authority_expiry_e2e.TestMalformedExpiryBlocksExecution). authority_context.expires_at = 'not-a-timestamp', constructed through the real AuthorityContext dataclass (no construction-time validation exists on this field, a previously documented limitation) and carried through a real RemoteCapabilityRequest into the real process_remote_capability_request() call -- not a synthetic bypass of the actual contract.",
+  "narrow_e2e_test_result": "6/6 pass, 0 fail (fabric/tests/test_authority_expiry_e2e.py): expired-denies-zero-execution, future-permits-execution, none-preserves-execution, malformed-denies-zero-execution, future-expiry-does-not-bypass-allowlist-for-a-different-capability, expired-and-wrong-scope-together-still-denies-with-zero-execution.",
+  "direct_authority_test_result": "16/16 pass, 0 fail (fabric/tests/test_authority_expiry.py, unmodified from the parent mission -- re-run, not re-authored, to confirm the primitive-level proof still holds unchanged).",
+  "fabric_test_result": "19/19 pass, 0 fail (fabric/tests/test_fabric_contract.py, unmodified).",
+  "full_regression_result": {
+    "run_method": "python3 -m unittest <module>, one suite per subprocess, this session",
+    "suites": [
+      {"path": "capabilities/tests/test_forgeworld_mobile_research_capability.py", "result": "14/14 pass"},
+      {"path": "local_inference/tests/test_local_inference.py", "result": "18/18 pass"},
+      {"path": "artifact_handoff/tests/test_artifact_handoff.py", "result": "21/21 pass"},
+      {"path": "artifact_handoff/tests/test_lineage_store.py", "result": "12/12 pass"},
+      {"path": "content_readers/tests/test_content_readers.py", "result": "25/25 pass"},
+      {"path": "tests/test_namespace_stabilization.py", "result": "8/8 pass"},
+      {"path": "fabric/tests/test_fabric_contract.py", "result": "19/19 pass"},
+      {"path": "fabric/tests/test_authority_expiry.py", "result": "16/16 pass"},
+      {"path": "fabric/tests/test_authority_expiry_e2e.py", "result": "6/6 pass (new this mission)"},
+      {"path": "fabric/tests/test_fabric_loopback.py", "result": "17/17 pass"},
+      {"path": "fabric/tcp/tests/test_fabric_tcp.py", "result": "12/12 pass"}
+    ],
+    "total": "168/168 pass, 0 fail",
+    "baseline_comparison": "Prior evidence-backed baseline was 162/162 (146 original + 16 from FW-AUTHORITY-EXPIRY-ENFORCEMENT-001). This run reproduces all 162 unchanged plus 6 new end-to-end tests = 168, zero regressions, zero unexplained failures.",
+    "unrunnable_in_this_sandbox": [
+      "capabilities/tests/test_discover.py",
+      "evidence_envelope/tests/test_envelope.py",
+      "evidence_envelope/tests/test_trajectory.py",
+      "forgeworld-mobile-research/tests/*.py"
+    ],
+    "unrunnable_reason": "pytest not installed in this sandbox; unchanged from prior missions"
+  },
+  "counterevidence": "None. All narrow, direct-authority, fabric-contract, and full-regression tests pass. No production code was modified and no existing test was altered to accommodate this mission.",
+  "unresolved_uncertainties": [
+    "Exact-boundary (evaluation_time == expires_at) is not independently re-proven at the process_remote_capability_request() layer -- see boundary_time_result_or_limitation. This is a recorded scope limitation, not a defect: the underlying primitive is proven, and no production clock-injection seam was added to close this gap under this mission's authorization.",
+    "The spy provider proves zero invocation for a request that never reaches invoke(); it does not instrument every possible side effect a real capability provider (e.g. content_read, backed by content_readers) might have. This is intentional -- the mission asks whether authority denial prevents reaching the executor, not whether every real provider is side-effect-free, which is out of scope here.",
+    "evaluation_time defaults to real wall-clock time at the one production call site; PAST_EXPIRY/FUTURE_EXPIRY are fixed calendar dates chosen to be robust against wall-clock drift for the practical life of this test suite, not against an adversarial clock."
+  ],
+  "rollback": {
+    "scope": "This microphase's sole delta: the new file fabric/tests/test_authority_expiry_e2e.py. No production file was touched, so no source rollback is needed.",
+    "exact_reversal": "rm fabric/tests/test_authority_expiry_e2e.py",
+    "verification": "git status --short shows fabric/interface.py's diff is unchanged from before this mission started (identical to FW-AUTHORITY-EXPIRY-ENFORCEMENT-001's own diff, confirmed via git diff --stat); no other pre-existing path was touched."
+  },
+  "resulting_capability_claim": {
+    "claim": "REMOTE_CAPABILITY_REQUEST_EXPIRY_GOVERNANCE_PROVEN_LOCALLY -- within the tested local ForgeWorld execution path (InMemoryFabricTransport, in-process), process_remote_capability_request() has demonstrated that expired authority cannot reach capability execution: authority_permits() is the sole gate before provider.invoke(), and denial at that gate corresponds 1:1 with zero executor invocations across expired, malformed, and mixed-violation cases, while future and non-expiring grants continue to execute exactly as before.",
+    "explicitly_not_claimed": [
+      "physical Android<->PC governance proven",
+      "network governance proven",
+      "general authorization correctness",
+      "general security correctness",
+      "ForgeSentinel implemented",
+      "CapabilityPromotionGate implemented",
+      "production readiness",
+      "exact-expiry-boundary proven at the end-to-end layer (only at the authority_permits() unit layer)"
+    ],
+    "promoted": false
+  },
+  "commit_status": "NOT COMMITTED",
+  "push_status": "NOT PUSHED"
+}

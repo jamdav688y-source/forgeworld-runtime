@@ -1,0 +1,134 @@
+{
+  "mission_id": "FW-MESSAGE-INTEGRITY-CONTRACT-001",
+  "parent_mission": "FW-MESSAGE-IDENTITY-REPLAY-CONTRACT-001",
+  "program": "FORGEWORLD-CONTINUITY-FABRIC-001",
+  "generated_at": "2026-09-26T00:00:00Z",
+  "generated_by": "Claude Sonnet 5, session_01ViNRAq3jGa9MJfVH3eL21o",
+  "starting_head": "6e00f0b0f47f3515cf1080ee59938c6f3f35765c",
+  "ending_head": "6e00f0b0f47f3515cf1080ee59938c6f3f35765c",
+  "branch": "claude/eager-mayer-n45ddd",
+  "starting_worktree": [
+    {"path": "fabric/interface.py", "state": "modified", "origin": "prior authority-expiry/replay missions' deltas, pre-existing for this mission"},
+    {"path": "fabric/loopback/pc_node_server.py", "state": "modified", "origin": "FW-MESSAGE-IDENTITY-REPLAY-CONTRACT-001's replay_guard wiring, pre-existing for this mission"},
+    {"path": "fabric/loopback/wire.py", "state": "modified", "origin": "pre-existing, predates all authority-expiry/replay/integrity missions"},
+    {"path": "fabric/tcp/", "state": "untracked", "origin": "pre-existing"},
+    {"path": "architecture/", "state": "untracked", "origin": "pre-existing"},
+    {"path": "evidence/", "state": "untracked directory", "origin": "pre-existing, contains five earlier missions' receipts"},
+    {"path": "fabric/tests/test_authority_expiry*.py, test_message_identity_replay*.py", "state": "untracked", "origin": "prior missions' deltas"}
+  ],
+  "existing_integrity_mechanisms": {
+    "env.sha256 (ArtifactEnvelope)": "hashlib.sha256(payload).hexdigest(), generated at build_artifact_envelope() (sender), independently recomputed and compared inside validate_envelope() (receiver, called from process_remote_capability_request()). Covers ONLY the artifact payload bytes. UNKEYED -- anyone can recompute a matching hash for any payload they choose; this catches accidental corruption, not deliberate tampering by an adversary who controls both bytes and hash.",
+    "compute_receipt_id()": "sha256 over a pipe-joined canonical string of RESPONSE-side fields (correlation_id, causation_id, source, dest, artifact_id, sha256, capability_id, transfer_state, capability_status). Deterministic and reused by verify_capability_response() for tamper/corruption detection of the RECEIPT, but also UNKEYED, and covers none of the REQUEST's own governance fields (request_id, capability_id, authority_context, expires_at) as inputs to verify on the way IN.",
+    "multiprocessing.connection authkey challenge": "Confirmed by reading CPython's own deliver_challenge()/answer_challenge() source (multiprocessing/connection.py): an HMAC-MD5 challenge-response performed ONCE, at connection establishment, proving the connecting peer knows the shared authkey. Does NOT sign, MAC, or otherwise protect any individual message sent over the connection afterward -- send_bytes()/recv_bytes() carry raw, unauthenticated bytes post-handshake. This is connection-establishment authentication, not message integrity, and this mission does not conflate the two.",
+    "evidence_envelope.envelope._canonical()": "json.dumps(obj, sort_keys=True, separators=(',',':'), default=str) -- an EXISTING deterministic canonicalization function, already reused by that module's own _event_key() ledger fingerprint. Reused directly by this mission (imported as envelope._canonical) rather than inventing a second canonicalization scheme.",
+    "conclusion": "No mechanism in this codebase integrity-bound a capability request's governance fields as a set, keyed or otherwise, before this mission. This mission adds the first one, reusing envelope._canonical for canonicalization and stdlib hmac/hashlib for the keyed tag -- no new cryptography invented, no external dependency introduced."
+  },
+  "chosen_integrity_primitive": "HMAC-SHA256 (stdlib hmac.new(key, canonical_bytes, hashlib.sha256).hexdigest()), verified via hmac.compare_digest (constant-time, not ==, per explicit instruction).",
+  "canonicalization_contract": "fabric.interface.canonical_request_fields(request) returns a JSON-safe dict of every RemoteCapabilityRequest field EXCEPT integrity_tag itself (request_id, source_node_id, destination_node_id, artifact_id, capability_id, the full authority_context expanded to actor_id/granted_capability_ids/granted_by/granted_at/expires_at, correlation_id, causation_id, timeout_seconds, requested_at), then envelope._canonical(...) serializes it deterministically (sorted keys, no whitespace). Proven stable across a real JSON wire round trip (TestSerializationRoundTripPreservesIntegrity / adversarial matrix item 12, both in-process and reconstructed via fabric.loopback.wire).",
+  "fields_integrity_bound": ["request_id", "source_node_id", "destination_node_id", "artifact_id", "capability_id", "authority_context.actor_id", "authority_context.granted_capability_ids", "authority_context.granted_by", "authority_context.granted_at", "authority_context.expires_at", "correlation_id", "causation_id", "timeout_seconds", "requested_at"],
+  "fields_deliberately_not_bound_here": "Raw artifact PAYLOAD bytes are a separate, pre-existing, unmodified mechanism (env.sha256 on the ArtifactEnvelope, a different wire message) -- this mission binds the request's REFERENCE to an artifact (artifact_id) as one of its governed fields, proven adversarially (TestArtifactReferenceMutationRejected), but does not re-implement or replace the existing payload-hash check.",
+  "key_source": "TEST-ONLY key material for this mission: os.urandom(32)/os.urandom(N) generated directly in test fixtures and passed explicitly as --integrity-key (hex-encoded) to spawned server subprocesses, or as a plain bytes object in-process. Deliberately kept SEPARATE from the transport's own authkey (which authenticates the connection, not messages, and is a different secret with a different purpose -- conflating them was considered and rejected: reusing authkey would tie message-integrity key rotation to connection-authentication key rotation, and authkey is already consumed internally by multiprocessing.connection's own challenge, not exposed for reuse as an HMAC key by this codebase). No production key management (rotation, provisioning, PKI, device-specific keys) is established by this mission -- explicitly recorded as a forward gap, not attempted.",
+  "verification_boundary": "fabric.interface.process_remote_capability_request(), as the very first statement in the function body -- before replay_guard, before transport.pull(), before envelope/hash validation, before FabricArtifactIndex, before authority_permits(). Only reached when the caller supplies integrity_key (optional parameter, defaults to None).",
+  "gate_order": ["wire/frame decode (existing, unmodified)", "integrity verification (NEW, first, when integrity_key is configured)", "replay check (existing, unchanged position, now downstream of integrity)", "envelope pull / hash validation (existing, unchanged)", "artifact-identity conflict check (existing, unchanged)", "authority check (existing, unchanged)", "capability lookup (existing, unchanged)", "execution (existing, unchanged)", "durable disposition recording (existing, unchanged)"],
+
+  "valid_message_result": "CAP_COMPLETED, executes exactly once (proven in-process, over loopback subprocess, and over TCP subprocess).",
+  "request_id_mutation_result": "CAP_FAILED (\"integrity verification failed\"), zero execution.",
+  "capability_mutation_result": "CAP_FAILED, zero execution -- in-process and over loopback. Over TCP specifically: fabric/tcp/pc_node_server.py's OWN pre-existing allowlist check (request.capability_id != ALLOWED_CAPABILITY_ID) runs OUTSIDE and BEFORE process_remote_capability_request() is ever called, so a capability_id mutation is intercepted there as CAP_UNSUPPORTED before this mission's integrity check is reached -- a discovered ordering interaction, not a security gap (both outcomes are zero-execution); recorded under counterevidence/limitations. The TCP capability-mutation test was therefore built against artifact_id instead (a field the TCP allowlist check does not inspect), which correctly reaches and is rejected by integrity verification.",
+  "actor_mutation_result": "CAP_FAILED, zero execution (in-process; authority_context.actor_id mutated while reusing the stale tag).",
+  "expiry_mutation_result": "CAP_FAILED, zero execution -- proven specifically as an ATTACKER EXTENDING an already-past expiry (2020 -> 2099) without the key; caught by integrity before authority-expiry logic is ever reached.",
+  "payload_mutation_result": "Not applicable to the REQUEST-integrity mechanism directly (raw payload bytes are not a RemoteCapabilityRequest field); tested instead as ARTIFACT REFERENCE mutation (artifact_id) -- CAP_FAILED, zero execution, in-process, loopback, and TCP.",
+  "tag_mutation_result": "CAP_FAILED, zero execution (single flipped hex character in an otherwise-valid tag).",
+  "missing_tag_result": "CAP_FAILED, zero execution, WHEN integrity_key is configured on the receiver (mandatory-once-configured policy). When integrity_key is NOT configured, an unsigned request executes exactly as before this mission (TestIntegrityKeyOmittedPreservesPriorBehavior) -- full backward compatibility.",
+  "malformed_tag_result": "CAP_FAILED, zero execution (non-hex garbage string compared via hmac.compare_digest, which safely returns False on any mismatch including a different-length string, rather than raising).",
+  "replay_tamper_result": "PROVEN (Section 12's critical case, in-process AND over both real transports): a request_id that already completed successfully, replayed with ONE field mutated (capability_id in-process/loopback; artifact_id over TCP, per the ordering finding above) and the ORIGINAL stale tag, returns CAP_FAILED -- explicitly NOT CAP_DUPLICATE_COMPLETED and NOT CAP_DUPLICATE_DENIED -- because integrity verification happens before replay_guard is ever consulted. The durable lineage record count stays at exactly 1 (the one genuine original execution); the tampered resend never reaches ah_interface.handoff() or provider.invoke().",
+
+  "loopback_result": "5/5 new transport tests pass (valid signed execution with lineage count 1; capability mutation rejected with lineage count 0; tag mutation rejected; missing tag rejected when required; completed-request-id-plus-mutation rejected as tampered with lineage count staying at 1).",
+  "tcp_result": "5/5 new transport tests pass (identical proof over 127.0.0.1 with an OS-assigned ephemeral port; capability-mutation test adapted to artifact_id per the TCP-allowlist-ordering finding above).",
+  "execution_count_on_tamper": "0 additional executions in every adversarial case, across all three layers (in-process spy invocation_count, loopback/TCP durable LineageStore record count) -- proven, not inferred from status codes alone.",
+
+  "production_files_changed": [
+    {"path": "fabric/interface.py", "change": "added 'import hmac' and 'replace' to the dataclasses import; added integrity_tag: Optional[str] = None field to RemoteCapabilityRequest; added _canonical_authority_fields(), canonical_request_fields(), compute_request_integrity_tag(), sign_request(), verify_request_integrity(); added optional integrity_key parameter to process_remote_capability_request() plus a mandatory-when-configured verification check as the function's first statement. 329 lines changed total across this and all prior authority-expiry/replay missions' cumulative diff; this mission's own share is the integrity-specific additions described here."},
+    {"path": "fabric/loopback/wire.py", "change": "capability_request_to_wire() now includes integrity_tag; safe_capability_request_from_wire() now reads integrity_tag via d.get() (defaults to None, so old/unsigned wire messages remain parseable). 2 lines."},
+    {"path": "fabric/loopback/pc_node_server.py", "change": "added --integrity-key CLI arg (hex-encoded, optional); threads integrity_key through run_server()/_handle_capability_request() into process_remote_capability_request(). ~10 lines."},
+    {"path": "fabric/tcp/pc_node_server.py", "change": "identical --integrity-key wiring to the loopback server (untracked in git; presence verified directly via grep, 6 occurrences)."}
+  ],
+  "tests_added": {
+    "files": [
+      "fabric/tests/test_message_integrity.py (15 tests, in-process: full adversarial matrix items 1-9, 11, 12, plus backward-compatibility and authority-non-weakening checks)",
+      "fabric/tests/test_message_integrity_loopback.py (5 tests: valid/capability-mutation/tag-mutation/missing-tag/replay-tamper over AF_UNIX)",
+      "fabric/tests/test_message_integrity_tcp.py (5 tests: same over localhost TCP, artifact_id mutation substituted for capability_id per the discovered TCP-allowlist ordering)"
+    ],
+    "total": 25,
+    "existing_test_files_modified": "none"
+  },
+  "full_regression_result": {
+    "run_method": "python3 -m unittest <module>, one suite per subprocess, this session, in the mission-specified order",
+    "suites": [
+      {"path": "fabric/tests/test_message_integrity.py", "result": "15/15 pass (new)"},
+      {"path": "fabric/tests/test_message_integrity_loopback.py", "result": "5/5 pass (new)"},
+      {"path": "fabric/tests/test_message_integrity_tcp.py", "result": "5/5 pass (new)"},
+      {"path": "fabric/tests/test_message_identity_replay.py", "result": "9/9 pass"},
+      {"path": "fabric/tests/test_message_identity_replay_loopback.py", "result": "2/2 pass"},
+      {"path": "fabric/tests/test_message_identity_replay_tcp.py", "result": "2/2 pass"},
+      {"path": "fabric/tests/test_authority_expiry.py", "result": "16/16 pass"},
+      {"path": "fabric/tests/test_authority_expiry_e2e.py", "result": "6/6 pass"},
+      {"path": "fabric/tests/test_authority_expiry_loopback.py", "result": "8/8 pass"},
+      {"path": "fabric/tests/test_authority_expiry_tcp.py", "result": "5/5 pass"},
+      {"path": "fabric/tests/test_fabric_contract.py", "result": "19/19 pass"},
+      {"path": "fabric/tests/test_fabric_loopback.py", "result": "17/17 pass"},
+      {"path": "fabric/tcp/tests/test_fabric_tcp.py", "result": "12/12 pass"},
+      {"path": "capabilities/tests/test_forgeworld_mobile_research_capability.py", "result": "14/14 pass"},
+      {"path": "local_inference/tests/test_local_inference.py", "result": "18/18 pass"},
+      {"path": "artifact_handoff/tests/test_artifact_handoff.py", "result": "21/21 pass"},
+      {"path": "artifact_handoff/tests/test_lineage_store.py", "result": "12/12 pass"},
+      {"path": "content_readers/tests/test_content_readers.py", "result": "25/25 pass"},
+      {"path": "tests/test_namespace_stabilization.py", "result": "8/8 pass"}
+    ],
+    "total": "219/219 pass, 0 fail",
+    "baseline_comparison": "Prior evidence-backed baseline was 194/194. This run reproduces all 194 unchanged plus 25 new message-integrity tests = 219, zero regressions, zero unexplained failures.",
+    "unrunnable_in_this_sandbox": [
+      "capabilities/tests/test_discover.py",
+      "evidence_envelope/tests/test_envelope.py",
+      "evidence_envelope/tests/test_trajectory.py",
+      "forgeworld-mobile-research/tests/*.py"
+    ],
+    "unrunnable_reason": "pytest not installed in this sandbox; unchanged from all prior missions"
+  },
+
+  "authority_invariants_preserved": "TestIntegrityDoesNotWeakenExistingChecks proves a validly signed, unexpired, in-scope request with an EMPTY authority grant is still CAP_UNAUTHORIZED with zero execution -- integrity is a precondition, never a substitute for authority. All 35 prior authority-expiry tests (unit/E2E/loopback/TCP) re-run unchanged and pass.",
+  "replay_invariants_preserved": "TestValidDuplicatePreservesReplaySemantics proves a genuinely valid, unmutated resend is still recognized and suppressed as a duplicate (CAP_DUPLICATE_COMPLETED) when BOTH integrity_key and replay_guard are configured together. All 13 prior message-identity-replay tests re-run unchanged and pass.",
+  "crash_window_b_status": "UNCHANGED, still open, not addressed by this mission per explicit instruction: a receiver crash between successful provider.invoke() and durable disposition persistence remains an unresolved risk (documented in evidence/message-identity-replay-contract-receipt.json). Message integrity does not solve atomic execution and this mission did not attempt to.",
+  "counterevidence": "None found against the core claim. One genuine, previously-undocumented architectural ordering interaction was discovered and is recorded rather than hidden: fabric/tcp/pc_node_server.py's own capability_id allowlist check sits OUTSIDE process_remote_capability_request() and therefore outside this mission's new integrity gate, so a capability_id mutation over TCP specifically is caught by that pre-existing mechanism (CAP_UNSUPPORTED) rather than by integrity verification (CAP_FAILED) -- both are zero-execution outcomes, so no invariant is violated, but the DISPOSITION returned differs by transport for this one field. fabric/loopback/pc_node_server.py has no equivalent pre-check, so the same mutation there IS caught by integrity (CAP_FAILED), confirmed directly by this mission's loopback test.",
+  "limitations": [
+    "No key management: test-only key material only (os.urandom, passed as a CLI hex string or in-process bytes). No rotation, provisioning, per-device keys, or PKI. A future microphase must decide how a real PC_NODE and phone would each obtain and refresh this key without it becoming a hardcoded production secret.",
+    "No peer identity: a valid tag proves the signer knew the key, not which specific device/actor signed it. Multiple legitimate signers sharing one key are indistinguishable by this mechanism alone.",
+    "No transport encryption: messages remain plaintext on the wire (as before this mission) -- an eavesdropper can read a request's full content even though they cannot undetectably modify it without the key.",
+    "The response side (RemoteCapabilityResult/FabricReceipt) is NOT integrity-bound by this mission -- compute_receipt_id() remains an unkeyed, deterministic fingerprint, unchanged. Explicitly out of scope: the mission's Section 2 names 'capability request' governance fields specifically.",
+    "The TCP-server capability_id-allowlist ordering interaction described above under counterevidence: a future microphase could move that check to occur after (or reuse) the request-integrity gate for full consistency across transports, but doing so was outside this mission's minimal-delta scope once discovered mid-implementation."
+  ],
+  "key_management_gap": "Real key provisioning/rotation/storage is entirely unaddressed; explicitly named as the next prerequisite before any physical-device work in this area.",
+  "peer_identity_gap": "Entirely unaddressed by design (Section 3's explicit prohibition on peer-identity construction this mission). A valid tag is proof-of-key-possession, not proof-of-identity.",
+  "transport_encryption_gap": "Entirely unaddressed (Section 3's explicit prohibition on TLS construction this mission). All wire traffic remains plaintext.",
+
+  "rollback": {
+    "scope": "This microphase's delta: fabric/interface.py (integrity primitives + gate), fabric/loopback/wire.py (integrity_tag carry-through), fabric/loopback/pc_node_server.py and fabric/tcp/pc_node_server.py (--integrity-key wiring), plus three new test files.",
+    "exact_reversal": "git checkout -- fabric/interface.py fabric/loopback/wire.py fabric/loopback/pc_node_server.py   # reverts to the FW-MESSAGE-IDENTITY-REPLAY-CONTRACT-001 state. fabric/tcp/pc_node_server.py is untracked -- manually remove the --integrity-key argument, the integrity_key parameter/plumbing, and the run_server() default, or restore from this receipt's recorded change description. rm fabric/tests/test_message_integrity.py fabric/tests/test_message_integrity_loopback.py fabric/tests/test_message_integrity_tcp.py",
+    "verification": "git diff --stat shows fabric/interface.py at 329 insertions/net across its full cumulative history (authority-expiry + replay + this mission); fabric/loopback/wire.py grew from 14 to 16 changed lines (exactly this mission's +2-line integrity_tag addition); fabric/loopback/pc_node_server.py grew from 3 to 17 changed lines (this mission's --integrity-key plumbing)."
+  },
+  "resulting_capability_claim": {
+    "claim": "LOCAL_CAPABILITY_MESSAGE_INTEGRITY_PROVEN -- within the tested local ForgeWorld substrate (in-process, AF_UNIX loopback subprocess, and localhost AF_INET TCP subprocess), a governance-relevant mutation to a capability request's request_id, capability_id, authority_context (actor_id/granted_capability_ids/expires_at), or artifact_id is detected and rejected (CAP_FAILED, zero execution) whenever the receiver has integrity_key configured, including the critical case of an old, already-completed, trusted request_id carrying newly mutated content -- which is rejected as tampered rather than answered with its historical duplicate disposition. Omitting integrity_key preserves every prior mission's proven behavior unchanged.",
+    "explicitly_not_claimed": [
+      "peer authentication / sender identity",
+      "non-repudiation",
+      "TLS security / transport encryption",
+      "LAN security",
+      "physical-device security",
+      "production key management",
+      "exactly-once execution (crash window B remains open)",
+      "general network security"
+    ],
+    "promoted": false
+  },
+  "commit_status": "NOT COMMITTED",
+  "push_status": "NOT PUSHED"
+}
