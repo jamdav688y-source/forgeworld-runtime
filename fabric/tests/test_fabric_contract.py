@@ -19,7 +19,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from fabric import interface as fi
 from fabric.transports import InMemoryFabricTransport
-from fabric import capabilities as fabric_capabilities  # noqa: F401 -- registers content_read/echo_mock
+from fabric import capabilities as fabric_capabilities  # noqa: F401 -- registers content_read/echo_mock/physical_ping
 from artifact_handoff.lineage_store import LineageStore
 
 PC_ID = "PC-NODE-MAIN"
@@ -57,7 +57,9 @@ class TestNodeIdentityAndAdvertisement(unittest.TestCase):
             for cap_id in fi.CAPABILITIES
         ]
         advertised_ids = {a.capability_id for a in ads}
-        self.assertEqual(advertised_ids, {"content_read", "echo_mock"})
+        # MISSION: FW-PHYSICAL-ANDROID-PC-PAIRING-001 added "physical_ping"
+        # alongside the pre-existing content_read/echo_mock.
+        self.assertEqual(advertised_ids, {"content_read", "echo_mock", "physical_ping"})
 
 
 class TestFullRoundTrip(unittest.TestCase):

@@ -1,0 +1,118 @@
+{
+  "mission_id": "FW-LOCAL-PAIRING-KEY-ESTABLISHMENT-001",
+  "parent_checkpoint_hash": "de8c378a10766636a65bc7318d16e6431cc2e2d6",
+  "program": "FORGEWORLD-CONTINUITY-FABRIC-001",
+  "generated_at": "2026-09-27T00:00:00Z",
+  "generated_by": "Claude Sonnet 5, session_01ViNRAq3jGa9MJfVH3eL21o",
+  "starting_head": "de8c378a10766636a65bc7318d16e6431cc2e2d6",
+  "ending_worktree": {
+    "modified_tracked_files": ["fabric/interface.py", "fabric/loopback/pc_node_server.py", "fabric/loopback/wire.py", "fabric/tcp/pc_node_server.py"],
+    "new_untracked_files": ["fabric/tests/test_local_pairing.py", "fabric/tests/test_local_pairing_loopback.py", "fabric/tests/test_local_pairing_tcp.py", "evidence/local-pairing-key-establishment-receipt.json"]
+  },
+
+  "existing_pairing_primitives": "None found. Searched fabric/interface.py, fabric/loopback/, fabric/tcp/ for pair/pairing/peer/endpoint/relationship/handshake/nonce/key exchange/session/connection concepts as production code -- the only matches were this mission's own prior prose boundary comments ('Explicitly NOT: peer identity') in the message-integrity and key-provisioning missions. fabric.interface.NodeIdentity (node_id/node_type/display_name/locality) was identified as the closest existing 'endpoint' concept and REUSED directly -- no new endpoint_id type was introduced; PairingRelationship references existing node_id strings.",
+  "endpoint_contract": "Reused fabric.interface.NodeIdentity.node_id (already validated via envelope.validate_mission_id, already used throughout RemoteCapabilityRequest.source_node_id/destination_node_id). No new endpoint_id concept was created, per 'reuse before creating' and the explicit instruction not to embed personal/human identity into the cryptographic primitive.",
+  "relationship_contract": "New PairingStore class (fabric/interface.py), durable JSONL metadata ledger (pairing_relationships.jsonl) reusing evidence_envelope.envelope's exact _FileLock/_atomic_write_bytes/_serialize_ledger discipline (a sixth application of that pattern). Record shape: relationship_id, status, local_node_id, remote_node_id, key_id, sas, created_at, reason. Four states: PENDING_CONFIRMATION, ACTIVE, REPLACED, REVOKED -- PENDING_CONFIRMATION added beyond the mission's suggested ACTIVE/REVOKED minimum because Section 11 explicitly requires a confirmation property distinguishable from mere offer receipt (matrix item 2: 'unconfirmed pairing -> NOT trusted'); REPLACED added because Section 12/16 explicitly require re-pairing to produce 'a distinguishable relationship generation' distinct from REVOKED.",
+  "pairing_ceremony": "create_offer(local_node_id, remote_node_id, key_store) provisions a FRESH LocalKeyStore key (never reuses an existing one, keeping relationship and key lifecycle orthogonal per Section 13), computes a Short Authentication String (SAS) from that key's secret, and records a PENDING_CONFIRMATION relationship -- granting no execution capability until confirmed. The offer never returns the secret bytes themselves, only relationship_id/key_id/sas.",
+  "confirmation_contract": "confirm(relationship_id, sas) is the one required positive action: it re-derives the expected SAS and compares it (hmac.compare_digest, constant-time) against the operator-supplied value, raising PairingConflictError on any mismatch or wrong-state relationship_id, and only then transitions PENDING_CONFIRMATION -> ACTIVE. SAS = first 8 hex characters of SHA-256(secret) -- a standard truncated-digest confirmation-number technique (same family as Bluetooth SSP / Signal safety-number displays), explicitly not claimed as strong collision resistance, sufficient only for this mission's declared LOCAL PROCESS/SUBPROCESS pairing proof.",
+  "key_establishment": "Discovery determined standard-library facilities are sufficient and no new cryptographic dependency is required (no PAIRING_CRYPTO_DEPENDENCY_REQUIRED condition triggered): this is a LOCAL bounded proof (Section 15's own scope), not a defense against eavesdropping on an untrusted network channel, so no Diffie-Hellman or other real key-exchange protocol was needed -- secrets.token_bytes(32) (already used by LocalKeyStore, reused here via key_store.provision_key()) is the sole generation primitive. Both 'endpoints' in every test share one on-disk key_store_dir, the same rendezvous mechanism LocalKeyStore's own prior transport tests already established -- this mission proves the RELATIONSHIP bookkeeping layer atop that already-proven key-sharing substrate; it does not solve bootstrapping trust between two devices that do not already share a filesystem or an equivalently trusted local channel. Recorded explicitly as a scope limitation, not hidden.",
+  "relationship_persistence": "Durable JSONL ledger under a PairingStore root directory, structurally identical in durability guarantees to LocalKeyStore's own metadata ledger -- proven to survive both an in-process fresh-instance re-open and a REAL second OS subprocess (test_local_pairing_loopback.py / _tcp.py's restart tests).",
+  "revocation": "revoke(relationship_id, reason) appends a REVOKED transition, idempotent on an already-REVOKED relationship_id, raising PairingConflictError for an unknown one. Distinguishable from REPLACED (rotation/re-pairing) in the audit trail, exactly as LocalKeyStore keeps REVOKED distinct from RETIRED. resolve_active() fails closed uniformly (returns None) for REVOKED, matching the rest of this program's fail-closed conventions.",
+  "repairing_semantics": "re_pair(old_relationship_id, local_node_id, remote_node_id, key_store) mirrors LocalKeyStore.provision_key(supersedes=...)'s exact atomicity: old_relationship_id must currently be ACTIVE (raises PairingConflictError otherwise) and is marked REPLACED in the SAME locked operation that creates a brand-new PENDING_CONFIRMATION relationship (fresh key, fresh relationship_id, fresh SAS) -- the new relationship still requires its own confirm(), never silently trusted. The prior relationship's key is NOT automatically revoked in LocalKeyStore (an explicit, separate operator decision), keeping relationship and key lifecycle orthogonal. Separately, an already-REVOKED relationship is proven to stay REVOKED even after an entirely new, unrelated pairing is created and confirmed (TestRePairAfterRevocation::test_revoked_relationship_stays_revoked_after_a_fresh_unrelated_pairing) -- an old revoked relationship never silently becomes trusted because new pairing occurred.",
+
+  "message_binding": "relationship_id was added to RemoteCapabilityRequest (new optional field, defaulting to None -- no incompatible migration) and, unlike integrity_key_id, IS included in canonical_request_fields()'s HMAC-signed content: a request cannot be reinterpreted under a different relationship merely by swapping the label, since doing so invalidates the tag. process_remote_capability_request() gained a new pairing_store parameter (precedence-first over key_store/integrity_key): it resolves request.relationship_id via pairing_store.resolve_active() (fail-closed for unknown/malformed/pending/replaced/revoked), cross-checks that the relationship's own bound key_id matches request.integrity_key_id (rejecting a 'valid key claimed under the wrong relationship' before any secret is even touched), then resolves and verifies exactly as the key_store-only path already did.",
+  "integrity_interaction": "Fully composed, not reimplemented: pairing_store's verification is layered strictly ahead of, and reuses, verify_request_integrity()/compute_request_integrity_tag() unchanged. TestTamperedMessageRejected proves a tampered field under a valid, ACTIVE relationship is still rejected (CAP_FAILED, zero execution).",
+  "key_lifecycle_interaction": "Proven orthogonal in both directions: a relationship's OWN key separately REVOKED in LocalKeyStore is rejected even though the relationship itself is still ACTIVE (TestKeyRevocationOrthogonalToPairing); a cryptographically valid key belonging to a DIFFERENT relationship is rejected when claimed under the wrong relationship_id (TestWrongRelationshipValidKeyRejected).",
+  "replay_interaction": "A genuinely valid, unmutated resend under an ACTIVE relationship is still recognized and suppressed (CAP_DUPLICATE_COMPLETED) when pairing_store and replay_guard are configured together (TestPairingDoesNotWeakenReplay) -- zero additional execution.",
+  "authority_interaction": "A validly paired, cryptographically verified request with EXPIRED authority is denied as CAP_UNAUTHORIZED, not CAP_FAILED -- integrity/pairing passed, a separate, unweakened gate denied (TestPairingDoesNotWeakenAuthority). Pairing acceptance and execution authority remain fully orthogonal.",
+
+  "loopback_result": "4/4 new tests pass: valid paired request executes once with the secret bytes and their hex encoding confirmed absent from the serialized wire request; an unconfirmed offer is rejected with zero lineage writes; a revoked relationship is rejected with zero lineage writes; a revoked relationship remains rejected after a REAL second OS subprocess restart, with the lineage record count staying at exactly 1 (the one pre-revocation execution).",
+  "tcp_result": "4/4 new tests pass, identical proof over 127.0.0.1 with an OS-assigned ephemeral port, including the real two-process restart proof.",
+  "restart_result": "PROVEN with a REAL second OS subprocess for both transports (not simulated in-process only, though in-process proxies are also included for completeness in test_local_pairing.py::TestRestartPersistence): a relationship confirmed before a server subprocess starts remains ACTIVE and usable by a server subprocess reading the same on-disk directories; a relationship revoked between two subprocess lifetimes remains REVOKED when a genuinely separate second subprocess is started against the identical directories.",
+
+  "secret_wire_absence": "Confirmed absent (in-process and over both real transports): every test that constructs a signed, relationship-bound request explicitly serializes it via fabric.loopback.wire.capability_request_to_wire() and asserts the raw secret bytes and their hex encoding are NOT present anywhere in the resulting JSON. relationship_id and integrity_key_id (both non-secret) ARE present on the wire, as intended.",
+  "secret_evidence_absence": "Confirmed absent: the PairingStore's own metadata ledger file was read directly and asserted not to contain the secret's hex encoding; the create_offer()/re_pair() return dicts (relationship_id, key_id, sas) were also asserted secret-free. No evidence/*.json receipt from this or any prior mission contains literal key or secret bytes (re-audited: grep for 48+ character hex strings and for hardcoded byte-string literals near 'key' across all tracked/untracked files found only the same pre-existing, clearly-labeled dummy TEST_KEY/WRONG_KEY constants in fabric/tests/test_message_integrity.py already documented in the prior mission's own receipt -- no new occurrence introduced by this mission).",
+
+  "production_files_changed": [
+    {"path": "fabric/interface.py", "change": "added relationship_id: Optional[str] = None to RemoteCapabilityRequest (included in canonical_request_fields()'s signed content, unlike integrity_key_id); added PAIRING_STATUS_* constants, PairingConflictError, _compute_sas(), and the PairingStore class (create_offer/confirm/revoke/re_pair/status_of/resolve_active); added optional pairing_store parameter to process_remote_capability_request() with a new precedence-first verification branch ahead of the existing key_store/integrity_key branches."},
+    {"path": "fabric/loopback/wire.py", "change": "capability_request_to_wire()/safe_capability_request_from_wire() now also carry relationship_id (non-secret). 2 lines."},
+    {"path": "fabric/loopback/pc_node_server.py", "change": "added --pairing-store-dir CLI arg (optional, takes precedence over --key-store-dir/--integrity-key when given); constructs fi.PairingStore(Path(pairing_store_dir)) when given and threads pairing_store through run_server()/_handle_capability_request() into process_remote_capability_request()."},
+    {"path": "fabric/tcp/pc_node_server.py", "change": "identical --pairing-store-dir wiring to the loopback server (now tracked in git after the FW-CHECKPOINT-AND-LOCAL-PAIRING-FOUNDATION-001 Phase A checkpoint commit)."}
+  ],
+  "tests_added": {
+    "files": [
+      "fabric/tests/test_local_pairing.py (19 tests, in-process: the full 15-item adversarial matrix plus a backward-compatibility regression-guard test)",
+      "fabric/tests/test_local_pairing_loopback.py (4 tests: valid paired execution with secret-wire-absence check, unconfirmed rejection, revoked rejection, real two-process restart proof, over AF_UNIX)",
+      "fabric/tests/test_local_pairing_tcp.py (4 tests: same over localhost TCP)"
+    ],
+    "total": 27,
+    "existing_test_files_modified": "none"
+  },
+  "full_regression_result": {
+    "run_method": "python3 -m unittest <module>, one suite per subprocess, this session, in the mission-specified order",
+    "suites": [
+      {"path": "fabric/tests/test_local_pairing.py", "result": "19/19 pass (new)"},
+      {"path": "fabric/tests/test_local_pairing_loopback.py", "result": "4/4 pass (new)"},
+      {"path": "fabric/tests/test_local_pairing_tcp.py", "result": "4/4 pass (new)"},
+      {"path": "fabric/tests/test_local_key_provisioning.py", "result": "24/24 pass"},
+      {"path": "fabric/tests/test_local_key_provisioning_loopback.py", "result": "5/5 pass"},
+      {"path": "fabric/tests/test_local_key_provisioning_tcp.py", "result": "5/5 pass"},
+      {"path": "fabric/tests/test_message_integrity.py", "result": "15/15 pass"},
+      {"path": "fabric/tests/test_message_integrity_loopback.py", "result": "5/5 pass"},
+      {"path": "fabric/tests/test_message_integrity_tcp.py", "result": "5/5 pass"},
+      {"path": "fabric/tests/test_message_identity_replay.py", "result": "9/9 pass"},
+      {"path": "fabric/tests/test_message_identity_replay_loopback.py", "result": "2/2 pass"},
+      {"path": "fabric/tests/test_message_identity_replay_tcp.py", "result": "2/2 pass"},
+      {"path": "fabric/tests/test_authority_expiry.py", "result": "16/16 pass"},
+      {"path": "fabric/tests/test_authority_expiry_e2e.py", "result": "6/6 pass"},
+      {"path": "fabric/tests/test_authority_expiry_loopback.py", "result": "8/8 pass"},
+      {"path": "fabric/tests/test_authority_expiry_tcp.py", "result": "5/5 pass"},
+      {"path": "fabric/tests/test_fabric_contract.py", "result": "19/19 pass"},
+      {"path": "fabric/tests/test_fabric_loopback.py", "result": "17/17 pass"},
+      {"path": "fabric/tcp/tests/test_fabric_tcp.py", "result": "12/12 pass"},
+      {"path": "capabilities/tests/test_forgeworld_mobile_research_capability.py", "result": "14/14 pass"},
+      {"path": "local_inference/tests/test_local_inference.py", "result": "18/18 pass"},
+      {"path": "artifact_handoff/tests/test_artifact_handoff.py", "result": "21/21 pass"},
+      {"path": "artifact_handoff/tests/test_lineage_store.py", "result": "12/12 pass"},
+      {"path": "content_readers/tests/test_content_readers.py", "result": "25/25 pass"},
+      {"path": "tests/test_namespace_stabilization.py", "result": "8/8 pass"}
+    ],
+    "total": "280/280 pass, 0 fail",
+    "baseline_comparison": "Committed checkpoint baseline (de8c378) was 253/253. This run reproduces all 253 unchanged plus 27 new pairing tests = 280, zero regressions, zero unexplained failures.",
+    "unrunnable_in_this_sandbox": [
+      "capabilities/tests/test_discover.py",
+      "evidence_envelope/tests/test_envelope.py",
+      "evidence_envelope/tests/test_trajectory.py",
+      "forgeworld-mobile-research/tests/*.py"
+    ],
+    "unrunnable_reason": "pytest not installed in this sandbox; unchanged from all prior missions"
+  },
+
+  "counterevidence": "None found against the core claim. One test-construction adjustment was required mid-mission (not a defect): the 'wrong relationship + valid key' adversarial test (matrix item 8) needed the mismatched integrity_key_id set explicitly via dataclasses.replace(), since sign_request()'s own key_id parameter always keeps integrity_key_id consistent with the signing key by design -- the test constructs the inconsistency deliberately, as an attacker would, rather than through sign_request()'s normal (safe) path.",
+  "limitations": [
+    "The SAS confirmation number is an 8-hex-character (~32-bit) truncated SHA-256 prefix -- adequate for this mission's declared LOCAL PROCESS/SUBPROCESS proof, explicitly not claimed as strong-collision-resistant or suitable for a real adversarial over-the-air pairing ceremony (a production implementation might use a longer or differently-derived confirmation number).",
+    "This mission does not solve real key bootstrapping between two devices that do not already share a filesystem or equivalently trusted local channel -- every test's two 'endpoints' share one on-disk key_store_dir. Physical Android<->PC pairing (named explicitly as future, unauthorized work) will need an actual out-of-band channel (QR code, manual entry, or similar) to carry the offer.",
+    "Relationship and key lifecycle are deliberately kept orthogonal (re-pairing does not auto-revoke the old key; key revocation does not auto-revoke relationships bound to it) -- an operator wanting cascading revocation must perform both actions explicitly today.",
+    "Crash window B (capability executes, receiver crashes before durable disposition persistence) remains open and unaddressed, unchanged from prior missions -- orthogonal to pairing.",
+    "Google account architecture (Section 18-19 of the mission) was addressed as design narrative only (see below) -- no GoogleCapabilityProvider code was written, since nothing in this mission's own test/evidence requirements called for constructing it and doing so unrequested would have been unrequested scope expansion."
+  ],
+  "future_owner_device_capability_target": "Recorded, not built: pc.filesystem/pc.shell/pc.powershell/pc.process/pc.git/pc.local_models/pc.development_tools/pc.artifacts/pc.memory and phone.filesystem/phone.termux/phone.shell/phone.process/phone.local_models/phone.artifacts/phone.memory/phone.notifications remain the destination capability-provider list; pairing is confirmed as their prerequisite (a capability request under an unconfirmed or revoked relationship already fails closed, exactly the gate these future providers would need). None of these providers were implemented in this mission.",
+  "future_google_capability_target": "Recorded, not built: a future GoogleCapabilityProvider would expose capability families (google.gmail.read/search/draft/send, google.drive.read/search/create/update, google.calendar.read/create/update, google.contacts.read) gated by TWO independent checks -- Google OAuth scope (what Google's consent flow allows) and ForgeWorld authority (what THIS request is allowed to do now), matching this program's existing 'transfer != trust' / 'key possession != execution authority' discipline exactly. No Google authentication, OAuth flow, credential storage, or account access was attempted or is proposed by this mission -- this is architectural narrative only, per explicit instruction.",
+
+  "rollback": {
+    "scope": "This microphase's delta atop the de8c378 checkpoint: fabric/interface.py (PairingStore + wiring), fabric/loopback/wire.py (relationship_id carry-through), fabric/loopback/pc_node_server.py and fabric/tcp/pc_node_server.py (--pairing-store-dir wiring), plus three new test files.",
+    "exact_reversal": "git checkout -- fabric/interface.py fabric/loopback/wire.py fabric/loopback/pc_node_server.py fabric/tcp/pc_node_server.py   # reverts all four tracked files to the de8c378 checkpoint state exactly (all four are tracked now, unlike in prior missions, since fabric/tcp/ was committed in Phase A). rm fabric/tests/test_local_pairing.py fabric/tests/test_local_pairing_loopback.py fabric/tests/test_local_pairing_tcp.py",
+    "verification": "git status --short after this mission's edits shows exactly the four production files listed above as modified, matching the mission's own scope precisely, with the checkpoint's tree otherwise undisturbed."
+  },
+  "resulting_capability_claim": {
+    "claim": "LOCAL_ENDPOINT_PAIRING_RELATIONSHIP_PROVEN -- two local ForgeWorld endpoints (identified by their existing node_id values) can deliberately establish (a positively-initiated offer requiring explicit SAS confirmation, never silent), persist (durable across a real process restart), use (a confirmed ACTIVE relationship gates a real governed capability request through to execution), revoke (durably distinct from replacement/rotation, fail-closed immediately and after restart), and re-establish (a hard-cutover re-pairing that never lets an old revoked relationship become trusted again merely because new pairing occurred) a bounded cryptographic relationship that integrates with, and never weakens, the existing key lifecycle, message integrity, replay suppression, and authority-expiry gates.",
+    "explicitly_not_claimed": [
+      "physical phone pairing", "device identity", "human identity",
+      "Google authorization", "LAN security", "internet security", "TLS",
+      "production deployment", "hardware-backed secrets", "unlimited autonomous authority"
+    ],
+    "promoted": false
+  },
+  "commit_status": "NOT COMMITTED",
+  "push_status": "NOT PUSHED"
+}

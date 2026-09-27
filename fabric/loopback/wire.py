@@ -145,6 +145,7 @@ def capability_request_to_wire(req: "fi.RemoteCapabilityRequest") -> dict:
         "correlation_id": req.correlation_id, "causation_id": req.causation_id,
         "timeout_seconds": req.timeout_seconds, "requested_at": req.requested_at,
         "integrity_tag": req.integrity_tag, "integrity_key_id": req.integrity_key_id,
+        "relationship_id": req.relationship_id, "source_peer_id": req.source_peer_id,
     }
 
 
@@ -160,6 +161,7 @@ def safe_capability_request_from_wire(d: dict):
             correlation_id=d["correlation_id"], causation_id=d["causation_id"],
             timeout_seconds=d["timeout_seconds"], requested_at=d.get("requested_at", fi._now()),
             integrity_tag=d.get("integrity_tag"), integrity_key_id=d.get("integrity_key_id"),
+            relationship_id=d.get("relationship_id"), source_peer_id=d.get("source_peer_id"),
         ), None
     except (KeyError, TypeError) as exc:
         return None, f"MALFORMED capability_request: {exc!r}"

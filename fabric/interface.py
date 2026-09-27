@@ -413,6 +413,8 @@ class RemoteCapabilityRequest:
     requested_at: str = field(default_factory=_now)
     integrity_tag: Optional[str] = None  # MISSION: FW-MESSAGE-INTEGRITY-CONTRACT-001 -- HMAC-SHA256 over every other field, set by sign_request(); None means unsigned (backward compatible: a receiver with no integrity_key configured never looks at this field)
     integrity_key_id: Optional[str] = None  # MISSION: FW-LOCAL-KEY-PROVISIONING-CONTRACT-001 -- NOT secret, safe to travel on the wire; identifies which LocalKeyStore entry resolve_key() must use to verify integrity_tag. Deliberately NOT itself part of canonical_request_fields()'s signed content -- swapping it without the corresponding secret cannot produce a tag that verifies against the newly-named key (see LocalKeyStore/evidence receipt for the argument).
+    relationship_id: Optional[str] = None  # MISSION: FW-LOCAL-PAIRING-KEY-ESTABLISHMENT-001 -- NOT secret. Unlike integrity_key_id, THIS field IS part of canonical_request_fields()'s signed content: a request must not be reinterpretable under a different PairingRelationship merely by swapping this label, so a wrong relationship_id invalidates the tag exactly like a wrong capability_id would.
+    source_peer_id: Optional[str] = None  # MISSION: FW-PEER-IDENTITY-CONTRACT-001 -- NOT secret, not human identity, not device identity: names a durable PeerIdentityRecord distinct from both AuthorityContext.actor_id (the authority principal) and source_node_id (the transport-routing identifier). Part of canonical_request_fields()'s signed content for the same reason relationship_id is -- a request must not be reinterpretable as originating from a different peer merely by swapping this label.
 
 
 @dataclass(frozen=True)
@@ -474,10 +476,23 @@ def _canonical_authority_fields(context: AuthorityContext) -> dict:
 
 def canonical_request_fields(request: RemoteCapabilityRequest) -> dict:
     """Every governance-relevant field of `request` EXCEPT integrity_tag
-    itself, as a JSON-safe dict -- the sole canonicalization contract this
-    mission establishes. Deliberately covers the WHOLE request (not a
-    hand-picked subset) so a future new field is bound by default rather
-    than silently left outside the tag's protection."""
+    and integrity_key_id, as a JSON-safe dict -- the sole canonicalization
+    contract this mission establishes. Deliberately covers the WHOLE
+    request otherwise (not a hand-picked subset) so a future new field is
+    bound by default rather than silently left outside the tag's
+    protection. relationship_id and source_peer_id ARE included here
+    (MISSION: FW-LOCAL-PAIRING-KEY-ESTABLISHMENT-001,
+    FW-PEER-IDENTITY-CONTRACT-001) -- a request must not be
+    reinterpretable under a different PairingRelationship or as
+    originating from a different peer merely by swapping either label,
+    so a wrong relationship_id or source_peer_id invalidates the tag.
+    destination peer identity is deliberately NOT a separate new field:
+    destination_node_id already provides that invariant (already
+    signed, already checked by both server scripts' "unknown node"
+    guard) -- adding a duplicate destination_peer_id would be an
+    unnecessary second concept for the same thing. integrity_key_id is
+    the one deliberate exception (see its own field comment on
+    RemoteCapabilityRequest for why omitting it is safe)."""
     return {
         "request_id": request.request_id,
         "source_node_id": request.source_node_id,
@@ -489,6 +504,8 @@ def canonical_request_fields(request: RemoteCapabilityRequest) -> dict:
         "causation_id": request.causation_id,
         "timeout_seconds": request.timeout_seconds,
         "requested_at": request.requested_at,
+        "relationship_id": request.relationship_id,
+        "source_peer_id": request.source_peer_id,
     }
 
 
@@ -774,6 +791,511 @@ class LocalKeyStore:
         return latest_active_id, secret
 
 
+# ---------------------------------------------------------------------------
+# local pairing / relationship lifecycle: MISSION
+# FW-LOCAL-PAIRING-KEY-ESTABLISHMENT-001
+#
+# PAIRING IS NOT IDENTITY. A PairingRelationship names two EXISTING
+# node_id strings (fabric.interface.NodeIdentity's own identifier --
+# reused, not reinvented, per this mission's "reuse before creating"
+# instruction; no new "endpoint_id" concept was introduced) and an
+# ACTIVE key_id from LocalKeyStore. It never claims device ownership,
+# human identity, or execution authority -- SHARED SECRET != PEER
+# IDENTITY, PAIRING != EXECUTION AUTHORITY, exactly as authority,
+# replay, and key lifecycle remain separate, composed gates downstream.
+#
+# SCOPE: this is a LOCAL bounded proof (Section 15's own instruction),
+# not a solution to real cross-network key exchange. Both "endpoints" in
+# every test share one on-disk directory -- the same rendezvous
+# mechanism LocalKeyStore's own transport tests already use (an
+# "operator" writes a key/relationship record that a separately spawned
+# server subprocess independently resolves). This mission proves the
+# RELATIONSHIP bookkeeping layer atop that already-proven key-sharing
+# substrate; it does not attempt to solve bootstrapping trust between
+# two devices that do not already share a filesystem or an equivalently
+# trusted local channel.
+#
+# Reuses evidence_envelope.envelope's exact JSONL/file-lock/atomic-write
+# discipline (a sixth application of that pattern) for relationship
+# metadata; secret material stays exclusively in LocalKeyStore, never
+# duplicated here.
+# ---------------------------------------------------------------------------
+
+PAIRING_STATUS_PENDING = "PENDING_CONFIRMATION"
+PAIRING_STATUS_ACTIVE = "ACTIVE"
+PAIRING_STATUS_REPLACED = "REPLACED"
+PAIRING_STATUS_REVOKED = "REVOKED"
+_PAIRING_STATUSES = (PAIRING_STATUS_PENDING, PAIRING_STATUS_ACTIVE, PAIRING_STATUS_REPLACED, PAIRING_STATUS_REVOKED)
+
+
+class PairingConflictError(FabricError):
+    """Programmer/operator-misuse only (confirming with the wrong SAS,
+    confirming/revoking/superseding an unknown or wrong-state
+    relationship_id) -- never raised for an expected runtime condition
+    at REQUEST-verification time, which fails closed via
+    resolve_active() returning None instead, per this module's Failure
+    Law."""
+
+
+def _compute_sas(secret: bytes) -> str:
+    """Short Authentication String: an 8-hex-character (~32-bit) prefix
+    of SHA-256(secret) -- a standard truncated-digest confirmation-number
+    technique (the same family as Bluetooth SSP/Signal safety-number
+    displays), not invented cryptography. Explicitly NOT claimed as
+    strong collision resistance; sufficient only for this mission's
+    LOCAL PROCESS/SUBPROCESS pairing proof, where an operator (or, in
+    these tests, the test itself) compares it out-of-band before
+    confirming trust."""
+    return hashlib.sha256(secret).hexdigest()[:8]
+
+
+class PairingStore:
+    """Durable relationship-lifecycle store, keyed by relationship_id.
+    Four states: PENDING_CONFIRMATION (an offer exists but has not been
+    explicitly confirmed -- NOT trusted), ACTIVE, REPLACED (superseded by
+    a newer relationship via re_pair(), mirroring LocalKeyStore's own
+    RETIRED semantics), REVOKED (distinct from REPLACED in the audit
+    trail, exactly as LocalKeyStore keeps REVOKED distinct from RETIRED).
+
+    Relationship records never contain secret bytes -- only a
+    reference to a LocalKeyStore key_id, resolved separately at
+    verification time."""
+
+    def __init__(self, root: Path, lock_timeout_seconds: float = 5.0):
+        self.root = Path(root)
+        self.root.mkdir(parents=True, exist_ok=True)
+        self.ledger_path = self.root / "pairing_relationships.jsonl"
+        self.lock_path = self.root / "pairing_relationships.lock"
+        self.lock_timeout_seconds = lock_timeout_seconds
+
+    def _read_all(self) -> list:
+        if not self.ledger_path.exists():
+            return []
+        records = []
+        with open(self.ledger_path, "r", encoding="utf-8") as f:
+            for line_number, raw_line in enumerate(f, start=1):
+                if not raw_line.endswith("\n"):
+                    raise envelope.LedgerIntegrityError(
+                        f"pairing relationship ledger {self.ledger_path} line {line_number} is not "
+                        "newline-terminated (truncated or partially written)"
+                    )
+                line = raw_line.strip()
+                if not line:
+                    continue
+                try:
+                    record = json.loads(line)
+                except ValueError as exc:
+                    raise envelope.LedgerIntegrityError(
+                        f"pairing relationship ledger {self.ledger_path} line {line_number} is not valid JSON: {exc}"
+                    ) from exc
+                if not isinstance(record, dict) or "relationship_id" not in record or "status" not in record:
+                    raise envelope.LedgerIntegrityError(
+                        f"pairing relationship ledger {self.ledger_path} line {line_number} is missing "
+                        "required field 'relationship_id' or 'status'"
+                    )
+                if record["status"] not in _PAIRING_STATUSES:
+                    raise envelope.LedgerIntegrityError(
+                        f"pairing relationship ledger {self.ledger_path} line {line_number} has an invalid "
+                        f"status {record['status']!r}"
+                    )
+                records.append(record)
+        return records
+
+    def _latest_record(self, relationship_id: str) -> Optional[dict]:
+        latest = None
+        for r in self._read_all():
+            if r["relationship_id"] == relationship_id:
+                latest = r
+        return latest
+
+    def create_offer(self, local_node_id: str, remote_node_id: str, key_store: LocalKeyStore) -> dict:
+        """Deliberate operator/process-initiated pairing offer -- no
+        silent automatic trust: the returned relationship starts
+        PENDING_CONFIRMATION and grants no execution capability until
+        confirm() succeeds. Always provisions a FRESH key via key_store
+        (never reuses an existing one), keeping relationship lifecycle
+        and key lifecycle orthogonal (MISSION section 13). Returns
+        {relationship_id, key_id, sas} -- never the secret bytes
+        themselves; the caller retrieves those separately via
+        key_store.resolve_key(key_id) to carry over the pairing
+        ceremony's own channel."""
+        local_node_id = envelope.validate_mission_id(local_node_id)
+        remote_node_id = envelope.validate_mission_id(remote_node_id)
+        key_id = key_store.provision_key()
+        secret = key_store.resolve_key(key_id)
+        sas = _compute_sas(secret)
+        relationship_id = envelope.validate_mission_id(f"REL-{uuid.uuid4().hex}")
+        with envelope._FileLock(self.lock_path, timeout_seconds=self.lock_timeout_seconds):
+            records = self._read_all()
+            envelope._atomic_write_bytes(self.ledger_path, envelope._serialize_ledger(records + [{
+                "relationship_id": relationship_id, "status": PAIRING_STATUS_PENDING,
+                "local_node_id": local_node_id, "remote_node_id": remote_node_id,
+                "key_id": key_id, "sas": sas, "created_at": _now(), "reason": None,
+            }]))
+        return {"relationship_id": relationship_id, "key_id": key_id, "sas": sas}
+
+    def confirm(self, relationship_id: str, sas: str) -> None:
+        """Operator-facing confirmation step -- the one required
+        positive action before a relationship becomes ACTIVE. Raises
+        PairingConflictError for an unknown relationship_id, a
+        relationship not currently PENDING_CONFIRMATION, or a SAS that
+        does not match (compared in constant time, consistent with this
+        module's other secret/tag comparisons)."""
+        with envelope._FileLock(self.lock_path, timeout_seconds=self.lock_timeout_seconds):
+            current = self._latest_record(relationship_id)
+            if current is None:
+                raise PairingConflictError(f"cannot confirm unknown relationship_id {relationship_id!r}")
+            if current["status"] != PAIRING_STATUS_PENDING:
+                raise PairingConflictError(
+                    f"cannot confirm relationship_id {relationship_id!r}: current status is "
+                    f"{current['status']!r}, not {PAIRING_STATUS_PENDING!r}"
+                )
+            if not hmac.compare_digest(current["sas"], sas):
+                raise PairingConflictError(f"SAS mismatch for relationship_id {relationship_id!r}")
+            records = self._read_all()
+            envelope._atomic_write_bytes(self.ledger_path, envelope._serialize_ledger(records + [{
+                "relationship_id": relationship_id, "status": PAIRING_STATUS_ACTIVE,
+                "local_node_id": current["local_node_id"], "remote_node_id": current["remote_node_id"],
+                "key_id": current["key_id"], "sas": current["sas"], "created_at": _now(), "reason": None,
+            }]))
+
+    def revoke(self, relationship_id: str, reason: str = "") -> None:
+        """Appends a REVOKED transition, distinct from REPLACED.
+        Idempotent: revoking an already-REVOKED relationship_id is a
+        no-op. Raises PairingConflictError for an unknown
+        relationship_id."""
+        with envelope._FileLock(self.lock_path, timeout_seconds=self.lock_timeout_seconds):
+            current = self._latest_record(relationship_id)
+            if current is None:
+                raise PairingConflictError(f"cannot revoke unknown relationship_id {relationship_id!r}")
+            if current["status"] == PAIRING_STATUS_REVOKED:
+                return
+            records = self._read_all()
+            envelope._atomic_write_bytes(self.ledger_path, envelope._serialize_ledger(records + [{
+                "relationship_id": relationship_id, "status": PAIRING_STATUS_REVOKED,
+                "local_node_id": current["local_node_id"], "remote_node_id": current["remote_node_id"],
+                "key_id": current["key_id"], "sas": current["sas"], "created_at": _now(), "reason": reason,
+            }]))
+
+    def re_pair(self, old_relationship_id: str, local_node_id: str, remote_node_id: str, key_store: LocalKeyStore) -> dict:
+        """Hard-cutover re-pairing, mirroring LocalKeyStore.provision_key
+        (supersedes=...)'s exact atomicity: old_relationship_id must be
+        currently ACTIVE and is marked REPLACED in the SAME locked
+        operation that creates a brand-new PENDING_CONFIRMATION
+        relationship (fresh key, fresh relationship_id, fresh SAS) --
+        never silently trusted, still requires its own confirm(). The
+        old relationship's key is NOT automatically revoked in
+        LocalKeyStore (relationship and key lifecycle stay orthogonal);
+        an operator wanting that does so as a separate, explicit
+        key_store.revoke_key() call."""
+        local_node_id = envelope.validate_mission_id(local_node_id)
+        remote_node_id = envelope.validate_mission_id(remote_node_id)
+        with envelope._FileLock(self.lock_path, timeout_seconds=self.lock_timeout_seconds):
+            current = self._latest_record(old_relationship_id)
+            if current is None:
+                raise PairingConflictError(f"cannot re-pair unknown relationship_id {old_relationship_id!r}")
+            if current["status"] != PAIRING_STATUS_ACTIVE:
+                raise PairingConflictError(
+                    f"cannot re-pair relationship_id {old_relationship_id!r}: current status is "
+                    f"{current['status']!r}, not {PAIRING_STATUS_ACTIVE!r}"
+                )
+            records = self._read_all()
+            new_key_id = key_store.provision_key()
+            new_secret = key_store.resolve_key(new_key_id)
+            new_sas = _compute_sas(new_secret)
+            new_relationship_id = envelope.validate_mission_id(f"REL-{uuid.uuid4().hex}")
+            new_records = records + [
+                {"relationship_id": old_relationship_id, "status": PAIRING_STATUS_REPLACED,
+                 "local_node_id": current["local_node_id"], "remote_node_id": current["remote_node_id"],
+                 "key_id": current["key_id"], "sas": current["sas"], "created_at": _now(),
+                 "reason": f"superseded by {new_relationship_id}"},
+                {"relationship_id": new_relationship_id, "status": PAIRING_STATUS_PENDING,
+                 "local_node_id": local_node_id, "remote_node_id": remote_node_id,
+                 "key_id": new_key_id, "sas": new_sas, "created_at": _now(), "reason": None},
+            ]
+            envelope._atomic_write_bytes(self.ledger_path, envelope._serialize_ledger(new_records))
+            return {"relationship_id": new_relationship_id, "key_id": new_key_id, "sas": new_sas}
+
+    def status_of(self, relationship_id: str) -> Optional[str]:
+        """Current lifecycle status, or None if never created / malformed
+        -- fail closed uniformly, matching LocalKeyStore.status_of()."""
+        try:
+            relationship_id = envelope.validate_mission_id(relationship_id)
+        except envelope.InvalidMissionIdError:
+            return None
+        record = self._latest_record(relationship_id)
+        return record["status"] if record is not None else None
+
+    def resolve_active(self, relationship_id: str) -> Optional[dict]:
+        """Returns {relationship_id, local_node_id, remote_node_id,
+        key_id} IF AND ONLY IF status is ACTIVE. Returns None uniformly
+        for unknown, malformed, PENDING_CONFIRMATION, REPLACED, or
+        REVOKED -- callers fail closed on None without needing to
+        distinguish why, exactly like LocalKeyStore.resolve_key()."""
+        try:
+            relationship_id = envelope.validate_mission_id(relationship_id)
+        except envelope.InvalidMissionIdError:
+            return None
+        record = self._latest_record(relationship_id)
+        if record is None or record["status"] != PAIRING_STATUS_ACTIVE:
+            return None
+        return {
+            "relationship_id": record["relationship_id"], "local_node_id": record["local_node_id"],
+            "remote_node_id": record["remote_node_id"], "key_id": record["key_id"],
+        }
+
+
+# ---------------------------------------------------------------------------
+# peer identity: MISSION FW-PEER-IDENTITY-CONTRACT-001
+#
+# PEER IDENTITY IS A STABLE FORGEWORLD PROTOCOL PRINCIPAL, NOTHING MORE.
+# Explicitly NOT: human identity, device ownership, a pairing
+# relationship itself, a key, authority, a capability, a Google account,
+# or model identity. peer_id is opaque, random, non-secret, and encodes
+# no PII, hostname, IP address, or mutable device label (Section 5's own
+# requirement) -- it is generated exactly like relationship_id and
+# key_id (envelope.validate_mission_id(f"PEER-{uuid4().hex}")), not
+# derived from anything.
+#
+# DISCOVERY FINDING (documented per Section 4's explicit instruction):
+# NodeIdentity.node_id was considered and REJECTED as a substitute for
+# peer_id -- node_id is a transient, unpersisted, unrevocable transport-
+# routing identifier (whoever constructs a NodeIdentity object picks one;
+# nothing stores, resolves, or revokes it), while peer_id is a durable,
+# governed, revocable protocol principal with its own lifecycle store.
+# AuthorityContext.actor_id was ALSO considered and REJECTED as identical
+# to peer_id -- actor_id is a free-text authority-attribution string with
+# no validation, no persistence, and no lifecycle of its own; peer_id and
+# actor_id remain semantically INDEPENDENT fields here (Section 12/17),
+# never automatically equated. A future policy MAY relate them; this
+# mission does not.
+#
+# Reuses evidence_envelope.envelope's exact JSONL/file-lock/atomic-write
+# discipline (a seventh application of that pattern) for both peer
+# lifecycle metadata and peer<->relationship binding records.
+# ---------------------------------------------------------------------------
+
+PEER_STATUS_ACTIVE = "ACTIVE"
+PEER_STATUS_REVOKED = "REVOKED"
+_PEER_STATUSES = (PEER_STATUS_ACTIVE, PEER_STATUS_REVOKED)
+
+_PEER_BINDING_BOUND = "BOUND"
+_PEER_BINDING_UNBOUND = "UNBOUND"
+_PEER_BINDING_STATUSES = (_PEER_BINDING_BOUND, _PEER_BINDING_UNBOUND)
+
+PEER_IDENTITY_METADATA_VERSION = "1"
+
+
+class PeerIdentityConflictError(FabricError):
+    """Programmer/operator-misuse only (revoking an unknown peer_id,
+    binding/unbinding an unknown peer_id) -- never raised for an
+    expected runtime condition at REQUEST-verification time, which
+    fails closed via resolve_active()/is_relationship_bound_to_peer()
+    returning None/False instead, per this module's Failure Law."""
+
+
+class PeerIdentityStore:
+    """Durable peer-identity lifecycle store, keyed by peer_id, plus a
+    SEPARATE append-only peer<->relationship binding ledger (Section 7:
+    'a peer identity must not become trusted merely because it exists' --
+    an ACTIVE peer with no binding to the relationship a request arrived
+    under is not sufficient). Two peer states only (ACTIVE, REVOKED --
+    Section 15's own 'do not implement federation/organizational
+    identity/user accounts' keeps this the smallest defensible model).
+    Revocation never mutates or deletes historical records -- it means
+    NO NEW TRUSTED EXECUTION, not erase history (Section 14); a revoked
+    peer_id is never silently reactivated by this store (Section 15)."""
+
+    def __init__(self, root: Path, lock_timeout_seconds: float = 5.0):
+        self.root = Path(root)
+        self.root.mkdir(parents=True, exist_ok=True)
+        self.ledger_path = self.root / "peer_identity.jsonl"
+        self.lock_path = self.root / "peer_identity.lock"
+        self.bindings_path = self.root / "peer_relationship_bindings.jsonl"
+        self.bindings_lock_path = self.root / "peer_relationship_bindings.lock"
+        self.lock_timeout_seconds = lock_timeout_seconds
+
+    def _read_all(self) -> list:
+        if not self.ledger_path.exists():
+            return []
+        records = []
+        with open(self.ledger_path, "r", encoding="utf-8") as f:
+            for line_number, raw_line in enumerate(f, start=1):
+                if not raw_line.endswith("\n"):
+                    raise envelope.LedgerIntegrityError(
+                        f"peer identity ledger {self.ledger_path} line {line_number} is not "
+                        "newline-terminated (truncated or partially written)"
+                    )
+                line = raw_line.strip()
+                if not line:
+                    continue
+                try:
+                    record = json.loads(line)
+                except ValueError as exc:
+                    raise envelope.LedgerIntegrityError(
+                        f"peer identity ledger {self.ledger_path} line {line_number} is not valid JSON: {exc}"
+                    ) from exc
+                if not isinstance(record, dict) or "peer_id" not in record or "status" not in record:
+                    raise envelope.LedgerIntegrityError(
+                        f"peer identity ledger {self.ledger_path} line {line_number} is missing "
+                        "required field 'peer_id' or 'status'"
+                    )
+                if record["status"] not in _PEER_STATUSES:
+                    raise envelope.LedgerIntegrityError(
+                        f"peer identity ledger {self.ledger_path} line {line_number} has an invalid "
+                        f"status {record['status']!r}"
+                    )
+                records.append(record)
+        return records
+
+    def _latest_record(self, peer_id: str) -> Optional[dict]:
+        latest = None
+        for r in self._read_all():
+            if r["peer_id"] == peer_id:
+                latest = r
+        return latest
+
+    def _read_all_bindings(self) -> list:
+        if not self.bindings_path.exists():
+            return []
+        records = []
+        with open(self.bindings_path, "r", encoding="utf-8") as f:
+            for line_number, raw_line in enumerate(f, start=1):
+                if not raw_line.endswith("\n"):
+                    raise envelope.LedgerIntegrityError(
+                        f"peer binding ledger {self.bindings_path} line {line_number} is not "
+                        "newline-terminated (truncated or partially written)"
+                    )
+                line = raw_line.strip()
+                if not line:
+                    continue
+                try:
+                    record = json.loads(line)
+                except ValueError as exc:
+                    raise envelope.LedgerIntegrityError(
+                        f"peer binding ledger {self.bindings_path} line {line_number} is not valid JSON: {exc}"
+                    ) from exc
+                if not isinstance(record, dict) or "peer_id" not in record or "relationship_id" not in record or "status" not in record:
+                    raise envelope.LedgerIntegrityError(
+                        f"peer binding ledger {self.bindings_path} line {line_number} is missing a required field"
+                    )
+                if record["status"] not in _PEER_BINDING_STATUSES:
+                    raise envelope.LedgerIntegrityError(
+                        f"peer binding ledger {self.bindings_path} line {line_number} has an invalid "
+                        f"status {record['status']!r}"
+                    )
+                records.append(record)
+        return records
+
+    def register_peer(self) -> str:
+        """Creates a fresh, opaque, non-secret, non-PII peer_id in ACTIVE
+        status. Takes no display name/label -- Section 5 explicitly
+        prohibits encoding human PII, hostnames, IPs, or mutable device
+        labels into peer_id."""
+        peer_id = envelope.validate_mission_id(f"PEER-{uuid.uuid4().hex}")
+        with envelope._FileLock(self.lock_path, timeout_seconds=self.lock_timeout_seconds):
+            records = self._read_all()
+            envelope._atomic_write_bytes(self.ledger_path, envelope._serialize_ledger(records + [{
+                "peer_id": peer_id, "status": PEER_STATUS_ACTIVE, "created_at": _now(),
+                "metadata_version": PEER_IDENTITY_METADATA_VERSION, "reason": None,
+            }]))
+        return peer_id
+
+    def revoke_peer(self, peer_id: str, reason: str = "") -> None:
+        """Appends a REVOKED transition. Idempotent: revoking an
+        already-REVOKED peer_id is a no-op. Raises
+        PeerIdentityConflictError for an unknown peer_id. Never mutates
+        or deletes prior records -- revocation means no new trusted
+        execution, not erased history -- and never silently reactivates
+        a revoked peer_id (there is no un-revoke method)."""
+        with envelope._FileLock(self.lock_path, timeout_seconds=self.lock_timeout_seconds):
+            current = self._latest_record(peer_id)
+            if current is None:
+                raise PeerIdentityConflictError(f"cannot revoke unknown peer_id {peer_id!r}")
+            if current["status"] == PEER_STATUS_REVOKED:
+                return
+            records = self._read_all()
+            envelope._atomic_write_bytes(self.ledger_path, envelope._serialize_ledger(records + [{
+                "peer_id": peer_id, "status": PEER_STATUS_REVOKED, "created_at": _now(),
+                "metadata_version": PEER_IDENTITY_METADATA_VERSION, "reason": reason,
+            }]))
+
+    def status_of(self, peer_id: str) -> Optional[str]:
+        """Current lifecycle status, or None if never registered /
+        malformed -- fail closed uniformly, matching
+        LocalKeyStore.status_of()/PairingStore.status_of()."""
+        try:
+            peer_id = envelope.validate_mission_id(peer_id)
+        except envelope.InvalidMissionIdError:
+            return None
+        record = self._latest_record(peer_id)
+        return record["status"] if record is not None else None
+
+    def resolve_active(self, peer_id: str) -> Optional[dict]:
+        """Returns {peer_id, created_at, metadata_version} IF AND ONLY IF
+        status is ACTIVE. Returns None uniformly for unknown, malformed,
+        or REVOKED -- callers fail closed on None without needing to
+        distinguish why."""
+        try:
+            peer_id = envelope.validate_mission_id(peer_id)
+        except envelope.InvalidMissionIdError:
+            return None
+        record = self._latest_record(peer_id)
+        if record is None or record["status"] != PEER_STATUS_ACTIVE:
+            return None
+        return {
+            "peer_id": record["peer_id"], "created_at": record["created_at"],
+            "metadata_version": record["metadata_version"],
+        }
+
+    def bind_relationship(self, peer_id: str, relationship_id: str) -> None:
+        """Explicit binding: records that relationship_id is currently
+        accepted for peer_id. Raises PeerIdentityConflictError if
+        peer_id is unknown. Does not itself check the relationship's own
+        state in PairingStore -- that remains a separate, orthogonal
+        gate, resolved independently by process_remote_capability_request()."""
+        peer_id = envelope.validate_mission_id(peer_id)
+        relationship_id = envelope.validate_mission_id(relationship_id)
+        with envelope._FileLock(self.lock_path, timeout_seconds=self.lock_timeout_seconds):
+            if self._latest_record(peer_id) is None:
+                raise PeerIdentityConflictError(f"cannot bind unknown peer_id {peer_id!r}")
+        with envelope._FileLock(self.bindings_lock_path, timeout_seconds=self.lock_timeout_seconds):
+            bindings = self._read_all_bindings()
+            envelope._atomic_write_bytes(self.bindings_path, envelope._serialize_ledger(bindings + [{
+                "peer_id": peer_id, "relationship_id": relationship_id,
+                "status": _PEER_BINDING_BOUND, "created_at": _now(),
+            }]))
+
+    def unbind_relationship(self, peer_id: str, relationship_id: str) -> None:
+        """Appends an UNBOUND transition for this exact (peer_id,
+        relationship_id) pair -- does not affect any OTHER binding either
+        peer_id or relationship_id may have."""
+        peer_id = envelope.validate_mission_id(peer_id)
+        relationship_id = envelope.validate_mission_id(relationship_id)
+        with envelope._FileLock(self.bindings_lock_path, timeout_seconds=self.lock_timeout_seconds):
+            bindings = self._read_all_bindings()
+            envelope._atomic_write_bytes(self.bindings_path, envelope._serialize_ledger(bindings + [{
+                "peer_id": peer_id, "relationship_id": relationship_id,
+                "status": _PEER_BINDING_UNBOUND, "created_at": _now(),
+            }]))
+
+    def is_relationship_bound_to_peer(self, peer_id: str, relationship_id: str) -> bool:
+        """True only if the LATEST binding record for this exact
+        (peer_id, relationship_id) pair is BOUND. False for no binding
+        at all, an UNBOUND latest record, or a malformed id -- fail
+        closed uniformly."""
+        try:
+            peer_id = envelope.validate_mission_id(peer_id)
+            relationship_id = envelope.validate_mission_id(relationship_id)
+        except envelope.InvalidMissionIdError:
+            return False
+        latest = None
+        for r in self._read_all_bindings():
+            if r["peer_id"] == peer_id and r["relationship_id"] == relationship_id:
+                latest = r
+        return latest is not None and latest["status"] == _PEER_BINDING_BOUND
+
+
 class FabricCapabilityProvider(Protocol):
     """The contract every capability adapter reachable over the fabric
     implements. fabric/capabilities.py's ContentReadCapability is one
@@ -1013,6 +1535,8 @@ def process_remote_capability_request(
     replay_guard: Optional[RequestReplayGuard] = None,
     integrity_key: Optional[bytes] = None,
     key_store: Optional[LocalKeyStore] = None,
+    pairing_store: Optional[PairingStore] = None,
+    peer_store: Optional[PeerIdentityStore] = None,
 ) -> tuple:
     """PC_NODE (or any destination) side of the fabric: pull the waiting
     envelope, verify its hash again (independent of the check
@@ -1020,6 +1544,41 @@ def process_remote_capability_request(
     artifact_handoff pipeline, enforce authority, dispatch to a
     registered capability, and produce a (RemoteCapabilityResult,
     FabricReceipt) pair. Never raises for an expected failure.
+
+    peer_store (optional, MISSION: FW-PEER-IDENTITY-CONTRACT-001):
+    requires pairing_store to ALSO be supplied (its absence itself fails
+    closed). Evaluated AFTER pairing_store's relationship+key+integrity
+    checks all succeed, so an unverified peer claim can never influence
+    execution: request.source_peer_id is resolved through
+    peer_store.resolve_active() -- fails closed for a missing, unknown,
+    malformed, or REVOKED peer_id -- and then
+    peer_store.is_relationship_bound_to_peer() confirms the resolved
+    relationship_id is currently accepted for that peer (a "valid peer
+    claimed under the wrong relationship" fails closed here, before
+    replay/authority). Because source_peer_id is part of
+    canonical_request_fields()'s signed content, mutating it after
+    signing invalidates the tag exactly like mutating relationship_id
+    does. PEER IDENTITY remains orthogonal to execution AUTHORITY and to
+    AuthorityContext.actor_id (never automatically equated) -- an ACTIVE,
+    correctly-bound peer only permits verification to proceed.
+
+    pairing_store (optional, MISSION: FW-LOCAL-PAIRING-KEY-ESTABLISHMENT-001):
+    when supplied, TAKES PRECEDENCE over key_store/integrity_key.
+    request.relationship_id is resolved through
+    pairing_store.resolve_active() -- which fails closed (returns None)
+    for an unknown, malformed, PENDING_CONFIRMATION, REPLACED, or
+    REVOKED relationship_id -- and the resolved relationship's own
+    key_id must match request.integrity_key_id (a mismatch means the
+    message claims a relationship it was not actually bound to, and is
+    rejected before any secret is even resolved). key_store (REQUIRED
+    alongside pairing_store; its absence itself fails closed) then
+    resolves the relationship's key exactly as the key_store-only path
+    already does. Because relationship_id is part of
+    canonical_request_fields()'s signed content, a cryptographically
+    valid tag computed under one relationship can never verify against
+    a different relationship_id substituted in afterward. PAIRING
+    ACCEPTANCE remains orthogonal to execution AUTHORITY, exactly as key
+    ACCEPTANCE already is.
 
     key_store (optional, MISSION: FW-LOCAL-KEY-PROVISIONING-CONTRACT-001):
     when supplied, TAKES PRECEDENCE over integrity_key. request.integrity_key_id
@@ -1058,7 +1617,86 @@ def process_remote_capability_request(
     optional, backward-compatible pattern lineage_store/artifact_index
     already established.
     """
-    if key_store is not None:
+    if pairing_store is not None:
+        relationship = pairing_store.resolve_active(request.relationship_id) if request.relationship_id else None
+        if relationship is None:
+            return _result_and_receipt(
+                request, status=CAP_FAILED, structured_result=None,
+                error_detail=(
+                    f"integrity verification failed: relationship_id {request.relationship_id!r} is "
+                    "missing, unknown, malformed, unconfirmed, replaced, or revoked -- request rejected "
+                    "before replay/authority evaluation"
+                ),
+            )
+        if request.integrity_key_id != relationship["key_id"]:
+            return _result_and_receipt(
+                request, status=CAP_FAILED, structured_result=None,
+                error_detail=(
+                    f"integrity verification failed: request_id {request.request_id!r} claims "
+                    f"relationship_id {request.relationship_id!r} but its integrity_key_id "
+                    f"{request.integrity_key_id!r} does not match that relationship's bound key "
+                    f"{relationship['key_id']!r}"
+                ),
+            )
+        if key_store is None:
+            return _result_and_receipt(
+                request, status=CAP_FAILED, structured_result=None,
+                error_detail="integrity verification failed: pairing_store was supplied without a key_store to resolve secrets through",
+            )
+        resolved_key = key_store.resolve_key(relationship["key_id"])
+        if resolved_key is None:
+            return _result_and_receipt(
+                request, status=CAP_FAILED, structured_result=None,
+                error_detail=(
+                    f"integrity verification failed: relationship_id {request.relationship_id!r}'s key "
+                    f"{relationship['key_id']!r} is unresolvable (unknown, retired, or revoked) -- "
+                    "request rejected before replay/authority evaluation"
+                ),
+            )
+        if not verify_request_integrity(request, resolved_key):
+            return _result_and_receipt(
+                request, status=CAP_FAILED, structured_result=None,
+                error_detail=(
+                    f"integrity verification failed: request_id {request.request_id!r} carries a "
+                    "malformed or mismatched integrity_tag under its relationship's resolved key -- "
+                    "request rejected before replay/authority evaluation"
+                ),
+            )
+        # Integrity is now proven -- source_peer_id (if a peer_store is
+        # configured) can be trusted to evaluate, never before this point.
+        if peer_store is not None:
+            if request.source_peer_id is None:
+                return _result_and_receipt(
+                    request, status=CAP_FAILED, structured_result=None,
+                    error_detail=(
+                        f"peer identity verification failed: request_id {request.request_id!r} carries no "
+                        "source_peer_id, but this receiver requires a peer-store-resolved peer"
+                    ),
+                )
+            peer = peer_store.resolve_active(request.source_peer_id)
+            if peer is None:
+                return _result_and_receipt(
+                    request, status=CAP_FAILED, structured_result=None,
+                    error_detail=(
+                        f"peer identity verification failed: peer_id {request.source_peer_id!r} is "
+                        "unknown, malformed, or revoked -- request rejected before replay/authority evaluation"
+                    ),
+                )
+            if not peer_store.is_relationship_bound_to_peer(request.source_peer_id, relationship["relationship_id"]):
+                return _result_and_receipt(
+                    request, status=CAP_FAILED, structured_result=None,
+                    error_detail=(
+                        f"peer identity verification failed: peer_id {request.source_peer_id!r} is not "
+                        f"currently bound to relationship_id {relationship['relationship_id']!r} -- "
+                        "request rejected before replay/authority evaluation"
+                    ),
+                )
+    elif peer_store is not None:
+        return _result_and_receipt(
+            request, status=CAP_FAILED, structured_result=None,
+            error_detail="peer identity verification failed: peer_store was supplied without a pairing_store to resolve relationships through",
+        )
+    elif key_store is not None:
         if request.integrity_key_id is None:
             return _result_and_receipt(
                 request, status=CAP_FAILED, structured_result=None,
@@ -1125,6 +1763,12 @@ def process_remote_capability_request(
                 "request_id": request.request_id, "capability_id": request.capability_id,
                 "status": status, "structured_result": structured_result, "error_detail": error_detail,
                 "sha256": sha256,
+                # MISSION: FW-PEER-IDENTITY-CONTRACT-001 -- identity provenance only
+                # (no secret material): answers "which ForgeWorld peer originated
+                # this execution?" durably, without touching artifact_handoff's
+                # separate Manifest/LineageStore contract at all.
+                "source_peer_id": request.source_peer_id, "relationship_id": request.relationship_id,
+                "actor_id": request.authority_context.actor_id,
             }
             try:
                 replay_guard.record_once(disposition)

@@ -53,5 +53,30 @@ class EchoCapability:
         return interface.CAP_COMPLETED, {"echoed_byte_count": len(payload), "artifact_id": manifest_dict.get("artifact_id")}, None
 
 
+class PhysicalPingCapability:
+    """MISSION: FW-PHYSICAL-ANDROID-PC-PAIRING-001 -- the one harmless
+    test capability the physical device-boundary proof invokes. Like
+    EchoCapability, it is a deliberately trivial MOCK: it echoes a
+    caller-supplied nonce back with a receipt-bound timestamp and never
+    reads a real file, touches the filesystem beyond the bytes
+    artifact_handoff.handoff() already fetched, spawns a shell, or
+    produces any external side effect."""
+
+    capability_id = "physical_ping"
+
+    def invoke(self, manifest_dict: dict, payload: bytes) -> tuple:
+        try:
+            echoed = payload.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            return interface.CAP_FAILED, None, f"physical_ping payload is not valid UTF-8: {exc}"
+        return interface.CAP_COMPLETED, {
+            "echoed_nonce": echoed,
+            "responded_at": interface._now(),
+            "artifact_id": manifest_dict.get("artifact_id"),
+            "evidence_reference": manifest_dict.get("sha256"),
+        }, None
+
+
 interface.register_capability(ContentReadCapability())
 interface.register_capability(EchoCapability())
+interface.register_capability(PhysicalPingCapability())

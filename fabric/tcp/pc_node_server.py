@@ -26,11 +26,14 @@ same-machine test fixture doesn't need:
 
   - binds to an EXPLICIT host:port the operator supplies on the command
     line -- there is no default, and 0.0.0.0/:: is refused outright.
-  - registers ONLY "content_read". Importing fabric.capabilities
-    registers "echo_mock" too as an import side effect (unmodified,
-    upstream behavior) -- this script explicitly removes "echo_mock"
-    from the registry immediately after import, so this listener can
-    never invoke anything but the one allowlisted capability.
+  - registers ONLY the single capability named by --capability (default
+    "content_read"; MISSION: FW-PHYSICAL-ANDROID-PC-PAIRING-001 added
+    "physical_ping" as the other selectable choice). Importing
+    fabric.capabilities registers content_read, echo_mock, AND
+    physical_ping as an import side effect (unmodified, upstream
+    behavior) -- this script explicitly removes every OTHER capability
+    from the registry once --capability is known, so a running listener
+    can never invoke anything but the one it was started with.
   - every request's capability_id is checked against that allowlist a
     SECOND time at dispatch (defense in depth, not just registry
     absence).
@@ -72,15 +75,30 @@ from fabric.loopback import wire  # noqa: E402
 from fabric import capabilities as fabric_capabilities  # noqa: E402 -- import registers content_read AND echo_mock; echo_mock is removed below
 from artifact_handoff.lineage_store import LineageStore  # noqa: E402
 
-ALLOWED_CAPABILITY_ID = "content_read"
+DEFAULT_CAPABILITY_ID = "content_read"
+# MISSION: FW-PHYSICAL-ANDROID-PC-PAIRING-001 added "physical_ping" as a
+# second selectable-but-still-single allowlisted capability (the harmless
+# nonce-echo test capability for the physical device-boundary proof).
+# Importing fabric.capabilities registers content_read, echo_mock, AND
+# physical_ping as an import side effect; _enforce_capability_allowlist()
+# below removes every capability except the one this listener instance
+# was started with, so a running process can still only ever invoke one.
+_KNOWN_CAPABILITY_IDS = ("content_read", "physical_ping")
 
-# Enforce the allowlist at import time: this listener must never be able
-# to invoke anything but content_read, regardless of what
-# fabric.capabilities registers as an unrelated import side effect.
-fi.CAPABILITIES.pop("echo_mock", None)
-assert set(fi.CAPABILITIES) == {ALLOWED_CAPABILITY_ID}, (
-    f"refusing to start: expected only {ALLOWED_CAPABILITY_ID!r} registered, found {sorted(fi.CAPABILITIES)}"
-)
+
+def _enforce_capability_allowlist(allowed_capability_id: str) -> None:
+    """Removes every registered capability except allowed_capability_id
+    from fi.CAPABILITIES, regardless of what fabric.capabilities
+    registers as an unrelated import side effect (currently content_read,
+    echo_mock, physical_ping). Must run AFTER argparse so the operator's
+    --capability choice, not import order, decides what this process can
+    invoke."""
+    for capability_id in list(fi.CAPABILITIES):
+        if capability_id != allowed_capability_id:
+            fi.CAPABILITIES.pop(capability_id, None)
+    assert set(fi.CAPABILITIES) == {allowed_capability_id}, (
+        f"refusing to start: expected only {allowed_capability_id!r} registered, found {sorted(fi.CAPABILITIES)}"
+    )
 
 
 def _handle_artifact_envelope(payload: dict, node_id: str, local_transport: InMemoryFabricTransport) -> dict:
@@ -93,7 +111,7 @@ def _handle_artifact_envelope(payload: dict, node_id: str, local_transport: InMe
     return local_transport.deliver(node_id, env)
 
 
-def _handle_capability_request(payload: dict, node_id: str, local_transport, lineage_store, artifact_index, replay_guard, integrity_key, key_store):
+def _handle_capability_request(payload: dict, node_id: str, allowed_capability_id: str, local_transport, lineage_store, artifact_index, replay_guard, integrity_key, key_store, pairing_store, peer_store):
     request, reason = wire.safe_capability_request_from_wire(payload)
     if request is None:
         return None, reason
@@ -103,18 +121,19 @@ def _handle_capability_request(payload: dict, node_id: str, local_transport, lin
             error_detail=f"unknown node: this listener identifies as {node_id!r}, not {request.destination_node_id!r}",
         )
         return (result, receipt), None
-    if request.capability_id != ALLOWED_CAPABILITY_ID:
+    if request.capability_id != allowed_capability_id:
         result, receipt = fi._result_and_receipt(
             request, status=fi.CAP_UNSUPPORTED, structured_result=None,
             error_detail=(
                 f"capability {request.capability_id!r} is not in this listener's allowlist "
-                f"({ALLOWED_CAPABILITY_ID!r} only)"
+                f"({allowed_capability_id!r} only)"
             ),
         )
         return (result, receipt), None
     result, receipt = fi.process_remote_capability_request(
         request, local_transport, lineage_store=lineage_store, artifact_index=artifact_index,
         replay_guard=replay_guard, integrity_key=integrity_key, key_store=key_store,
+        pairing_store=pairing_store, peer_store=peer_store,
     )
     return (result, receipt), None
 
@@ -122,11 +141,16 @@ def _handle_capability_request(payload: dict, node_id: str, local_transport, lin
 def run_server(host: str, port: int, authkey: bytes, node_id: str, lineage_dir: str,
                max_messages: int = 20, idle_timeout: float = 20.0,
                max_runtime_seconds: float = 120.0, max_message_bytes: int = 65536,
-               integrity_key: Optional[bytes] = None, key_store_dir: Optional[str] = None) -> None:
+               integrity_key: Optional[bytes] = None, key_store_dir: Optional[str] = None,
+               pairing_store_dir: Optional[str] = None, peer_store_dir: Optional[str] = None,
+               capability_id: str = DEFAULT_CAPABILITY_ID) -> None:
+    _enforce_capability_allowlist(capability_id)
     lineage_store = LineageStore(Path(lineage_dir))
     artifact_index = fi.FabricArtifactIndex()
     replay_guard = fi.RequestReplayGuard(Path(lineage_dir))
     key_store = fi.LocalKeyStore(Path(key_store_dir)) if key_store_dir else None
+    pairing_store = fi.PairingStore(Path(pairing_store_dir)) if pairing_store_dir else None
+    peer_store = fi.PeerIdentityStore(Path(peer_store_dir)) if peer_store_dir else None
     local_transport = InMemoryFabricTransport(registered_nodes=(node_id,))
 
     listener = connection.Listener((host, port), family="AF_INET", authkey=authkey, backlog=1)
@@ -162,7 +186,8 @@ def run_server(host: str, port: int, authkey: bytes, node_id: str, lineage_dir: 
                 print(f"PC_NODE_ENVELOPE_RESULT {outcome}", flush=True)
             elif kind == "CAPABILITY_REQUEST":
                 pair, framing_error = _handle_capability_request(
-                    payload, node_id, local_transport, lineage_store, artifact_index, replay_guard, integrity_key, key_store,
+                    payload, node_id, capability_id, local_transport, lineage_store, artifact_index, replay_guard,
+                    integrity_key, key_store, pairing_store, peer_store,
                 )
                 if pair is None:
                     wire.send_message(conn, "CAPABILITY_RESPONSE_ERROR", {"reason": framing_error})
@@ -205,6 +230,25 @@ def main() -> None:
         help="directory for a LocalKeyStore (MISSION: FW-LOCAL-KEY-PROVISIONING-CONTRACT-001). "
              "Takes precedence over --integrity-key when given.",
     )
+    parser.add_argument(
+        "--pairing-store-dir", default=None,
+        help="directory for a PairingStore (MISSION: FW-LOCAL-PAIRING-KEY-ESTABLISHMENT-001). "
+             "Takes precedence over --key-store-dir/--integrity-key when given; --key-store-dir "
+             "must also be supplied so relationship keys can be resolved.",
+    )
+    parser.add_argument(
+        "--peer-store-dir", default=None,
+        help="directory for a PeerIdentityStore (MISSION: FW-PEER-IDENTITY-CONTRACT-001). "
+             "Requires --pairing-store-dir to also be supplied.",
+    )
+    parser.add_argument(
+        "--capability", default=DEFAULT_CAPABILITY_ID, choices=_KNOWN_CAPABILITY_IDS,
+        help=(
+            "the ONE capability_id this listener will register/invoke (MISSION: "
+            "FW-PHYSICAL-ANDROID-PC-PAIRING-001 added 'physical_ping' alongside the "
+            f"existing 'content_read'). Default: {DEFAULT_CAPABILITY_ID!r}."
+        ),
+    )
     args = parser.parse_args()
 
     if args.host in ("0.0.0.0", "::", ""):
@@ -216,7 +260,8 @@ def main() -> None:
         max_messages=args.max_messages, idle_timeout=args.idle_timeout,
         max_runtime_seconds=args.max_runtime_seconds, max_message_bytes=args.max_message_bytes,
         integrity_key=bytes.fromhex(args.integrity_key) if args.integrity_key else None,
-        key_store_dir=args.key_store_dir,
+        key_store_dir=args.key_store_dir, pairing_store_dir=args.pairing_store_dir,
+        peer_store_dir=args.peer_store_dir, capability_id=args.capability,
     )
 
 

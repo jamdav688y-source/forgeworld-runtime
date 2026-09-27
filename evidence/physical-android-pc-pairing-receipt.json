@@ -1,0 +1,140 @@
+{
+  "mission_id": "FW-PHYSICAL-ANDROID-PC-PAIRING-001",
+  "parent_mission": "FW-PEER-IDENTITY-CONTRACT-001",
+  "program": "FORGEWORLD-CONTINUITY-FABRIC-001",
+
+  "starting_head": "de8c378a10766636a65bc7318d16e6431cc2e2d6",
+  "starting_worktree": {
+    "modified_tracked_files": [
+      "fabric/interface.py",
+      "fabric/loopback/pc_node_server.py",
+      "fabric/loopback/wire.py",
+      "fabric/tcp/pc_node_server.py"
+    ],
+    "untracked_files": [
+      "evidence/local-pairing-key-establishment-receipt.json",
+      "evidence/peer-identity-contract-receipt.json",
+      "fabric/tests/test_local_pairing.py",
+      "fabric/tests/test_local_pairing_loopback.py",
+      "fabric/tests/test_local_pairing_tcp.py",
+      "fabric/tests/test_peer_identity.py",
+      "fabric/tests/test_peer_identity_loopback.py",
+      "fabric/tests/test_peer_identity_tcp.py"
+    ],
+    "note": "this is the exact FW-LOCAL-PAIRING-KEY-ESTABLISHMENT-001 + FW-PEER-IDENTITY-CONTRACT-001 delta from the prior two missions, reproduced unchanged before this mission's own construction began"
+  },
+  "starting_regression": "307/307 PASS, 0 FAIL (re-verified this session, via `python3 -m unittest <module>` one suite per subprocess, in the mission-specified order, before construction began -- reproduces evidence/peer-identity-contract-receipt.json's own claimed total exactly)",
+
+  "pc_environment": {
+    "note": "THIS SESSION RUNS IN A CLOUD LINUX CONTAINER, NOT THE OPERATOR'S ACTUAL WINDOWS PC. Section 4's 'inspect the actual PC environment' cannot be honestly performed from here -- reporting this container's own OS as if it answered that question would misrepresent the target machine.",
+    "this_containers_os": "Linux 6.18.44-fc-v37 (not Windows; not the deployment target)",
+    "this_containers_python": "3.11.15",
+    "operator_pc_environment": "UNOBSERVED -- the operator must supply Windows version, Python runtime, firewall posture, and LAN interface details themselves when they run the procedure in operator_procedure below"
+  },
+  "phone_environment_if_observable": "UNOBSERVED -- no Android/Termux device is reachable from this cloud container; nothing about the phone's OS, Termux version, or Python availability could be inspected",
+
+  "pc_peer_id": "NONE MINTED FOR PHYSICAL USE -- ephemeral PEER-* ids were minted and torn down only inside this session's own local TCP-loopback test suite (fabric/tcp/tests/test_physical_ping_harness.py); the operator mints the real one with `pc_pairing_ceremony.py register-peer` per the procedure below",
+  "phone_peer_id": "NONE -- same reason; the phone receives its peer_id string verbatim from the PC operator's register-peer output, out-of-band",
+  "relationship_reference": "NONE PERSISTED -- same reason; relationship_id/key_id are minted fresh by `pc_pairing_ceremony.py offer` at operator run-time, not pre-generated here",
+  "physical_binding_reference": "NOT IMPLEMENTED THIS MICROPHASE -- see limitations.physical_endpoint_binding_not_implemented below",
+
+  "transport_type": "multiprocessing.connection over AF_INET/TCP (unmodified adapter from FW-FABRIC-DEVICE-BOUNDARY-001) -- HMAC-SHA256 message integrity, no transport encryption",
+  "pc_binding_interface": "operator-supplied explicit LAN IP only; fabric/tcp/pc_node_server.py refuses --host 0.0.0.0/::/empty outright (pre-existing guard, unchanged)",
+  "port_strategy": "operator-chosen TCP port, paired with a one-shot Windows Firewall rule opened immediately before starting pc_node_server.py and removed immediately after it exits (documented in pc_node_server.py's own FIREWALL/LIFECYCLE docstring, unchanged from the prior device-boundary mission)",
+  "operator_confirmation_method": "Short Authentication String (8 hex chars, truncated SHA-256 of the relationship secret) printed by `pc_pairing_ceremony.py offer` and compared out-of-band (read aloud / side-by-side) by the operator on both the PC and phone before running `confirm` -- unchanged mechanism from FW-LOCAL-PAIRING-KEY-ESTABLISHMENT-001, now exercised across the physical-boundary ceremony script",
+
+  "request_integrity_result": "PROVEN in local TCP-loopback harness only (fabric/tcp/tests/test_physical_ping_harness.py::TestPhysicalPingFullChainOverTCP::test_tampered_tag_rejected_with_zero_execution) -- a mutated integrity_tag is rejected with CAP_FAILED and zero lineage writes. NOT proven over a real physical link.",
+  "peer_binding_result": "PROVEN in local TCP-loopback harness only (test_wrong_relationship_id_rejected_with_zero_execution, test_revoked_peer_rejected_with_zero_execution) -- an unbound or revoked peer_id is rejected before capability dispatch. NOT proven physically.",
+  "authority_result": "PROVEN in local TCP-loopback harness only (test_expired_authority_rejected_with_zero_execution) -- CAP_UNAUTHORIZED with zero lineage writes for an expired AuthorityContext. NOT proven physically.",
+  "replay_result": "PROVEN in local TCP-loopback harness only (test_valid_paired_request_executes_physical_ping_exactly_once's duplicate-send assertion) -- an exact duplicate request_id returns CAP_DUPLICATE_COMPLETED with zero additional lineage writes. NOT proven physically.",
+
+  "physical_roundtrip_result": "NOT_PERFORMED -- PHYSICAL_OPERATOR_ACTION_REQUIRED. No real Android/Termux device and no real Windows PC are reachable from this cloud execution container (see pc_environment/phone_environment_if_observable above). Per the mission's own Section 26, no physical success is claimed; see operator_procedure for the exact steps to complete this on the operator's own hardware.",
+  "physical_duplicate_result": "NOT_PERFORMED physically; local-harness equivalent PROVEN (see replay_result)",
+  "physical_tamper_result": "NOT_PERFORMED physically; local-harness equivalent PROVEN (see request_integrity_result)",
+  "physical_revocation_result": "NOT_PERFORMED physically; local-harness equivalent PROVEN (fabric/tcp/tests/test_physical_ping_harness.py::TestPhysicalPingFullChainOverTCP::test_revoked_relationship_rejected_with_zero_execution and test_revoked_peer_rejected_with_zero_execution)",
+  "reconnect_result": "NOT_PERFORMED physically. Local-harness equivalent is PARTIAL: pc_node_server.py is a one-shot listener (accepts exactly one TCP connection, by design -- see its own docstring), so a real second handshake against the SAME process is architecturally impossible; test_disconnect_reconnect_relationship_survives instead proves the underlying relationship/key/peer STATE survives closing one transport object, and TestProcessRestartPhysicalPingLifecycleOverTCP proves it survives a full process restart (a fresh listener). A genuine phone Wi-Fi drop and rejoin against a long-lived multi-connection listener is a design change out of this microphase's scope (the one-shot lifecycle is a deliberate physical-safety discipline, not an oversight).",
+  "restart_result": "PROVEN (test_revoked_relationship_remains_rejected_after_server_restart): a relationship revoked between two separate pc_node_server.py process invocations, sharing only their on-disk store directories, remains rejected after restart -- state is durable across process lifetime, not merely in-memory.",
+
+  "response_integrity_status": "RESPONSE_INTEGRITY_GAP, unchanged from the prior peer-identity mission's own finding: the REQUEST is HMAC-signed and verified; the PC's RESPONSE (RemoteCapabilityResult + FabricReceipt) is not. receipt_id is a plain SHA-256 digest of the response's own fields (not a keyed MAC), so the phone client's independent recomputation of receipt_id catches accidental corruption or a naive relay bug, but does NOT cryptographically prove the response came from the genuine paired PC rather than a man-in-the-middle who also knows the (unkeyed) receipt_id algorithm. This mission does not claim bidirectional authenticated communication.",
+  "transport_confidentiality_status": "NOT PROVEN, and not claimed. Per the mission's own Section 10/20, this run used only synthetic, non-sensitive nonce payloads (e.g. 'forgeworld-physical-ping-<uuid>') for exactly this reason -- do not send production data across this transport until FW-SESSION-BINDING-AND-TRANSPORT-CONFIDENTIALITY-001 is complete.",
+
+  "secret_wire_status": "CONFIRMED CLEAN: only integrity_key_id (non-secret, an opaque label) ever appears on the wire in a CAPABILITY_REQUEST; the raw HMAC secret bytes are never serialized into any wire message in pc_node_server.py, termux_physical_ping_client.py, or the wire.py/canonical_request_fields() contract they both implement -- confirmed by code inspection (build_request()/capability_request_to_wire() never reference the secret) and by every harness test passing with the secret held only in local Python variables.",
+  "secret_evidence_status": "CONFIRMED CLEAN: this receipt contains no relationship secret, no HMAC key, and no authkey. pc_pairing_ceremony.py's own docstring documents that its `offer` subcommand prints the secret to the operator's terminal exactly once, for manual out-of-band transcription, and never writes it to any file this repository's evidence machinery touches.",
+
+  "production_files_changed": [
+    "fabric/capabilities.py (added PhysicalPingCapability -- a harmless nonce-echo MOCK capability, registered under 'physical_ping')",
+    "fabric/tcp/pc_node_server.py (parameterized the previously-hardcoded content_read-only allowlist into an operator-selectable --capability flag, default content_read, unchanged behavior for existing callers; new 'physical_ping' choice added)",
+    "fabric/tests/test_fabric_contract.py (updated TestNodeIdentityAndAdvertisement's hardcoded expected capability-id set to include the newly-registered 'physical_ping', matching the shared fi.CAPABILITIES registry -- a required consequence of the capabilities.py change, not a weakening of the test's own invariant)"
+  ],
+  "pc_files_created": [
+    "fabric/tcp/pc_pairing_ceremony.py (operator CLI: offer/confirm/revoke a PairingRelationship, register/bind/revoke a PeerIdentityStore peer_id, status -- a thin wrapper around already-tested fabric.interface primitives, adding only operator I/O for the out-of-band secret/SAS transcription the physical boundary requires)"
+  ],
+  "phone_files_created": [
+    "fabric/tcp/termux_physical_ping_client.py (standalone Termux-runnable phone harness: builds and HMAC-signs a physical_ping CAPABILITY_REQUEST carrying relationship_id/source_peer_id/integrity_key_id, verifies the response independently, stdlib-only, no fabric.* import -- duplicated-logic-by-necessity, kept honest by tests_added's cross-reference vector tests)"
+  ],
+  "tests_added": {
+    "files": [
+      "fabric/tests/test_physical_ping_capability.py (4 tests: registration, echo/complete happy path, non-UTF-8 payload failure, source-inspection guard against filesystem/shell access)",
+      "fabric/tcp/tests/test_physical_ping_harness.py (15 tests: full valid round trip + exact-duplicate replay, tampered integrity tag, wrong relationship_id, revoked relationship, revoked peer, expired authority, a disconnect/relationship-survival check, a real two-process restart proof, the pairing-ceremony CLI's full offer/register/bind/confirm/status/revoke happy path and its wrong-SAS failure path, the exact termux_physical_ping_client.py file run as a real subprocess against a real TCP socket -- both a correct round trip and a wrong-authkey rejection, and three cross-reference vector tests proving the phone client's standalone duplicated HMAC/canonicalization/receipt-id logic produces byte-identical output to fabric.interface's real implementations)"
+    ],
+    "total": 19,
+    "existing_test_files_modified": "fabric/tests/test_fabric_contract.py (one assertion updated, see production_files_changed)"
+  },
+  "full_regression_result": {
+    "run_method": "python3 -m unittest <module> -v, one suite per subprocess, this session, in the mission-specified order (the same 307-test baseline set, plus the 2 new suites)",
+    "total": "326/326 pass, 0 fail",
+    "baseline_comparison": "Reproduced the 307/307 baseline unchanged, then added 19 new tests (4 + 15) = 326, zero regressions in previously-passing suites after the one required test_fabric_contract.py assertion update (documented above, a direct and expected consequence of registering a new shared capability, not a weakened invariant).",
+    "unrunnable_in_this_sandbox": [
+      "capabilities/tests/test_discover.py",
+      "evidence_envelope/tests/test_envelope.py",
+      "evidence_envelope/tests/test_trajectory.py",
+      "forgeworld-mobile-research/tests/*.py"
+    ],
+    "unrunnable_reason": "unchanged from all prior missions -- these suites depend on packages (PyYAML, PIL, others) not installed in this sandbox; note pytest itself IS now available in this sandbox (a change from prior missions' environment), but the mission-specified unittest run method was used throughout for exact comparability with the 253/280/307 baseline chain"
+  },
+
+  "counterevidence": [
+    "This entire proof is local-TCP-loopback (127.0.0.1) only. No real Android/Termux process and no real Windows PC process ever communicated. PHYSICAL_ANDROID_PC_GOVERNED_REQUEST_PATH_PROVEN is explicitly NOT claimed.",
+    "physical_endpoint_binding_not_implemented: Section 6's conceptual physical_endpoint_binding record (binding_id/peer_id/relationship_id/endpoint_class/created_at/status) was designed but NOT built as a persisted store this microphase -- peer identity and pairing relationship already gate execution; endpoint_class metadata would be additive bookkeeping only, not a new gate, and adding a fifth durable-store class without an immediate consumer risked overbuilding ahead of the physical proof itself. Recommended for the next microphase alongside session binding, if still wanted.",
+    "capability_advertisement_full_shape_not_implemented: Section 19's fuller CapabilityAdvertisement shape (version/input_contract/output_contract/authority_requirement/availability/evidence_requirement) is not built; the existing fi.NodeCapabilityAdvertisement (node_id, capability_id, tags, reachable, advertised_at) is reused unchanged and does not yet cover those fields.",
+    "response_integrity_status and transport_confidentiality_status above are real, currently-unclosed gaps, not merely theoretical caveats.",
+    "The SAS out-of-band comparison is procedurally required but not cryptographically enforced -- nothing in pc_pairing_ceremony.py or PairingStore.confirm() prevents an operator from typing the SAS without actually comparing it; the human step is trusted, as Section 7 anticipates."
+  ],
+  "limitations": "See counterevidence. Additionally: pc_node_server.py's one-shot-listener discipline (inherited, unmodified) means the physical proof this mission enables is a single governed request per PC process invocation, not a persistent session -- exactly matching the prior device-boundary mission's own scope, not expanded here.",
+
+  "operator_procedure": {
+    "summary": "Run on the operator's own Windows PC and Android/Termux phone, both on the same LAN. Nothing here can be executed from this cloud sandbox.",
+    "prerequisites": [
+      "PC: Python 3 installed and this repository checked out.",
+      "Phone: Termux installed, `pkg install python` run once.",
+      "Both devices on the same Wi-Fi network/LAN.",
+      "Operator can read the PC's terminal and type into the phone's Termux terminal (or vice versa) -- the out-of-band channel this ceremony relies on."
+    ],
+    "steps": [
+      "1. On the PC, choose store directories once, e.g. C:\\forgeworld\\pairing, C:\\forgeworld\\keys, C:\\forgeworld\\peers.",
+      "2. PC: python fabric\\tcp\\pc_pairing_ceremony.py --pairing-store-dir C:\\forgeworld\\pairing --key-store-dir C:\\forgeworld\\keys --peer-store-dir C:\\forgeworld\\peers register-peer  -> note the printed peer_id.",
+      "3. PC: python fabric\\tcp\\pc_pairing_ceremony.py --pairing-store-dir C:\\forgeworld\\pairing --key-store-dir C:\\forgeworld\\keys --peer-store-dir C:\\forgeworld\\peers offer --local-node-id PC-NODE-MAIN --remote-node-id PHONE-NODE-TERMUX  -> note relationship_id, key_id, sas, and the secret hex (printed ONCE).",
+      "4. Operator transcribes relationship_id, key_id, the secret hex, and the peer_id from steps 2-3 into a phone_config.json on the phone (see termux_physical_ping_client.py's own docstring for the exact JSON shape) -- by hand, over the trusted out-of-band channel (not over this LAN).",
+      "5. PC: python fabric\\tcp\\pc_pairing_ceremony.py --pairing-store-dir C:\\forgeworld\\pairing --key-store-dir C:\\forgeworld\\keys --peer-store-dir C:\\forgeworld\\peers bind-peer --peer-id <peer_id> --relationship-id <relationship_id>",
+      "6. Operator reads the sas value aloud (or shows both screens side by side) and confirms it matches on both devices BEFORE continuing.",
+      "7. PC: python fabric\\tcp\\pc_pairing_ceremony.py --pairing-store-dir C:\\forgeworld\\pairing --key-store-dir C:\\forgeworld\\keys --peer-store-dir C:\\forgeworld\\peers confirm --relationship-id <relationship_id> --sas <sas>",
+      "8. PC: open a Windows Firewall rule scoped to one chosen TCP port, then: python fabric\\tcp\\pc_node_server.py --host <PC's LAN IP> --port <chosen port> --authkey <fresh hex, e.g. from `python -c \"import secrets;print(secrets.token_hex(16))\"`> --node-id PC-NODE-MAIN --lineage-dir C:\\forgeworld\\lineage --capability physical_ping --pairing-store-dir C:\\forgeworld\\pairing --key-store-dir C:\\forgeworld\\keys --peer-store-dir C:\\forgeworld\\peers  -- copy the authkey into phone_config.json's \"authkey\" field the same out-of-band way (step 4), then start this command.",
+      "9. Phone (Termux): python termux_physical_ping_client.py --config phone_config.json",
+      "10. Expect on the phone: 'PHONE_RESULT: PHONE_TO_PC_GOVERNED_PHYSICAL_PING_VERIFIED receipt_id=...' and exit code 0. Expect on the PC: 'PC_NODE_CAPABILITY_RESULT status=COMPLETED ...' followed by PC_NODE_EXITING (the listener is one-shot; it exits after this one request).",
+      "11. Immediately after, the operator removes the Windows Firewall rule opened in step 8.",
+      "12. Adversarial/revocation checks (optional but recommended): re-run step 9 unchanged -> expect CAP_DUPLICATE_COMPLETED-shaped rejection (the receipt says so; a fresh pc_node_server.py invocation is needed per attempt, since it is one-shot). To test revocation: PC runs `pc_pairing_ceremony.py revoke --relationship-id <relationship_id> --reason ...` (or revoke-peer), starts a fresh pc_node_server.py as in step 8, and the SAME phone_config.json now must fail with a FAILED status."
+    ],
+    "expected_success_output_pc": "PC_NODE_LISTENING <ip>:<port> / PC_NODE_ACCEPTED / PC_NODE_ENVELOPE_RESULT {'delivered': True, ...} / PC_NODE_CAPABILITY_RESULT status=COMPLETED receipt_id=... / PC_NODE_SHUTDOWN_RECEIVED / PC_NODE_EXITING",
+    "expected_success_output_phone": "PHONE: connecting to ... / PHONE: connected. / PHONE: artifact envelope delivered and acknowledged. / PHONE: received capability result status='COMPLETED' / (JSON response dump) / PHONE_RESULT: PHONE_TO_PC_GOVERNED_PHYSICAL_PING_VERIFIED receipt_id=...",
+    "expected_failure_signatures": "UNREACHABLE (no route/firewall blocked) -- TRANSFER_FAILED (envelope rejected) -- CAPABILITY_REQUEST_FAILED (framing/malformed) -- a COMPLETED-shaped JSON whose result.status is FAILED/UNAUTHORIZED/UNSUPPORTED/DUPLICATE_* (trust gate rejected the request; read error_detail) -- VERIFICATION_FAILED (the phone's own independent receipt check caught an inconsistency)."
+  },
+
+  "newly_demonstrated_capability": "The local (non-physical) PC-side harness (pc_node_server.py --capability physical_ping), the operator pairing-ceremony CLI (pc_pairing_ceremony.py), and the standalone phone harness (termux_physical_ping_client.py) are all constructed, mutually compatible, and proven correct against a real TCP socket -- including the full peer-identity + pairing + key + message-integrity + replay + authority gate chain and a genuine two-process restart -- with byte-for-byte cross-reference tests guarding the phone script's necessarily-duplicated cryptographic logic against silent drift from fabric.interface.",
+  "current_capability_frontier": "PHYSICAL_OPERATOR_ACTION_REQUIRED: the harnesses, ceremony, and operator procedure exist and are locally validated; the actual physical Android/Termux <-> Windows PC governed request has not been performed because no such devices are reachable from this cloud execution container. No physical success is claimed.",
+
+  "next_microphase": "FW-SESSION-BINDING-AND-TRANSPORT-CONFIDENTIALITY-001",
+  "rollback": "This mission's diff is fully isolated and none of it has been committed: `git checkout -- fabric/capabilities.py fabric/tcp/pc_node_server.py fabric/tests/test_fabric_contract.py` reverts the three modified files, and deleting fabric/tcp/pc_pairing_ceremony.py, fabric/tcp/termux_physical_ping_client.py, fabric/tests/test_physical_ping_capability.py, fabric/tcp/tests/test_physical_ping_harness.py, and this receipt removes everything newly created -- restoring the worktree to exactly the pre-mission state (starting_head's committed baseline plus the untouched FW-LOCAL-PAIRING-KEY-ESTABLISHMENT-001/FW-PEER-IDENTITY-CONTRACT-001 delta).",
+
+  "commit_status": "NOT COMMITTED",
+  "push_status": "NOT PUSHED"
+}

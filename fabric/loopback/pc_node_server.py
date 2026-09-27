@@ -50,7 +50,7 @@ def _handle_artifact_envelope(payload: dict, node_id: str, local_transport: InMe
     return outcome
 
 
-def _handle_capability_request(payload: dict, node_id: str, local_transport, lineage_store, artifact_index, replay_guard, integrity_key, key_store):
+def _handle_capability_request(payload: dict, node_id: str, local_transport, lineage_store, artifact_index, replay_guard, integrity_key, key_store, pairing_store, peer_store):
     request, reason = wire.safe_capability_request_from_wire(payload)
     if request is None:
         # Cannot build a proper (result, receipt) pair without a valid
@@ -65,6 +65,7 @@ def _handle_capability_request(payload: dict, node_id: str, local_transport, lin
     result, receipt = fi.process_remote_capability_request(
         request, local_transport, lineage_store=lineage_store, artifact_index=artifact_index,
         replay_guard=replay_guard, integrity_key=integrity_key, key_store=key_store,
+        pairing_store=pairing_store, peer_store=peer_store,
     )
     return (result, receipt), None
 
@@ -85,11 +86,14 @@ class _AlwaysIncompleteTestCapability:
 
 def run_server(address: str, family: str, authkey: bytes, node_id: str, lineage_dir: str,
                max_messages: int = 100, idle_timeout: float = 15.0, integrity_key: Optional[bytes] = None,
-               key_store_dir: Optional[str] = None) -> None:
+               key_store_dir: Optional[str] = None, pairing_store_dir: Optional[str] = None,
+               peer_store_dir: Optional[str] = None) -> None:
     lineage_store = LineageStore(Path(lineage_dir))
     artifact_index = fi.FabricArtifactIndex()
     replay_guard = fi.RequestReplayGuard(Path(lineage_dir))
     key_store = fi.LocalKeyStore(Path(key_store_dir)) if key_store_dir else None
+    peer_store = fi.PeerIdentityStore(Path(peer_store_dir)) if peer_store_dir else None
+    pairing_store = fi.PairingStore(Path(pairing_store_dir)) if pairing_store_dir else None
     local_transport = InMemoryFabricTransport(registered_nodes=(node_id,))
     fi.register_capability(_AlwaysIncompleteTestCapability())
 
@@ -128,7 +132,8 @@ def run_server(address: str, family: str, authkey: bytes, node_id: str, lineage_
                 wire.send_message(conn, "ARTIFACT_ENVELOPE_ACK", outcome)
             elif kind == "CAPABILITY_REQUEST":
                 pair, framing_error = _handle_capability_request(
-                    payload, node_id, local_transport, lineage_store, artifact_index, replay_guard, integrity_key, key_store,
+                    payload, node_id, local_transport, lineage_store, artifact_index, replay_guard,
+                    integrity_key, key_store, pairing_store, peer_store,
                 )
                 if pair is None:
                     wire.send_message(conn, "CAPABILITY_RESPONSE_ERROR", {"reason": framing_error})
@@ -162,6 +167,17 @@ def main() -> None:
         help="directory for a LocalKeyStore (MISSION: FW-LOCAL-KEY-PROVISIONING-CONTRACT-001). "
              "Takes precedence over --integrity-key when given.",
     )
+    parser.add_argument(
+        "--pairing-store-dir", default=None,
+        help="directory for a PairingStore (MISSION: FW-LOCAL-PAIRING-KEY-ESTABLISHMENT-001). "
+             "Takes precedence over --key-store-dir/--integrity-key when given; --key-store-dir "
+             "must also be supplied so relationship keys can be resolved.",
+    )
+    parser.add_argument(
+        "--peer-store-dir", default=None,
+        help="directory for a PeerIdentityStore (MISSION: FW-PEER-IDENTITY-CONTRACT-001). "
+             "Requires --pairing-store-dir to also be supplied.",
+    )
     args = parser.parse_args()
 
     run_server(
@@ -169,7 +185,8 @@ def main() -> None:
         node_id=args.node_id, lineage_dir=args.lineage_dir,
         max_messages=args.max_messages, idle_timeout=args.idle_timeout,
         integrity_key=bytes.fromhex(args.integrity_key) if args.integrity_key else None,
-        key_store_dir=args.key_store_dir,
+        key_store_dir=args.key_store_dir, pairing_store_dir=args.pairing_store_dir,
+        peer_store_dir=args.peer_store_dir,
     )
 
 
