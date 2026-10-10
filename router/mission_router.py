@@ -25,8 +25,10 @@ ROUTER_DIR = Path(__file__).resolve().parent
 HISTORY_PATH = CAPABILITIES_DIR / "history.jsonl"
 DECISIONS_PATH = ROUTER_DIR / "decisions.jsonl"
 
-sys.path.insert(0, str(CAPABILITIES_DIR))
-import discover  # noqa: E402
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+from capabilities import discover  # noqa: E402
 
 CONFIDENCE_WEIGHTS = {
     "reachability": 0.35,

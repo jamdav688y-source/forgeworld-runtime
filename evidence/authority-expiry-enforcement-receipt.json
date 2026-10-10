@@ -1,0 +1,108 @@
+{
+  "mission_id": "FW-AUTHORITY-EXPIRY-ENFORCEMENT-001",
+  "parent_mission": "FORGEWORLD-CONTINUITY-FABRIC-001",
+  "generated_at": "2026-09-26T00:00:00Z",
+  "generated_by": "Claude Sonnet 5, session_01ViNRAq3jGa9MJfVH3eL21o",
+  "repository": {
+    "root": "/home/user/forgeworld-runtime",
+    "branch": "claude/eager-mayer-n45ddd",
+    "starting_head": "6e00f0b0f47f3515cf1080ee59938c6f3f35765c",
+    "ending_head": "6e00f0b0f47f3515cf1080ee59938c6f3f35765c",
+    "head_unchanged": true
+  },
+  "starting_worktree_state": [
+    {"path": "fabric/loopback/wire.py", "state": "modified", "origin": "pre-existing, predates this mission"},
+    {"path": "fabric/tcp/", "state": "untracked", "origin": "pre-existing, predates this mission"},
+    {"path": "architecture/", "state": "untracked", "origin": "pre-existing, predates this mission"},
+    {"path": "evidence/", "state": "untracked", "origin": "pre-existing, predates this mission"}
+  ],
+  "ending_worktree_state": [
+    {"path": "fabric/interface.py", "state": "modified", "origin": "this mission's delta"},
+    {"path": "fabric/loopback/wire.py", "state": "modified", "origin": "pre-existing, untouched by this mission, byte-identical to starting state"},
+    {"path": "fabric/tcp/", "state": "untracked", "origin": "pre-existing, untouched by this mission"},
+    {"path": "architecture/", "state": "untracked", "origin": "pre-existing, untouched by this mission"},
+    {"path": "evidence/", "state": "untracked, one file added", "origin": "pre-existing directory; this mission added evidence/authority-expiry-enforcement-receipt.json only, did not modify evidence/recovery-receipt.json"},
+    {"path": "fabric/tests/test_authority_expiry.py", "state": "untracked, new file", "origin": "this mission's delta"}
+  ],
+  "invariant_repaired": {
+    "id": "authority-expiry-unenforced",
+    "prior_disclosure": "architecture/authority-map.md, 'Confirmed live gap' section, written during Phase 0",
+    "description": "fabric.interface.authority_permits() previously ignored AuthorityContext.expires_at entirely; an expired grant still satisfied the check. Fixed: authority_permits() now parses expires_at (when set) and denies whenever evaluation_time >= expires_at.",
+    "invariant_restored": "Historical authorization MUST NOT silently become current authority (mission Section 1); KNOWLEDGE != CAPABILITY != AUTHORITY != EXECUTION != VERIFIED_OUTCOME"
+  },
+  "expiry_semantics_selected": {
+    "expires_at_less_than_evaluation_time": "REJECTED (expired)",
+    "expires_at_greater_than_evaluation_time": "ELIGIBLE, subject to all existing authority checks (capability_id must still be in granted_capability_ids)",
+    "expires_at_is_none": "existing non-expiring behavior preserved exactly",
+    "expires_at_equal_to_evaluation_time": "REJECTED (fail-closed boundary: evaluation_time >= expires_at is expired), per operator's explicitly preferred semantic",
+    "timestamp_representation": "No new representation invented. expires_at continues to be an Optional[str] in the pre-existing _now() format ('%Y-%m-%dT%H:%M:%SZ', UTC/Zulu). It is parsed via datetime.strptime() using that exact format and made explicitly UTC-aware via .replace(tzinfo=timezone.utc), since the trailing 'Z' in every value this module has ever written denotes UTC. No naive/aware ambiguity exists in stored data because the module has only ever produced one string shape via _now(); the ambiguity risk that does exist is at the evaluation_time call boundary (see below).",
+    "naive_vs_aware_handling": "authority_permits() gained an optional evaluation_time: Optional[datetime] parameter (defaults to datetime.now(timezone.utc) when omitted, preserving real-wall-clock behavior for the one production call site). If a caller supplies a naive (tzinfo=None) evaluation_time, the function raises FabricError explicitly rather than attempting a comparison whose outcome would depend on an unstated timezone assumption -- this is the naive/aware ambiguity surfaced explicitly, as required, rather than silently resolved.",
+    "malformed_expiry_handling": "If expires_at is set but does not parse against the exact _now() format (datetime.strptime raises ValueError), authority_permits() returns False (denies) rather than falling back to string comparison or treating it as non-expiring. This is the fail-closed handling of 'uncertainty could accidentally grant authority.'"
+  },
+  "files_changed": [
+    {"path": "fabric/interface.py", "change": "added datetime/timezone import; added _TIMESTAMP_FORMAT constant and _parse_expiry() helper; replaced authority_permits() body to enforce expiry; updated the now-stale 'structural placeholder only' comment on AuthorityContext.expires_at to describe actual enforced behavior. No other function touched. AuthorityContext's field types/order unchanged (backward compatible)."},
+    {"path": "fabric/tests/test_authority_expiry.py", "change": "new file, 16 tests, added rather than modifying fabric/tests/test_fabric_contract.py's existing assertions"}
+  ],
+  "tests_added": {
+    "file": "fabric/tests/test_authority_expiry.py",
+    "classes": [
+      "TestExpiredAuthorityIsRejected (2 tests)",
+      "TestFutureAuthorityIsAccepted (2 tests)",
+      "TestNonExpiringGrantPreservesExistingBehavior (3 tests)",
+      "TestExactBoundaryIsRejected (2 tests)",
+      "TestMalformedExpiryFailsClosed (4 tests, includes the naive-evaluation_time adversarial case)",
+      "TestExistingAuthorityBehaviorUnchanged (3 tests, including an expired-but-broad grant still denying an unlisted capability)"
+    ],
+    "total": 16
+  },
+  "narrow_test_result": "16/16 pass, 0 fail (fabric/tests/test_authority_expiry.py, run via python3 -m unittest)",
+  "full_regression_result": {
+    "run_method": "python3 -m unittest <module>, one suite at a time, this session, immediately after the narrow run",
+    "suites": [
+      {"path": "capabilities/tests/test_forgeworld_mobile_research_capability.py", "result": "14/14 pass"},
+      {"path": "local_inference/tests/test_local_inference.py", "result": "18/18 pass"},
+      {"path": "artifact_handoff/tests/test_artifact_handoff.py", "result": "21/21 pass"},
+      {"path": "artifact_handoff/tests/test_lineage_store.py", "result": "12/12 pass"},
+      {"path": "content_readers/tests/test_content_readers.py", "result": "25/25 pass"},
+      {"path": "tests/test_namespace_stabilization.py", "result": "8/8 pass"},
+      {"path": "fabric/tests/test_fabric_contract.py", "result": "19/19 pass (unmodified from Phase-0 baseline; not edited this mission)"},
+      {"path": "fabric/tests/test_authority_expiry.py", "result": "16/16 pass (new this mission)"},
+      {"path": "fabric/tests/test_fabric_loopback.py", "result": "17/17 pass"},
+      {"path": "fabric/tcp/tests/test_fabric_tcp.py", "result": "12/12 pass"}
+    ],
+    "total": "162/162 pass, 0 fail",
+    "baseline_comparison": "Phase-0 baseline was 146/146 across the same 9 suites (excluding the new file). This run reproduces all 146 unchanged plus the 16 new tests = 162, with zero regressions and zero unexplained failures.",
+    "unrunnable_in_this_sandbox": [
+      "capabilities/tests/test_discover.py",
+      "evidence_envelope/tests/test_envelope.py",
+      "evidence_envelope/tests/test_trajectory.py",
+      "forgeworld-mobile-research/tests/*.py"
+    ],
+    "unrunnable_reason": "pytest not installed in this sandbox; unchanged from Phase-0"
+  },
+  "failures_counterevidence": "None. All narrow and regression tests pass. No test was modified to accommodate the implementation.",
+  "resulting_capability_claim": {
+    "claim": "TESTED: fabric.interface.authority_permits() enforces AuthorityContext.expires_at with the documented fail-closed boundary and fail-closed malformed-value handling, proven by 16 deterministic unit tests plus the full 146-test pre-existing regression suite passing unchanged.",
+    "explicitly_not_claimed": "This is not promoted to a generalized capability or governance-graph entry. CapabilityGraph and CapabilityPromotionGate were not touched -- neither exists in a form that requires an evidence reference to record, so per the mission's capability-claim discipline, no such recording was made and none was needed. This receipt is the evidence artifact for a later, separately authorized promotion decision, not a promotion itself."
+  },
+  "unresolved_risks": [
+    "evaluation_time defaults to datetime.now(timezone.utc) when omitted by a caller; the one production call site (fabric/interface.py process_remote_capability_request(), line ~578) calls authority_permits() with two positional arguments and therefore uses real wall-clock time -- this was not changed, and no test exercises that exact call site's expiry behavior end-to-end (only authority_permits() itself is tested directly with an injected evaluation_time). A future microphase could add an end-to-end test through process_remote_capability_request() with a real expired context.",
+    "expires_at remains an unvalidated free-text Optional[str] at construction time (AuthorityContext has no __post_init__ check on this field, matching architecture/authority-map.md's prior observation about granted_by being free-text too) -- malformed values are only caught when authority_permits() is actually called, not at grant-construction time. This mission did not add construction-time validation because doing so was outside the bounded surface (authority_permits() itself) and risked expanding scope into AuthorityContext's constructor semantics.",
+    "no timezone other than UTC is or was ever supported; this is consistent with the pre-existing _now() convention, not a new limitation introduced by this mission."
+  ],
+  "rollback_procedure": {
+    "scope": "This microphase's delta only: fabric/interface.py's diff (shown in full below) and the new file fabric/tests/test_authority_expiry.py. No reset/clean/checkout of any kind is required or was used.",
+    "exact_reversal": "git checkout -- fabric/interface.py   # reverts only this mission's hunk; fabric/loopback/wire.py's pre-existing modification is a separate, untouched file and is unaffected. rm fabric/tests/test_authority_expiry.py   # removes only the new test file.",
+    "diff_hunk_reference": "git diff fabric/interface.py at the time this receipt was written shows exactly one hunk: +1 import line (datetime, timezone), and the AuthorityContext.expires_at comment plus the full authority_permits() function body replaced (previously a single return statement with no expiry check). No other lines in the file changed."
+  },
+  "pre_existing_work_preserved": {
+    "fabric/loopback/wire.py": "untouched by this mission; git diff shows the same pre-existing modification as at mission start, no additional changes",
+    "fabric/tcp/": "untouched by this mission",
+    "architecture/": "untouched by this mission; not read-modified, only read for context",
+    "evidence/recovery-receipt.json": "untouched by this mission; only a new sibling file (this receipt) was added to evidence/"
+  },
+  "newly_demonstrated_capability": "AuthorityContext.expires_at is now a live, enforced, fail-closed field rather than a structural placeholder. This closes governance_risks[0] ('authority-expiry-unenforced') from evidence/recovery-receipt.json.",
+  "next_highest_leverage_gap": "Per architecture/authority-map.md and architecture/sentinel-map.md: no policy engine exists that evaluates more than actor x action x time (still no context-conditional grants, no human-approval interface backing granted_by, no ForgeSentinel anomaly layer). The next bounded, evidence-justified microphase would be either (a) an end-to-end test proving process_remote_capability_request() itself rejects an expired grant through the full request/response path, or (b) validating expires_at's format at AuthorityContext construction time so a malformed grant fails at creation rather than only at permission-check time -- both are small, single-function-surface, directly justified by this mission's own unresolved_risks.",
+  "commit_status": "NOT COMMITTED",
+  "push_status": "NOT PUSHED"
+}

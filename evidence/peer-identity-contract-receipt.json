@@ -1,0 +1,150 @@
+{
+  "mission_id": "FW-PEER-IDENTITY-CONTRACT-001",
+  "parent_mission": "FW-LOCAL-PAIRING-KEY-ESTABLISHMENT-001",
+  "program": "FORGEWORLD-CONTINUITY-FABRIC-001",
+  "generated_at": "2026-09-27T00:00:00Z",
+  "generated_by": "Claude Sonnet 5, session_01ViNRAq3jGa9MJfVH3eL21o",
+  "starting_head": "de8c378a10766636a65bc7318d16e6431cc2e2d6",
+  "starting_worktree": {
+    "modified_tracked_files": ["fabric/interface.py", "fabric/loopback/pc_node_server.py", "fabric/loopback/wire.py", "fabric/tcp/pc_node_server.py"],
+    "new_untracked_files": ["fabric/tests/test_local_pairing.py", "fabric/tests/test_local_pairing_loopback.py", "fabric/tests/test_local_pairing_tcp.py", "evidence/local-pairing-key-establishment-receipt.json"],
+    "verified_before_mutation": "git rev-parse HEAD and git status --short/diff --stat/diff --name-status were captured and matched the operator's reported FW-LOCAL-PAIRING-KEY-ESTABLISHMENT-001 state exactly -- no PEER_IDENTITY_BASELINE_DIVERGENCE. The pairing regression (test_local_pairing.py/_loopback.py/_tcp.py plus a spot-check of core suites) was re-run fresh and confirmed passing before any new edit."
+  },
+  "starting_regression": "280/280 PASS, 0 FAIL (re-verified this session before construction began)",
+
+  "existing_identity_primitives": "None found as production code. Searched fabric/interface.py, fabric/loopback/, fabric/tcp/, PairingStore, LocalKeyStore, AuthorityContext, NodeIdentity, RemoteCapabilityRequest, wire.py, both server scripts, and every pairing/authority test file for peer/identity/principal/actor/node_id/relationship/device/owner/subject/issuer/claim/credential/trust concepts. Two existing fields were specifically considered and REJECTED as substitutes for peer_id (documented directly in fabric/interface.py's own module comments, per Section 4's explicit instruction): NodeIdentity.node_id (a transient, unpersisted, unrevocable transport-routing identifier -- nothing stores, resolves, or revokes it) and AuthorityContext.actor_id (a free-text authority-attribution string with no validation, persistence, or lifecycle). Neither was reused; a genuinely new PeerIdentityStore was constructed.",
+  "chosen_peer_identity_contract": "PeerIdentityStore (fabric/interface.py): peer_id (opaque, random, non-secret, PEER-<uuid4 hex>), created_at, status (ACTIVE/REVOKED -- two states only, per Section 15's explicit 'do not implement federation/organizational identity/user accounts'), metadata_version (fixed constant '1', a forward-compatibility placeholder). A SEPARATE append-only peer<->relationship binding ledger (peer_relationship_bindings.jsonl) records which relationship_id(s) are currently accepted for a given peer_id -- Section 7's explicit requirement that 'a peer identity must not become trusted merely because it exists.'",
+  "peer_id_generation": "envelope.validate_mission_id(f'PEER-{uuid.uuid4().hex}') -- identical generation idiom to relationship_id and key_id, not derived from any secret, username, hostname, IP, or mutable device label.",
+  "peer_store": "Reuses evidence_envelope.envelope's exact JSONL/file-lock/atomic-write discipline (a seventh application of that pattern, after LineageStore, TrajectoryStore, RequestReplayGuard, LocalKeyStore's metadata ledger, PairingStore's metadata ledger, and now PeerIdentityStore's two ledgers). Supports register_peer/revoke_peer/status_of/resolve_active/bind_relationship/unbind_relationship/is_relationship_bound_to_peer; all proven durable across a fresh store instance and a real second OS subprocess.",
+  "relationship_binding": "bind_relationship(peer_id, relationship_id) appends a BOUND record to the separate bindings ledger; unbind_relationship() appends UNBOUND for that exact pair only (does not affect any other binding either identifier may have). is_relationship_bound_to_peer() checks the LATEST record for the exact pair. Revoking a peer does NOT retroactively unbind its relationships (orthogonal lifecycles, proven by TestRevokedRelationshipZeroExecution/TestRevokedKeyZeroExecution-style composition) -- but resolve_active(peer_id) returning None for a revoked peer means the enforcement gate rejects regardless of any surviving binding record.",
+  "request_identity_binding": "source_peer_id: Optional[str] = None added to RemoteCapabilityRequest (new optional field, no incompatible migration) and included in canonical_request_fields()'s HMAC-signed content, identically to how relationship_id was added in the parent mission -- mutating source_peer_id after signing invalidates the tag exactly like mutating capability_id or relationship_id would.",
+  "actor_id_semantics": "AuthorityContext.actor_id was NOT touched and is never read, compared against, or derived from source_peer_id anywhere in this mission's code. TestActorIdRemainsIndependent proves directly: the same peer_id executes successfully alongside a DIFFERENT, unrelated actor_id value, with no cross-check performed. Recorded decision: peer_id = protocol principal (who sent this, cryptographically), actor_id = authority principal (on whose authority this capability is requested) -- distinct today, may be related by a FUTURE policy, never automatically equated by this mission.",
+  "destination_identity_semantics": "No new destination_peer_id field was introduced. destination_node_id already provides the equivalent invariant this mission's Section 9 asked about: it is already part of canonical_request_fields()'s signed content (added in the original message-integrity mission) and already checked by both server scripts' pre-existing 'unknown node' guard (request.destination_node_id != node_id -> CAP_FAILED). Adding a duplicate destination_peer_id concept for the same already-solved invariant was judged unnecessary and was not built.",
+  "final_gate_order": ["wire/frame decode (existing, unmodified)", "relationship resolution (pairing_store.resolve_active) + relationship/key cross-check (existing, unmodified from the parent mission)", "key resolution (key_store.resolve_key) (existing, unmodified)", "message integrity verification (verify_request_integrity) (existing, unmodified)", "PEER IDENTITY resolution + peer/relationship binding check (NEW, evaluated strictly AFTER integrity succeeds so an unverified peer claim can never influence anything)", "replay check (existing, unchanged position)", "envelope pull / hash validation (existing, unchanged)", "artifact-identity conflict check (existing, unchanged)", "authority check (existing, unchanged)", "capability lookup (existing, unchanged)", "execution (existing, unchanged)", "durable disposition recording, now including source_peer_id/relationship_id/actor_id (extended, not replaced)"],
+
+  "active_peer_result": "CAP_COMPLETED, executes exactly once (proven in-process, over loopback subprocess, and over TCP subprocess) -- matrix item 1.",
+  "unknown_peer_result": "CAP_FAILED, zero execution -- matrix item 2, proven all three layers.",
+  "malformed_peer_result": "CAP_FAILED, zero execution -- matrix item 3, both a non-format-conforming peer_id string and an entirely missing source_peer_id when peer_store is configured.",
+  "revoked_peer_result": "CAP_FAILED, zero execution, despite an otherwise fully valid relationship/key/integrity/authority chain -- matrix item 4, proven all three layers plus real process restart.",
+  "wrong_relationship_result": "CAP_FAILED, zero execution -- matrix item 5: a peer bound only to relationship A is rejected when presented (with valid integrity) under relationship B.",
+  "revoked_relationship_result": "CAP_FAILED, zero execution -- matrix item 6: relationship resolution itself fails first (existing pairing-store gate), peer identity is never even reached, but the end-to-end outcome remains correctly zero-execution.",
+  "revoked_key_result": "CAP_FAILED, zero execution -- matrix item 7: key resolution fails first (existing key-store gate), same composition property as above.",
+  "expired_authority_result": "CAP_UNAUTHORIZED (not CAP_FAILED) -- matrix item 8: identity/integrity fully passed, a separate, unweakened gate denied. Zero execution either way.",
+  "missing_grant_result": "CAP_UNAUTHORIZED -- matrix item 9: a fully valid, ACTIVE, correctly-bound peer with an empty capability grant is still denied.",
+  "peer_tamper_result": "CAP_FAILED, zero execution -- matrix item 10: source_peer_id mutated after signing (stale tag) fails integrity verification before peer identity is ever evaluated.",
+  "replay_result": "CAP_DUPLICATE_COMPLETED, zero additional execution -- matrix item 11: existing replay semantics fully preserved under a valid peer-identified request.",
+
+  "loopback_result": "4/4 new tests pass: full chain (peer+relationship+key+integrity+authority) executes once end-to-end over a real AF_UNIX subprocess; unknown peer rejected with zero lineage writes; revoked peer rejected with zero lineage writes; revoked peer remains rejected after a REAL second OS subprocess restart, lineage record count staying at exactly 1 (the one pre-revocation execution) -- matrix items 12/13.",
+  "tcp_result": "4/4 new tests pass, identical proof over 127.0.0.1 with an OS-assigned ephemeral port, including the real two-process restart proof.",
+  "restart_result": "PROVEN with a REAL second OS subprocess for both transports (in-process fresh-store-instance proxies also included for completeness in test_peer_identity.py::TestRestartPersistence): peer identity and its relationship binding both persist and remain independently resolvable across a genuine process restart; peer revocation persists identically.",
+  "lineage_identity_provenance": "RequestReplayGuard's own durable disposition record (already owned by this mission-chain, unlike artifact_handoff's separate Manifest/LineageStore contract, which was deliberately NOT touched to avoid a broader blast radius) was extended to also store source_peer_id, relationship_id, and actor_id alongside the existing request_id/capability_id/status/structured_result/error_detail/sha256 -- answering 'WHICH FORGEWORLD PEER ORIGINATED THIS EXECUTION?' durably. TestHistoricalLineageAvailableAfterRevocation proves this record, written BEFORE a peer's revocation, remains fully readable AFTER revocation -- revocation means no new trusted execution, not erased history (Section 14). No secret material is present in this record.",
+
+  "secret_safety_result": "CLEAN. No .secret files, no peer_identity.jsonl/peer_relationship_bindings.jsonl content, or any other secret artifact left anywhere in the repo tree (re-verified via filesystem search after the full test run). Peer identity/binding ledgers and every offer/registration return value were directly asserted (in-process test) to be free of the relationship's own secret key bytes and their hex encoding. Every serialized wire request was asserted to carry source_peer_id as plain (non-secret) metadata while never containing secret bytes. No new hardcoded secret-shaped byte literal was introduced by this mission (re-audited: the only pre-existing occurrence remains fabric/tests/test_message_integrity.py's already-documented dummy TEST_KEY/WRONG_KEY constants from an earlier mission).",
+
+  "production_files_changed": [
+    {"path": "fabric/interface.py", "change": "added source_peer_id: Optional[str] = None to RemoteCapabilityRequest (included in canonical_request_fields()'s signed content); added PEER_STATUS_*/_PEER_BINDING_* constants, PEER_IDENTITY_METADATA_VERSION, PeerIdentityConflictError, and the PeerIdentityStore class (register_peer/revoke_peer/status_of/resolve_active/bind_relationship/unbind_relationship/is_relationship_bound_to_peer); added optional peer_store parameter to process_remote_capability_request() with a new verification branch evaluated strictly after pairing_store's existing checks succeed; extended _finalize()'s replay-guard disposition record with source_peer_id/relationship_id/actor_id."},
+    {"path": "fabric/loopback/wire.py", "change": "capability_request_to_wire()/safe_capability_request_from_wire() now also carry source_peer_id (non-secret). 2 lines."},
+    {"path": "fabric/loopback/pc_node_server.py", "change": "added --peer-store-dir CLI arg (optional, requires --pairing-store-dir); constructs fi.PeerIdentityStore(Path(peer_store_dir)) when given and threads peer_store through run_server()/_handle_capability_request() into process_remote_capability_request()."},
+    {"path": "fabric/tcp/pc_node_server.py", "change": "identical --peer-store-dir wiring to the loopback server."}
+  ],
+  "tests_added": {
+    "files": [
+      "fabric/tests/test_peer_identity.py (19 tests, in-process: the full 18-item adversarial matrix)",
+      "fabric/tests/test_peer_identity_loopback.py (4 tests: full-chain execution, unknown-peer rejection, revoked-peer rejection, real two-process restart proof, over AF_UNIX)",
+      "fabric/tests/test_peer_identity_tcp.py (4 tests: same over localhost TCP)"
+    ],
+    "total": 27,
+    "existing_test_files_modified": "none"
+  },
+  "narrow_test_results": {
+    "test_peer_identity.py": "19/19 pass",
+    "test_peer_identity_loopback.py": "4/4 pass",
+    "test_peer_identity_tcp.py": "4/4 pass"
+  },
+  "full_regression_result": {
+    "run_method": "python3 -m unittest <module>, one suite per subprocess, this session, in the mission-specified order",
+    "suites": [
+      {"path": "fabric/tests/test_peer_identity.py", "result": "19/19 pass (new)"},
+      {"path": "fabric/tests/test_peer_identity_loopback.py", "result": "4/4 pass (new)"},
+      {"path": "fabric/tests/test_peer_identity_tcp.py", "result": "4/4 pass (new)"},
+      {"path": "fabric/tests/test_local_pairing.py", "result": "19/19 pass"},
+      {"path": "fabric/tests/test_local_pairing_loopback.py", "result": "4/4 pass"},
+      {"path": "fabric/tests/test_local_pairing_tcp.py", "result": "4/4 pass"},
+      {"path": "fabric/tests/test_local_key_provisioning.py", "result": "24/24 pass"},
+      {"path": "fabric/tests/test_local_key_provisioning_loopback.py", "result": "5/5 pass"},
+      {"path": "fabric/tests/test_local_key_provisioning_tcp.py", "result": "5/5 pass"},
+      {"path": "fabric/tests/test_message_integrity.py", "result": "15/15 pass"},
+      {"path": "fabric/tests/test_message_integrity_loopback.py", "result": "5/5 pass"},
+      {"path": "fabric/tests/test_message_integrity_tcp.py", "result": "5/5 pass"},
+      {"path": "fabric/tests/test_message_identity_replay.py", "result": "9/9 pass"},
+      {"path": "fabric/tests/test_message_identity_replay_loopback.py", "result": "2/2 pass"},
+      {"path": "fabric/tests/test_message_identity_replay_tcp.py", "result": "2/2 pass"},
+      {"path": "fabric/tests/test_authority_expiry.py", "result": "16/16 pass"},
+      {"path": "fabric/tests/test_authority_expiry_e2e.py", "result": "6/6 pass"},
+      {"path": "fabric/tests/test_authority_expiry_loopback.py", "result": "8/8 pass"},
+      {"path": "fabric/tests/test_authority_expiry_tcp.py", "result": "5/5 pass"},
+      {"path": "fabric/tests/test_fabric_contract.py", "result": "19/19 pass"},
+      {"path": "fabric/tests/test_fabric_loopback.py", "result": "17/17 pass"},
+      {"path": "fabric/tcp/tests/test_fabric_tcp.py", "result": "12/12 pass"},
+      {"path": "capabilities/tests/test_forgeworld_mobile_research_capability.py", "result": "14/14 pass"},
+      {"path": "local_inference/tests/test_local_inference.py", "result": "18/18 pass"},
+      {"path": "artifact_handoff/tests/test_artifact_handoff.py", "result": "21/21 pass"},
+      {"path": "artifact_handoff/tests/test_lineage_store.py", "result": "12/12 pass"},
+      {"path": "content_readers/tests/test_content_readers.py", "result": "25/25 pass"},
+      {"path": "tests/test_namespace_stabilization.py", "result": "8/8 pass"}
+    ],
+    "total": "307/307 pass, 0 fail",
+    "baseline_comparison": "Committed checkpoint baseline (de8c378, then extended uncommitted by the pairing mission) was 280/280. This run reproduces all 280 unchanged plus 27 new peer-identity tests = 307, zero regressions, zero unexplained failures.",
+    "unrunnable_in_this_sandbox": [
+      "capabilities/tests/test_discover.py",
+      "evidence_envelope/tests/test_envelope.py",
+      "evidence_envelope/tests/test_trajectory.py",
+      "forgeworld-mobile-research/tests/*.py"
+    ],
+    "unrunnable_reason": "pytest not installed in this sandbox; unchanged from all prior missions"
+  },
+
+  "counterevidence": "None found against the core claim.",
+  "limitations": [
+    "PeerIdentityStore does not itself cascade revocation to relationships or keys (relationship/key/peer lifecycles remain fully orthogonal, an explicit design choice consistent with the prior two missions) -- an operator wanting cascading revocation performs each action explicitly.",
+    "No re-identification/reactivation ceremony exists: a REVOKED peer_id has no un-revoke path in this store at all (Section 15's 'prefer the narrowest safe behavior' -- REVOKED PEER remains revoked unless a future authorized operation explicitly reconstructs one).",
+    "peer_id has no real-world meaning assigned yet (no 'this is the operator's PC' / 'this is the operator's phone' binding) -- deliberately deferred to the physical-device mission, per Section 20's explicit instruction.",
+    "Crash window B (capability executes, receiver crashes before durable disposition persistence) remains open and unaddressed, unchanged from prior missions -- orthogonal to peer identity.",
+    "Google account architecture and transport confidentiality were both explicitly out of scope and untouched, per Sections 21-22."
+  ],
+  "newly_demonstrated_capability": "LOCAL_PEER_IDENTITY_RELATIONSHIP_BINDING_PROVEN",
+  "current_capability_frontier": "Authority+expiry, replay, message integrity, key lifecycle, local pairing/relationship establishment, and now peer identity binding are each proven at the primitive, in-process, and local-transport layers, including real process restart. Physical device identity, Google/account authority, and transport confidentiality remain entirely unaddressed.",
+
+  "physical_android_pc_readiness_gaps": [
+    "peer identity: PROVEN (this mission)",
+    "physical endpoint binding: NOT STARTED -- peer_id carries no real-world device meaning yet",
+    "device pairing ceremony: PROVEN LOCALLY ONLY -- no out-of-band channel (QR/manual entry) for a real second device exists",
+    "session binding: NOT STARTED",
+    "transport confidentiality: NOT STARTED -- HMAC integrity proven, encryption explicitly out of scope",
+    "network discovery/addressing: NOT STARTED",
+    "connection lifecycle: PARTIALLY PROVEN -- one-shot listener/bounded lifecycle proven in the sandbox only, never against a real network peer",
+    "Android/Termux service process: EXISTS (fabric/tcp/termux_phone_client.py) but never run against this mission's identity/pairing chain",
+    "Windows service/process: NOT STARTED",
+    "reconnection: NOT STARTED",
+    "heartbeat: NOT STARTED",
+    "capability advertisement: PARTIALLY EXISTS (NodeCapabilityAdvertisement, unintegrated with pairing/identity)"
+  ],
+  "next_highest_leverage_microphase": "Per the mission's own stated sequence: FW-PHYSICAL-ANDROID-PC-PAIRING (an out-of-band offer-carrying mechanism for a real second device) or FW-SESSION-BINDING (binding a live connection to an already-proven peer/relationship pair) -- both explicitly NOT authorized or begun by this mission.",
+
+  "rollback": {
+    "scope": "This microphase's delta atop the de8c378 checkpoint (on top of the also-uncommitted pairing mission delta): fabric/interface.py (PeerIdentityStore + wiring), fabric/loopback/wire.py (source_peer_id carry-through), fabric/loopback/pc_node_server.py and fabric/tcp/pc_node_server.py (--peer-store-dir wiring), plus three new test files.",
+    "exact_reversal": "git diff fabric/interface.py fabric/loopback/wire.py fabric/loopback/pc_node_server.py fabric/tcp/pc_node_server.py against the pairing mission's own recorded diff distinguishes this mission's hunks precisely (each addition is marked with an explicit 'MISSION: FW-PEER-IDENTITY-CONTRACT-001' comment). rm fabric/tests/test_peer_identity.py fabric/tests/test_peer_identity_loopback.py fabric/tests/test_peer_identity_tcp.py restores the pairing-mission-only state exactly.",
+    "verification": "git status --short after this mission's edits shows the same four production files as modified (matching the pairing mission's own footprint, now further extended), with the checkpoint's committed tree otherwise undisturbed."
+  },
+  "resulting_capability_claim": {
+    "claim": "LOCAL_PEER_IDENTITY_RELATIONSHIP_BINDING_PROVEN -- ForgeWorld can create a durable protocol-level peer identity, bind it to a proven local pairing relationship, integrity-bind that identity claim to governed requests, revoke it, preserve it (and its binding) across a real process restart, and enforce identity/relationship consistency (a valid peer under the wrong relationship, an unknown peer, a revoked peer, or a tampered peer claim all fail closed with zero execution) strictly before replay, authority, and capability execution -- without ever conflating peer identity with human identity, device ownership, authority, or any secret material.",
+    "explicitly_not_claimed": [
+      "physical device identity", "human identity", "device ownership",
+      "Google identity", "internet identity", "PKI", "certificate identity",
+      "LAN security", "physical phone trust", "transport confidentiality"
+    ],
+    "promoted": false
+  },
+  "commit_status": "NOT COMMITTED",
+  "push_status": "NOT PUSHED"
+}
