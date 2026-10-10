@@ -1537,6 +1537,8 @@ def process_remote_capability_request(
     key_store: Optional[LocalKeyStore] = None,
     pairing_store: Optional[PairingStore] = None,
     peer_store: Optional[PeerIdentityStore] = None,
+    reachability_state: Optional[dict] = None,
+    allow_live_discovery: bool = False,
 ) -> tuple:
     """PC_NODE (or any destination) side of the fabric: pull the waiting
     envelope, verify its hash again (independent of the check
@@ -1544,6 +1546,15 @@ def process_remote_capability_request(
     artifact_handoff pipeline, enforce authority, dispatch to a
     registered capability, and produce a (RemoteCapabilityResult,
     FabricReceipt) pair. Never raises for an expected failure.
+
+    reachability_state / allow_live_discovery (MISSION:
+    FW-FABRIC-INTEGRATION-PROBE-001): passed straight through to
+    artifact_handoff.handoff(). With neither supplied (the default), the
+    governed path performs NO live capability discovery -- the manifest's
+    routing is recorded as REACHABILITY_NOT_SUPPLIED instead. Routing is
+    informational only: execution is dispatched by request.capability_id
+    after authority_permits(), never by the manifest's selected_capability,
+    so reachability can neither grant nor deny execution authority.
 
     peer_store (optional, MISSION: FW-PEER-IDENTITY-CONTRACT-001):
     requires pairing_store to ALSO be supplied (its absence itself fails
@@ -1825,7 +1836,10 @@ def process_remote_capability_request(
         source_provider="fabric_envelope", source_reference=env.envelope_id,
         declared_filename=None, declared_content_type=env.declared_content_type,
     )
-    manifest = ah_interface.handoff(reference, _EnvelopeBytesAcquisitionProvider(env), lineage_store=lineage_store)
+    manifest = ah_interface.handoff(
+        reference, _EnvelopeBytesAcquisitionProvider(env), lineage_store=lineage_store,
+        reachability_state=reachability_state, allow_live_discovery=allow_live_discovery,
+    )
 
     try:
         status, structured_result, error_detail = provider.invoke(manifest.to_dict(), bytes(env.payload))

@@ -231,12 +231,36 @@ CONTENT_TYPE_REQUIRED_TAGS = {
     "text/plain": ["research", "documentation"],
 }
 
+# MISSION: FW-FABRIC-INTEGRATION-PROBE-001. Routing notes for the two
+# fail-closed reachability outcomes, so callers can distinguish "nothing
+# reachable" from "reachability was never established".
+REACHABILITY_NOT_SUPPLIED = "REACHABILITY_NOT_SUPPLIED"
+REACHABILITY_MALFORMED = "REACHABILITY_MALFORMED"
+
+
+def _reachability_state_problem(reachability_state: Any) -> Optional[str]:
+    """Structural check of a caller-supplied reachability_state against
+    the shape discover.probe_all() produces: {capability_id: {
+    "reachability_confidence": number in [0, 1], ...}}. Returns None if
+    valid, else a reason. A reachability record is routing input only --
+    it is never evidence that any capability executed or succeeded."""
+    if not isinstance(reachability_state, dict):
+        return f"reachability_state must be a dict, got {type(reachability_state).__name__}"
+    for cap_id, entry in reachability_state.items():
+        if not isinstance(cap_id, str) or not isinstance(entry, dict):
+            return f"reachability_state entry {cap_id!r} must map a capability_id string to a dict"
+        confidence = entry.get("reachability_confidence")
+        if isinstance(confidence, bool) or not isinstance(confidence, (int, float)) or not 0.0 <= confidence <= 1.0:
+            return f"reachability_state[{cap_id!r}].reachability_confidence must be a number in [0, 1]"
+    return None
+
 
 def route_to_capability(
     detected_content_type: str,
     *,
     registry: Optional[list] = None,
     reachability_state: Optional[dict] = None,
+    allow_live_discovery: bool = False,
 ) -> tuple:
     """Return (selected_capability_id_or_None, routing_note).
 
@@ -244,13 +268,33 @@ def route_to_capability(
     matches it -> honestly returns (None, <reason>), exactly like
     mission_router's own "queued_no_reachable_capability" outcome --
     never a forced or guessed selection.
+
+    Reachability is never discovered implicitly. With no
+    reachability_state supplied, this returns (None,
+    REACHABILITY_NOT_SUPPLIED ...) without probing anything, unless the
+    caller explicitly passes allow_live_discovery=True -- the only path
+    that runs discover.probe_all() (which launches executables and opens
+    outbound TCP connections). A malformed reachability_state fails
+    closed the same way (REACHABILITY_MALFORMED) rather than falling
+    back to live discovery.
     """
     required_tags = CONTENT_TYPE_REQUIRED_TAGS.get(detected_content_type)
     if not required_tags:
         return None, f"no capability-tag mapping registered for content type {detected_content_type!r}"
 
+    if reachability_state is None:
+        if not allow_live_discovery:
+            return None, (
+                f"{REACHABILITY_NOT_SUPPLIED}: no reachability_state was supplied and live discovery "
+                "was not authorized; routing skipped without probing"
+            )
+        reachability_state = discover.probe_all()
+    else:
+        problem = _reachability_state_problem(reachability_state)
+        if problem is not None:
+            return None, f"{REACHABILITY_MALFORMED}: {problem}; routing skipped without probing"
+
     registry = registry if registry is not None else discover.load_registry()
-    reachability_state = reachability_state if reachability_state is not None else discover.probe_all()
 
     scored = [
         mission_router.score_capability(cap, required_tags, reachability_state, history=[])
@@ -386,6 +430,7 @@ def handoff(
     parent_manifest: Optional[Manifest] = None,
     unpack_limits: Any = None,
     reachability_state: Optional[dict] = None,
+    allow_live_discovery: bool = False,
     max_unpack_depth: int = 1,
     lineage_store: Any = None,
     _current_depth: int = 0,
@@ -406,7 +451,8 @@ def handoff(
     manifest, _children = _handoff_with_children(
         reference, acquisition_provider,
         parent_manifest=parent_manifest, unpack_limits=unpack_limits,
-        reachability_state=reachability_state, max_unpack_depth=max_unpack_depth,
+        reachability_state=reachability_state, allow_live_discovery=allow_live_discovery,
+        max_unpack_depth=max_unpack_depth,
         lineage_store=lineage_store, _current_depth=_current_depth,
     )
     return manifest
@@ -431,6 +477,7 @@ def _handoff_with_children(
     parent_manifest: Optional[Manifest] = None,
     unpack_limits: Any = None,
     reachability_state: Optional[dict] = None,
+    allow_live_discovery: bool = False,
     max_unpack_depth: int = 1,
     lineage_store: Any = None,
     _current_depth: int = 0,
@@ -512,14 +559,16 @@ def _handoff_with_children(
                     child_manifest, grandchildren = _handoff_with_children(
                         child_reference, child_provider,
                         parent_manifest=parent_stub, unpack_limits=unpack_limits,
-                        reachability_state=reachability_state, max_unpack_depth=max_unpack_depth,
+                        reachability_state=reachability_state, allow_live_discovery=allow_live_discovery,
+                        max_unpack_depth=max_unpack_depth,
                         lineage_store=lineage_store, _current_depth=_current_depth + 1,
                     )
                     child_manifests.append(child_manifest)
                     child_manifests.extend(grandchildren)
 
     selected_capability, routing_note = route_to_capability(
-        detected_content_type, reachability_state=reachability_state
+        detected_content_type, reachability_state=reachability_state,
+        allow_live_discovery=allow_live_discovery,
     )
 
     manifest = Manifest(

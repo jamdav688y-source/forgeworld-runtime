@@ -7,7 +7,7 @@ this sandbox, installing it is out of scope).
 ALL fixtures are synthetic and local (built in-memory / in a TemporaryDirectory
 by this file). Nothing here touches Gmail, Drive, any network service, or
 any real external artifact. route_to_capability() uses discover.load_registry()
-+ discover.probe_all() (read-only, no writes) and mission_router.
++ caller-supplied reachability (never an implicit discover.probe_all()) and mission_router.
 score_capability() (a pure function) -- never mission_router.route(), so
 no test here writes to the live router/decisions.jsonl or
 capabilities/state.json.
@@ -277,12 +277,13 @@ class TestDownstreamRoutingPreservesProvenance(unittest.TestCase):
         self.assertEqual(child.provenance_lineage, (root.artifact_id,))
 
     def test_without_forced_reachability_routing_is_honestly_none(self):
-        # In this sandbox tesseract is genuinely absent, so without forcing
-        # reachability, forgeworld_mobile_research is honestly unreachable
+        # forgeworld_mobile_research is explicitly reported unreachable
+        # (deterministic fixture, no live probe -- FW-FABRIC-INTEGRATION-PROBE-001),
         # and routing must not pretend otherwise.
+        unreachable = {"forgeworld_mobile_research": {"reachability_confidence": 0.0, "evidence": "explicitly unreachable for test"}}
         with tempfile.TemporaryDirectory() as d:
             path = _write_fixture(d, "photo.png", self.PNG_BYTES)
-            manifest = interface.handoff(_reference(path), PROVIDER)  # no reachability_state override
+            manifest = interface.handoff(_reference(path), PROVIDER, reachability_state=unreachable)
 
         self.assertEqual(manifest.detected_content_type, "image/png")
         self.assertIsNone(manifest.selected_capability)
