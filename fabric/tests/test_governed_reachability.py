@@ -85,6 +85,7 @@ class _GovernedChainTestCase(unittest.TestCase):
         self.replay_guard = fi.RequestReplayGuard(self.replay_root)
         self.lineage_root = root / "lineage"
         self.lineage_store = LineageStore(self.lineage_root)
+        self.grant_store = fi.LocalGrantStore(root / "grants")  # FW-PHASE-0-IMPLEMENT-001
         self.probe_patch = mock.patch.object(discover, "probe_all", side_effect=_probe_forbidden)
         self.probe_mock = self.probe_patch.start()
 
@@ -93,6 +94,10 @@ class _GovernedChainTestCase(unittest.TestCase):
         self.relationship = offer
         self.peer_id = self.peer_store.register_peer()
         self.peer_store.bind_relationship(self.peer_id, offer["relationship_id"])
+        self.grant_store.issue_grant(
+            self.peer_id, offer["relationship_id"], [self.capability.capability_id],
+            _utc_stamp(timedelta(hours=1)), issued_by="test_operator",
+        )
 
     def tearDown(self):
         self.probe_patch.stop()
@@ -125,7 +130,7 @@ class _GovernedChainTestCase(unittest.TestCase):
         kwargs.setdefault("reachability_state", INJECTED_REACHABILITY)
         return fi.process_remote_capability_request(
             request, transport, key_store=self.key_store, pairing_store=self.pairing_store,
-            peer_store=self.peer_store, replay_guard=self.replay_guard,
+            peer_store=self.peer_store, grant_store=self.grant_store, replay_guard=self.replay_guard,
             lineage_store=self.lineage_store, **kwargs,
         )
 
@@ -232,7 +237,8 @@ class TestRefusalsAreClassifiedAndDoNotExecute(_GovernedChainTestCase):
         durable = fi.RequestReplayGuard(self.replay_root).get(request.request_id)
         self.assertEqual(durable["status"], fi.CAP_UNAUTHORIZED)
         self.assertIsNone(durable["structured_result"])
-        self.assertIn("not authorized", durable["error_detail"])
+        self.assertIn(fi.REQUESTER_CONTEXT_DENIED, durable["error_detail"])
+        self.assertEqual(durable["authorization_code"], fi.REQUESTER_CONTEXT_DENIED)
 
 
 class TestReachabilityIsExplicitAndSeparateFromAuthority(_GovernedChainTestCase):

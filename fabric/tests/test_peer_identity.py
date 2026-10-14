@@ -37,6 +37,7 @@ import json
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -67,6 +68,11 @@ def _authority(capability_ids, expires_at=None, actor=PHONE_ID):
     )
 
 
+def _grant_expiry(hours=1):
+    """Explicit receiver-held grant expiry (FW-PHASE-0-IMPLEMENT-001)."""
+    return (datetime.now(timezone.utc) + timedelta(hours=hours)).strftime(fi._TIMESTAMP_FORMAT)
+
+
 class _PeerIdentityTestCase(unittest.TestCase):
     def setUp(self):
         self.spy = _SpyCapabilityProvider("peerid_spy_" + fi.uuid.uuid4().hex[:8])
@@ -79,6 +85,8 @@ class _PeerIdentityTestCase(unittest.TestCase):
         self.pairing_store = fi.PairingStore(Path(self._pairing_tmp.name))
         self.peer_store = fi.PeerIdentityStore(Path(self._peers_tmp.name))
         self.replay_guard = fi.RequestReplayGuard(Path(self._replay_tmp.name))
+        self._grants_tmp = tempfile.TemporaryDirectory()  # FW-PHASE-0-IMPLEMENT-001
+        self.grant_store = fi.LocalGrantStore(Path(self._grants_tmp.name))
 
     def tearDown(self):
         fi.CAPABILITIES.pop(self.spy.capability_id, None)
@@ -86,6 +94,7 @@ class _PeerIdentityTestCase(unittest.TestCase):
         self._pairing_tmp.cleanup()
         self._peers_tmp.cleanup()
         self._replay_tmp.cleanup()
+        self._grants_tmp.cleanup()
 
     def _confirmed_relationship(self):
         offer = self.pairing_store.create_offer(PC_ID, PHONE_ID, self.key_store)
@@ -95,6 +104,9 @@ class _PeerIdentityTestCase(unittest.TestCase):
     def _peer_bound_to(self, relationship):
         peer_id = self.peer_store.register_peer()
         self.peer_store.bind_relationship(peer_id, relationship["relationship_id"])
+        self.grant_store.issue_grant(
+            peer_id, relationship["relationship_id"], [self.spy.capability_id], _grant_expiry(), issued_by="test_operator",
+        )
         return peer_id
 
     def _build_signed_request(self, relationship, peer_id, cap_authority=None,
@@ -123,7 +135,7 @@ class _PeerIdentityTestCase(unittest.TestCase):
     def _process(self, transport, signed, **kwargs):
         return fi.process_remote_capability_request(
             signed, transport, key_store=self.key_store, pairing_store=self.pairing_store,
-            peer_store=self.peer_store, **kwargs,
+            peer_store=self.peer_store, grant_store=self.grant_store, **kwargs,
         )
 
 
@@ -372,14 +384,17 @@ class TestExistingBehaviorUnchangedWithoutPeerStore(_PeerIdentityTestCase):
     """Matrix item 18 -- omitting peer_store preserves every prior
     mission's proven behavior exactly."""
 
-    def test_omitting_peer_store_falls_back_to_pairing_only_path(self):
+    def test_omitting_peer_store_under_pairing_fails_closed(self):
+        # FW-PHASE-0-IMPLEMENT-001 (B4): pairing without a verified peer
+        # identity no longer falls back to a pairing-only execution path.
         relationship = self._confirmed_relationship()
         transport, signed = self._build_signed_request(relationship, None)  # no source_peer_id at all
         result, _ = fi.process_remote_capability_request(
             signed, transport, key_store=self.key_store, pairing_store=self.pairing_store,
         )  # no peer_store
-        self.assertEqual(result.status, fi.CAP_COMPLETED)
-        self.assertEqual(self.spy.invocation_count, 1)
+        self.assertEqual(result.status, fi.CAP_FAILED)
+        self.assertIn(fi.PEER_STORE_REQUIRED, result.error_detail)
+        self.assertEqual(self.spy.invocation_count, 0)
 
     def test_peer_store_without_pairing_store_fails_closed(self):
         relationship = self._confirmed_relationship()

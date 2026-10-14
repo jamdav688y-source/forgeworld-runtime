@@ -1296,6 +1296,258 @@ class PeerIdentityStore:
         return latest is not None and latest["status"] == _PEER_BINDING_BOUND
 
 
+# ---------------------------------------------------------------------------
+# receiver-held capability grants: MISSION FW-PHASE-0-IMPLEMENT-001
+#
+# AUTHENTICATION NEVER GRANTS EXECUTION AUTHORITY. A request's own
+# AuthorityContext is written and signed by the requester, so on its own it
+# proves nothing about what the receiver allows -- a paired peer holding the
+# relationship key can sign any grant it likes. LocalGrantStore is the
+# receiver's own record of what a (peer_id, relationship_id) pair may
+# execute, issued and revoked only by the receiver's operator. In governed
+# mode (pairing_store + peer_store + grant_store), execution requires an
+# active, unexpired, unrevoked grant here AND the requester's own
+# AuthorityContext -- the requester can narrow, never widen.
+#
+# Every grant carries an explicit expiry; non-expiring grants are refused at
+# issuance. evaluate() never raises for a store problem: a corrupt or
+# unreadable ledger denies. Reuses evidence_envelope.envelope's
+# JSONL/file-lock/atomic-write discipline, like every other store here.
+# ---------------------------------------------------------------------------
+
+GRANT_EVENT_ISSUED = "ISSUED"
+GRANT_EVENT_REVOKED = "REVOKED"
+_GRANT_EVENTS = (GRANT_EVENT_ISSUED, GRANT_EVENT_REVOKED)
+GRANT_SCHEMA_VERSION = 1
+_GRANT_REQUIRED_FIELDS = (
+    "grant_id", "event", "peer_id", "relationship_id", "capability_ids",
+    "issued_by", "issued_at", "expires_at",
+)
+_GRANT_BINDING_FIELDS = (
+    "peer_id", "relationship_id", "capability_ids", "issued_by", "issued_at", "expires_at",
+)
+
+# GrantDecision codes. Travel only in error_detail and the durable replay
+# disposition -- receipt states (_CAP_STATES) are unchanged.
+GRANT_ACTIVE = "GRANT_ACTIVE"
+NO_ACTIVE_GRANT = "NO_ACTIVE_GRANT"
+GRANT_RELATIONSHIP_MISMATCH = "GRANT_RELATIONSHIP_MISMATCH"
+CAPABILITY_NOT_GRANTED = "CAPABILITY_NOT_GRANTED"
+GRANT_EXPIRED = "GRANT_EXPIRED"
+GRANT_REVOKED = "GRANT_REVOKED"
+GRANT_STORE_CORRUPT = "GRANT_STORE_CORRUPT"
+GRANT_STORE_UNAVAILABLE = "GRANT_STORE_UNAVAILABLE"
+REQUESTER_CONTEXT_DENIED = "REQUESTER_CONTEXT_DENIED"
+
+# Governed-mode configuration codes (CAP_FAILED, rejected before replay).
+PEER_STORE_REQUIRED = "PEER_STORE_REQUIRED"
+GRANT_STORE_REQUIRED = "GRANT_STORE_REQUIRED"
+GOVERNED_STORES_REQUIRED = "GOVERNED_STORES_REQUIRED"
+
+RECEIVER_AUTHORIZATION_DENIED = "RECEIVER_AUTHORIZATION_DENIED"
+RECEIVER_AUTHORIZATION_CONFIG = "RECEIVER_AUTHORIZATION_CONFIG"
+
+
+class GrantStoreError(FabricError):
+    """Operator-misuse only (invalid issuance input, revoking an unknown
+    grant_id) -- never raised at request-evaluation time, where
+    LocalGrantStore.evaluate() denies instead, per this module's Failure Law."""
+
+
+class GrantConflictError(GrantStoreError):
+    """A ledger record would change the binding fields of an existing grant_id."""
+
+
+@dataclass(frozen=True)
+class GrantDecision:
+    permitted: bool
+    code: str
+    grant_id: Optional[str] = None
+
+
+class LocalGrantStore:
+    """Durable, receiver-controlled capability grants, keyed by grant_id and
+    bound to an exact (peer_id, relationship_id) pair. Append-only: a
+    REVOKED record repeats the grant's binding fields, so the ledger
+    replays on its own; history is never mutated or deleted, and a revoked
+    grant is never reactivated (there is no un-revoke method)."""
+
+    def __init__(self, root: Path, lock_timeout_seconds: float = 5.0):
+        self.root = Path(root)
+        self.root.mkdir(parents=True, exist_ok=True)
+        self.ledger_path = self.root / "capability_grants.jsonl"
+        self.lock_path = self.root / "capability_grants.lock"
+        self.lock_timeout_seconds = lock_timeout_seconds
+
+    def _read_all(self) -> list:
+        if not self.ledger_path.exists():
+            return []
+        records = []
+        with open(self.ledger_path, "r", encoding="utf-8") as f:
+            for line_number, raw_line in enumerate(f, start=1):
+                if not raw_line.endswith("\n"):
+                    raise envelope.LedgerIntegrityError(
+                        f"capability grant ledger {self.ledger_path} line {line_number} is not "
+                        "newline-terminated (truncated or partially written)"
+                    )
+                line = raw_line.strip()
+                if not line:
+                    continue
+                try:
+                    record = json.loads(line)
+                except ValueError as exc:
+                    raise envelope.LedgerIntegrityError(
+                        f"capability grant ledger {self.ledger_path} line {line_number} is not valid JSON: {exc}"
+                    ) from exc
+                if not isinstance(record, dict) or any(k not in record for k in _GRANT_REQUIRED_FIELDS):
+                    raise envelope.LedgerIntegrityError(
+                        f"capability grant ledger {self.ledger_path} line {line_number} is missing a required field"
+                    )
+                if record["event"] not in _GRANT_EVENTS or not isinstance(record["capability_ids"], list):
+                    raise envelope.LedgerIntegrityError(
+                        f"capability grant ledger {self.ledger_path} line {line_number} has an invalid "
+                        "event or capability_ids"
+                    )
+                records.append(record)
+        return records
+
+    @staticmethod
+    def _current(records: list) -> list:
+        """Latest record per grant_id, in first-issued order."""
+        latest = {}
+        for r in records:
+            latest[r["grant_id"]] = r
+        return list(latest.values())
+
+    def issue_grant(self, peer_id: str, relationship_id: str, capability_ids, expires_at: str,
+                    issued_by: str, reason: Optional[str] = None) -> str:
+        """Records a new ACTIVE grant and returns its grant_id. expires_at
+        is required, must be a _now()-format UTC timestamp, and must be in
+        the future -- non-expiring grants do not exist. Does not consult
+        the pairing or peer stores (orthogonal lifecycles, like every other
+        store here); the request-time gate enforces those independently."""
+        try:
+            peer_id = envelope.validate_mission_id(peer_id)
+            relationship_id = envelope.validate_mission_id(relationship_id)
+        except envelope.InvalidMissionIdError as exc:
+            raise GrantStoreError(f"invalid peer_id or relationship_id: {exc}") from exc
+        if capability_ids is None or isinstance(capability_ids, (str, bytes)):
+            raise GrantStoreError("capability_ids must be a non-string iterable of capability ids")
+        capability_ids = list(capability_ids)
+        if not capability_ids:
+            raise GrantStoreError("capability_ids must not be empty")
+        try:
+            capability_ids = [envelope.validate_mission_id(c) for c in capability_ids]
+        except envelope.InvalidMissionIdError as exc:
+            raise GrantStoreError(f"invalid capability_id: {exc}") from exc
+        if len(set(capability_ids)) != len(capability_ids):
+            raise GrantStoreError("capability_ids must not contain duplicates")
+        if not isinstance(issued_by, str) or not issued_by.strip():
+            raise GrantStoreError("issued_by must be a non-empty string")
+        if not isinstance(expires_at, str):
+            raise GrantStoreError("an explicit expires_at is required; non-expiring grants are not permitted")
+        try:
+            expires_at_dt = _parse_expiry(expires_at)
+        except ValueError as exc:
+            raise GrantStoreError(f"expires_at {expires_at!r} is not a {_TIMESTAMP_FORMAT} UTC timestamp") from exc
+        issued_at = _now()
+        if expires_at_dt <= _parse_expiry(issued_at):
+            raise GrantStoreError(f"expires_at {expires_at!r} must be in the future")
+
+        grant_id = _new_id("GRANT")
+        record = {
+            "grant_id": grant_id, "event": GRANT_EVENT_ISSUED,
+            "peer_id": peer_id, "relationship_id": relationship_id,
+            "capability_ids": sorted(capability_ids), "issued_by": issued_by,
+            "issued_at": issued_at, "expires_at": expires_at,
+            "revoked_at": None, "reason": reason, "schema_version": GRANT_SCHEMA_VERSION,
+        }
+        with envelope._FileLock(self.lock_path, timeout_seconds=self.lock_timeout_seconds):
+            records = self._read_all()
+            if any(r["grant_id"] == grant_id for r in records):
+                raise GrantConflictError(f"grant_id {grant_id!r} already exists")
+            envelope._atomic_write_bytes(self.ledger_path, envelope._serialize_ledger(records + [record]))
+        return grant_id
+
+    def revoke_grant(self, grant_id: str, reason: str = "") -> None:
+        """Appends a REVOKED record. Idempotent for an already-revoked grant;
+        raises GrantStoreError for an unknown grant_id."""
+        try:
+            grant_id = envelope.validate_mission_id(grant_id)
+        except envelope.InvalidMissionIdError as exc:
+            raise GrantStoreError(f"invalid grant_id: {exc}") from exc
+        with envelope._FileLock(self.lock_path, timeout_seconds=self.lock_timeout_seconds):
+            records = self._read_all()
+            current = None
+            for r in records:
+                if r["grant_id"] == grant_id:
+                    current = r
+            if current is None:
+                raise GrantStoreError(f"cannot revoke unknown grant_id {grant_id!r}")
+            if current["event"] == GRANT_EVENT_REVOKED:
+                return
+            revoked = {field_name: current[field_name] for field_name in _GRANT_BINDING_FIELDS}
+            revoked.update({
+                "grant_id": grant_id, "event": GRANT_EVENT_REVOKED, "revoked_at": _now(),
+                "reason": reason, "schema_version": GRANT_SCHEMA_VERSION,
+            })
+            envelope._atomic_write_bytes(self.ledger_path, envelope._serialize_ledger(records + [revoked]))
+
+    def status_of(self, grant_id: str) -> Optional[dict]:
+        """Current state of grant_id, or None if unknown or malformed."""
+        try:
+            grant_id = envelope.validate_mission_id(grant_id)
+        except envelope.InvalidMissionIdError:
+            return None
+        current = None
+        for r in self._read_all():
+            if r["grant_id"] == grant_id:
+                current = r
+        return dict(current) if current is not None else None
+
+    def list_for(self, peer_id: str, relationship_id: str) -> tuple:
+        """Current state of every grant for this exact pair, in issue order."""
+        return tuple(
+            dict(r) for r in self._current(self._read_all())
+            if r["peer_id"] == peer_id and r["relationship_id"] == relationship_id
+        )
+
+    def evaluate(self, peer_id: Optional[str], relationship_id: Optional[str], capability_id: str,
+                 evaluation_time: datetime) -> GrantDecision:
+        """Is capability_id currently granted to this exact (peer_id,
+        relationship_id) pair at evaluation_time (an aware UTC datetime,
+        the receiver's own clock)? Pure read. Never raises for a store
+        problem: a corrupt ledger is GRANT_STORE_CORRUPT and an unreadable
+        one GRANT_STORE_UNAVAILABLE, both denials."""
+        if evaluation_time.tzinfo is None:
+            raise FabricError("LocalGrantStore.evaluate() requires an aware (UTC) evaluation_time")
+        try:
+            current = self._current(self._read_all())
+        except envelope.LedgerIntegrityError:
+            return GrantDecision(False, GRANT_STORE_CORRUPT)
+        except OSError:
+            return GrantDecision(False, GRANT_STORE_UNAVAILABLE)
+
+        for_peer = [g for g in current if g["peer_id"] == peer_id]
+        matching = [g for g in for_peer if g["relationship_id"] == relationship_id]
+        if not matching:
+            return GrantDecision(False, GRANT_RELATIONSHIP_MISMATCH if for_peer else NO_ACTIVE_GRANT)
+        covering = [g for g in matching if capability_id in g["capability_ids"]]
+        if not covering:
+            return GrantDecision(False, CAPABILITY_NOT_GRANTED)
+        live = [g for g in covering if g["event"] != GRANT_EVENT_REVOKED]
+        if not live:
+            return GrantDecision(False, GRANT_REVOKED)
+        for g in live:
+            try:
+                expires_at_dt = _parse_expiry(g["expires_at"])
+            except (TypeError, ValueError):
+                continue  # malformed expiry is treated as expired
+            if evaluation_time < expires_at_dt:
+                return GrantDecision(True, GRANT_ACTIVE, g["grant_id"])
+        return GrantDecision(False, GRANT_EXPIRED)
+
+
 class FabricCapabilityProvider(Protocol):
     """The contract every capability adapter reachable over the fabric
     implements. fabric/capabilities.py's ContentReadCapability is one
@@ -1539,6 +1791,7 @@ def process_remote_capability_request(
     peer_store: Optional[PeerIdentityStore] = None,
     reachability_state: Optional[dict] = None,
     allow_live_discovery: bool = False,
+    grant_store: Optional[LocalGrantStore] = None,
 ) -> tuple:
     """PC_NODE (or any destination) side of the fabric: pull the waiting
     envelope, verify its hash again (independent of the check
@@ -1546,6 +1799,22 @@ def process_remote_capability_request(
     artifact_handoff pipeline, enforce authority, dispatch to a
     registered capability, and produce a (RemoteCapabilityResult,
     FabricReceipt) pair. Never raises for an expected failure.
+
+    grant_store (MISSION: FW-PHASE-0-IMPLEMENT-001): GOVERNED MODE is
+    pairing_store + peer_store + grant_store (+ key_store). In governed
+    mode, after pairing, integrity, peer identity and replay checks, the
+    receiver's own LocalGrantStore must hold an active grant for this
+    exact (source_peer_id, relationship_id, capability_id), AND the
+    requester's AuthorityContext must still permit it -- the requester
+    can narrow, never widen. A pairing_store without peer_store or
+    grant_store, or a grant_store without pairing_store and peer_store,
+    fails closed (CAP_FAILED, RECEIVER_AUTHORIZATION_CONFIG) before any
+    other evaluation.
+
+    UNGOVERNED MODES (no stores, integrity_key only, or key_store only)
+    remain for compatibility and still authorize from the requester's own
+    AuthorityContext. They are not receiver-authorized and must not be used
+    by production execution entry points.
 
     reachability_state / allow_live_discovery (MISSION:
     FW-FABRIC-INTEGRATION-PROBE-001): passed straight through to
@@ -1628,6 +1897,22 @@ def process_remote_capability_request(
     optional, backward-compatible pattern lineage_store/artifact_index
     already established.
     """
+    config_problem = None
+    if pairing_store is not None and peer_store is None:
+        config_problem = PEER_STORE_REQUIRED
+    elif pairing_store is not None and grant_store is None:
+        config_problem = GRANT_STORE_REQUIRED
+    elif grant_store is not None and (pairing_store is None or peer_store is None):
+        config_problem = GOVERNED_STORES_REQUIRED
+    if config_problem is not None:
+        return _result_and_receipt(
+            request, status=CAP_FAILED, structured_result=None,
+            error_detail=(
+                f"{RECEIVER_AUTHORIZATION_CONFIG}:{config_problem}: governed execution requires "
+                "pairing_store, peer_store and grant_store together -- request rejected before any evaluation"
+            ),
+        )
+
     if pairing_store is not None:
         relationship = pairing_store.resolve_active(request.relationship_id) if request.relationship_id else None
         if relationship is None:
@@ -1765,6 +2050,8 @@ def process_remote_capability_request(
                 sha256=prior.get("sha256", ""),
             )
 
+    authorization: dict = {}  # grant_id / authorization_code, governed mode only
+
     def _finalize(status: str, structured_result: Any, error_detail: Optional[str], sha256: str = "") -> tuple:
         result, receipt = _result_and_receipt(
             request, status=status, structured_result=structured_result, error_detail=error_detail, sha256=sha256,
@@ -1780,6 +2067,7 @@ def process_remote_capability_request(
                 # separate Manifest/LineageStore contract at all.
                 "source_peer_id": request.source_peer_id, "relationship_id": request.relationship_id,
                 "actor_id": request.authority_context.actor_id,
+                **authorization,
             }
             try:
                 replay_guard.record_once(disposition)
@@ -1815,15 +2103,37 @@ def process_remote_capability_request(
                 request, status=CAP_DUPLICATE_CONFLICT, structured_result=None, error_detail=conflict, sha256=env.sha256,
             )
 
+    if grant_store is not None:
+        decision = grant_store.evaluate(
+            request.source_peer_id, request.relationship_id, request.capability_id, datetime.now(timezone.utc),
+        )
+        authorization.update({"grant_id": decision.grant_id, "authorization_code": decision.code})
+        if not decision.permitted:
+            return _finalize(
+                status=CAP_UNAUTHORIZED, structured_result=None,
+                error_detail=(
+                    f"{RECEIVER_AUTHORIZATION_DENIED}:{decision.code}: no active receiver-held grant permits "
+                    f"capability {request.capability_id!r} for peer {request.source_peer_id!r} under "
+                    f"relationship {request.relationship_id!r}"
+                ),
+                sha256=env.sha256,
+            )
+
+    # In governed mode this is the requester narrowing its own request; it
+    # can only further restrict what the receiver-held grant above allows.
     if not authority_permits(request.authority_context, request.capability_id):
-        return _finalize(
-            status=CAP_UNAUTHORIZED, structured_result=None,
-            error_detail=(
+        if grant_store is not None:
+            authorization["authorization_code"] = REQUESTER_CONTEXT_DENIED
+            error_detail = (
+                f"{RECEIVER_AUTHORIZATION_DENIED}:{REQUESTER_CONTEXT_DENIED}: the request's own "
+                f"authority_context does not permit capability {request.capability_id!r}"
+            )
+        else:
+            error_detail = (
                 f"actor {request.authority_context.actor_id!r} is not authorized for capability "
                 f"{request.capability_id!r} (granted: {request.authority_context.granted_capability_ids})"
-            ),
-            sha256=env.sha256,
-        )
+            )
+        return _finalize(status=CAP_UNAUTHORIZED, structured_result=None, error_detail=error_detail, sha256=env.sha256)
 
     provider = CAPABILITIES.get(request.capability_id)
     if provider is None:

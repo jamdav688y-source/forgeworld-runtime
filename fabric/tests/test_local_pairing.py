@@ -38,6 +38,7 @@ import json
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -68,6 +69,11 @@ def _authority(capability_ids, expires_at=None, actor=PHONE_ID):
     )
 
 
+def _grant_expiry(hours=1):
+    """Explicit receiver-held grant expiry (FW-PHASE-0-IMPLEMENT-001)."""
+    return (datetime.now(timezone.utc) + timedelta(hours=hours)).strftime(fi._TIMESTAMP_FORMAT)
+
+
 class _PairingTestCase(unittest.TestCase):
     def setUp(self):
         self.spy = _SpyCapabilityProvider("pairing_spy_" + fi.uuid.uuid4().hex[:8])
@@ -78,16 +84,31 @@ class _PairingTestCase(unittest.TestCase):
         self.key_store = fi.LocalKeyStore(Path(self._keys_tmp.name))
         self.pairing_store = fi.PairingStore(Path(self._pairing_tmp.name))
         self.replay_guard = fi.RequestReplayGuard(Path(self._replay_tmp.name))
+        # FW-PHASE-0-IMPLEMENT-001: pairing-mode execution is governed -- it
+        # requires a verified peer and a receiver-held grant.
+        self._peers_tmp = tempfile.TemporaryDirectory()
+        self._grants_tmp = tempfile.TemporaryDirectory()
+        self.peer_store = fi.PeerIdentityStore(Path(self._peers_tmp.name))
+        self.grant_store = fi.LocalGrantStore(Path(self._grants_tmp.name))
+        self._peer_for_relationship = {}
 
     def tearDown(self):
         fi.CAPABILITIES.pop(self.spy.capability_id, None)
         self._keys_tmp.cleanup()
         self._pairing_tmp.cleanup()
         self._replay_tmp.cleanup()
+        self._peers_tmp.cleanup()
+        self._grants_tmp.cleanup()
 
     def _confirmed_relationship(self):
         offer = self.pairing_store.create_offer(PC_ID, PHONE_ID, self.key_store)
         self.pairing_store.confirm(offer["relationship_id"], offer["sas"])
+        peer_id = self.peer_store.register_peer()
+        self.peer_store.bind_relationship(peer_id, offer["relationship_id"])
+        self.grant_store.issue_grant(
+            peer_id, offer["relationship_id"], [self.spy.capability_id], _grant_expiry(), issued_by="test_operator",
+        )
+        self._peer_for_relationship[offer["relationship_id"]] = peer_id
         return offer
 
     def _transfer_and_build_request(self, cap_authority=None, payload=b"pairing probe payload", artifact_id=None):
@@ -120,6 +141,7 @@ class _PairingTestCase(unittest.TestCase):
             artifact_id=env.artifact_id, capability_id=self.spy.capability_id, authority_context=cap_authority,
             correlation_id=correlation_id, causation_id=xfer_result.transfer_id, timeout_seconds=5,
             relationship_id=relationship["relationship_id"],
+            source_peer_id=self._peer_for_relationship.get(relationship["relationship_id"]),
         )
         key_bytes = key_bytes if key_bytes is not None else self.key_store.resolve_key(relationship["key_id"])
         signed = fi.sign_request(unsigned, key_bytes, key_id=relationship["key_id"])
@@ -135,6 +157,7 @@ class TestValidPairingBecomesActive(_PairingTestCase):
         transport, signed = self._build_signed_request_under(relationship)
         result, _ = fi.process_remote_capability_request(
             signed, transport, key_store=self.key_store, pairing_store=self.pairing_store,
+            peer_store=self.peer_store, grant_store=self.grant_store,
         )
         self.assertEqual(result.status, fi.CAP_COMPLETED)
         self.assertEqual(self.spy.invocation_count, 1)
@@ -150,6 +173,7 @@ class TestUnconfirmedPairingNotTrusted(_PairingTestCase):
         transport, signed = self._build_signed_request_under(offer)
         result, _ = fi.process_remote_capability_request(
             signed, transport, key_store=self.key_store, pairing_store=self.pairing_store,
+            peer_store=self.peer_store, grant_store=self.grant_store,
         )
         self.assertEqual(result.status, fi.CAP_FAILED)
         self.assertEqual(self.spy.invocation_count, 0)
@@ -181,6 +205,7 @@ class TestUnknownRelationshipZeroExecution(_PairingTestCase):
         transport, signed = self._build_signed_request_under(fake_relationship)
         result, _ = fi.process_remote_capability_request(
             signed, transport, key_store=self.key_store, pairing_store=self.pairing_store,
+            peer_store=self.peer_store, grant_store=self.grant_store,
         )
         self.assertEqual(result.status, fi.CAP_FAILED)
         self.assertEqual(self.spy.invocation_count, 0)
@@ -195,6 +220,7 @@ class TestRevokedRelationshipZeroExecution(_PairingTestCase):
         self.pairing_store.revoke(relationship["relationship_id"], reason="test: simulate compromised relationship")
         result, _ = fi.process_remote_capability_request(
             signed, transport, key_store=self.key_store, pairing_store=self.pairing_store,
+            peer_store=self.peer_store, grant_store=self.grant_store,
         )
         self.assertEqual(result.status, fi.CAP_FAILED)
         self.assertEqual(self.spy.invocation_count, 0)
@@ -233,6 +259,7 @@ class TestWrongRelationshipValidKeyRejected(_PairingTestCase):
         tampered = fi.replace(signed, integrity_key_id=r1["key_id"])
         result, _ = fi.process_remote_capability_request(
             tampered, transport, key_store=self.key_store, pairing_store=self.pairing_store,
+            peer_store=self.peer_store, grant_store=self.grant_store,
         )
         self.assertEqual(result.status, fi.CAP_FAILED)
         self.assertEqual(self.spy.invocation_count, 0)
@@ -250,6 +277,7 @@ class TestKeyRevocationOrthogonalToPairing(_PairingTestCase):
         self.assertEqual(self.pairing_store.status_of(relationship["relationship_id"]), fi.PAIRING_STATUS_ACTIVE)
         result, _ = fi.process_remote_capability_request(
             signed, transport, key_store=self.key_store, pairing_store=self.pairing_store,
+            peer_store=self.peer_store, grant_store=self.grant_store,
         )
         self.assertEqual(result.status, fi.CAP_FAILED)
         self.assertEqual(self.spy.invocation_count, 0)
@@ -264,6 +292,7 @@ class TestPairingDoesNotWeakenAuthority(_PairingTestCase):
         transport, signed = self._build_signed_request_under(relationship, cap_authority=expired_authority)
         result, _ = fi.process_remote_capability_request(
             signed, transport, key_store=self.key_store, pairing_store=self.pairing_store,
+            peer_store=self.peer_store, grant_store=self.grant_store,
         )
         self.assertEqual(result.status, fi.CAP_UNAUTHORIZED)  # pairing/integrity passed, authority denied
         self.assertEqual(self.spy.invocation_count, 0)
@@ -278,6 +307,7 @@ class TestTamperedMessageRejected(_PairingTestCase):
         tampered = fi.replace(signed, capability_id="attacker_chosen_capability")  # stale tag
         result, _ = fi.process_remote_capability_request(
             tampered, transport, key_store=self.key_store, pairing_store=self.pairing_store,
+            peer_store=self.peer_store, grant_store=self.grant_store,
         )
         self.assertEqual(result.status, fi.CAP_FAILED)
         self.assertEqual(self.spy.invocation_count, 0)
@@ -290,13 +320,15 @@ class TestPairingDoesNotWeakenReplay(_PairingTestCase):
         relationship = self._confirmed_relationship()
         transport, signed = self._build_signed_request_under(relationship)
         first, _ = fi.process_remote_capability_request(
-            signed, transport, key_store=self.key_store, pairing_store=self.pairing_store, replay_guard=self.replay_guard,
+            signed, transport, key_store=self.key_store, pairing_store=self.pairing_store,
+            peer_store=self.peer_store, grant_store=self.grant_store, replay_guard=self.replay_guard,
         )
         self.assertEqual(first.status, fi.CAP_COMPLETED)
         self.assertEqual(self.spy.invocation_count, 1)
 
         second, _ = fi.process_remote_capability_request(
-            signed, transport, key_store=self.key_store, pairing_store=self.pairing_store, replay_guard=self.replay_guard,
+            signed, transport, key_store=self.key_store, pairing_store=self.pairing_store,
+            peer_store=self.peer_store, grant_store=self.grant_store, replay_guard=self.replay_guard,
         )
         self.assertEqual(second.status, fi.CAP_DUPLICATE_COMPLETED)
         self.assertEqual(self.spy.invocation_count, 1)
@@ -320,6 +352,7 @@ class TestRePairAfterRevocation(_PairingTestCase):
         transport, signed_with_old = self._build_signed_request_under(old_relationship)
         result, _ = fi.process_remote_capability_request(
             signed_with_old, transport, key_store=self.key_store, pairing_store=self.pairing_store,
+            peer_store=self.peer_store, grant_store=self.grant_store,
         )
         self.assertEqual(result.status, fi.CAP_FAILED)
         self.assertEqual(self.spy.invocation_count, 0)

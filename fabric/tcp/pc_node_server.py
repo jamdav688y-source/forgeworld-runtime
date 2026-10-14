@@ -111,7 +111,7 @@ def _handle_artifact_envelope(payload: dict, node_id: str, local_transport: InMe
     return local_transport.deliver(node_id, env)
 
 
-def _handle_capability_request(payload: dict, node_id: str, allowed_capability_id: str, local_transport, lineage_store, artifact_index, replay_guard, integrity_key, key_store, pairing_store, peer_store):
+def _handle_capability_request(payload: dict, node_id: str, allowed_capability_id: str, local_transport, lineage_store, artifact_index, replay_guard, integrity_key, key_store, pairing_store, peer_store, grant_store=None):
     request, reason = wire.safe_capability_request_from_wire(payload)
     if request is None:
         return None, reason
@@ -133,7 +133,7 @@ def _handle_capability_request(payload: dict, node_id: str, allowed_capability_i
     result, receipt = fi.process_remote_capability_request(
         request, local_transport, lineage_store=lineage_store, artifact_index=artifact_index,
         replay_guard=replay_guard, integrity_key=integrity_key, key_store=key_store,
-        pairing_store=pairing_store, peer_store=peer_store,
+        pairing_store=pairing_store, peer_store=peer_store, grant_store=grant_store,
     )
     return (result, receipt), None
 
@@ -143,7 +143,7 @@ def run_server(host: str, port: int, authkey: bytes, node_id: str, lineage_dir: 
                max_runtime_seconds: float = 120.0, max_message_bytes: int = 65536,
                integrity_key: Optional[bytes] = None, key_store_dir: Optional[str] = None,
                pairing_store_dir: Optional[str] = None, peer_store_dir: Optional[str] = None,
-               capability_id: str = DEFAULT_CAPABILITY_ID) -> None:
+               capability_id: str = DEFAULT_CAPABILITY_ID, grant_store_dir: Optional[str] = None) -> None:
     _enforce_capability_allowlist(capability_id)
     lineage_store = LineageStore(Path(lineage_dir))
     artifact_index = fi.FabricArtifactIndex()
@@ -151,6 +151,7 @@ def run_server(host: str, port: int, authkey: bytes, node_id: str, lineage_dir: 
     key_store = fi.LocalKeyStore(Path(key_store_dir)) if key_store_dir else None
     pairing_store = fi.PairingStore(Path(pairing_store_dir)) if pairing_store_dir else None
     peer_store = fi.PeerIdentityStore(Path(peer_store_dir)) if peer_store_dir else None
+    grant_store = fi.LocalGrantStore(Path(grant_store_dir)) if grant_store_dir else None
     local_transport = InMemoryFabricTransport(registered_nodes=(node_id,))
 
     listener = connection.Listener((host, port), family="AF_INET", authkey=authkey, backlog=1)
@@ -187,7 +188,7 @@ def run_server(host: str, port: int, authkey: bytes, node_id: str, lineage_dir: 
             elif kind == "CAPABILITY_REQUEST":
                 pair, framing_error = _handle_capability_request(
                     payload, node_id, capability_id, local_transport, lineage_store, artifact_index, replay_guard,
-                    integrity_key, key_store, pairing_store, peer_store,
+                    integrity_key, key_store, pairing_store, peer_store, grant_store,
                 )
                 if pair is None:
                     wire.send_message(conn, "CAPABILITY_RESPONSE_ERROR", {"reason": framing_error})
@@ -249,6 +250,12 @@ def main() -> None:
             f"existing 'content_read'). Default: {DEFAULT_CAPABILITY_ID!r}."
         ),
     )
+    parser.add_argument(
+        "--grant-store-dir", default=None,
+        help="directory for a LocalGrantStore (MISSION: FW-PHASE-0-IMPLEMENT-001). Required whenever "
+             "--pairing-store-dir is given: execution then needs an operator-issued grant for the peer "
+             "and relationship (see pc_pairing_ceremony.py issue-grant).",
+    )
     args = parser.parse_args()
 
     if args.host in ("0.0.0.0", "::", ""):
@@ -262,6 +269,7 @@ def main() -> None:
         integrity_key=bytes.fromhex(args.integrity_key) if args.integrity_key else None,
         key_store_dir=args.key_store_dir, pairing_store_dir=args.pairing_store_dir,
         peer_store_dir=args.peer_store_dir, capability_id=args.capability,
+        grant_store_dir=args.grant_store_dir,
     )
 
 

@@ -47,11 +47,19 @@ TYPICAL CEREMONY (see the mission's operator runbook for the full text):
      accept requests under this relationship_id.
   5. Revocation (`revoke` / `revoke-peer`) withdraws trust at either
      layer independently, at any later time.
+  6. PC operator runs `issue-grant` (MISSION: FW-PHASE-0-IMPLEMENT-001)
+     -- records which capabilities this exact peer_id + relationship_id
+     may execute, until an explicit expiry. Pairing and peer identity
+     authenticate the phone; only a receiver-held grant authorizes it.
+     `revoke-grant` withdraws a grant at any later time; `list-grants`
+     shows the current grants for a pair. These commands never print or
+     read key material.
 """
 from __future__ import annotations
 
 import argparse
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent.parent.parent
@@ -65,6 +73,10 @@ def _stores(args):
     pairing_store = fi.PairingStore(Path(args.pairing_store_dir))
     peer_store = fi.PeerIdentityStore(Path(args.peer_store_dir)) if getattr(args, "peer_store_dir", None) else None
     return key_store, pairing_store, peer_store
+
+
+def _grant_store(args):
+    return fi.LocalGrantStore(Path(args.grant_store_dir))
 
 
 def cmd_offer(args) -> int:
@@ -150,11 +162,60 @@ def cmd_revoke_peer(args) -> int:
     return 0
 
 
-def main() -> int:
+def cmd_issue_grant(args) -> int:
+    _, pairing_store, peer_store = _stores(args)
+    if pairing_store.resolve_active(args.relationship_id) is None:
+        print(f"ISSUE_GRANT_FAILED: relationship_id {args.relationship_id!r} is not ACTIVE", file=sys.stderr)
+        return 1
+    if peer_store.resolve_active(args.peer_id) is None:
+        print(f"ISSUE_GRANT_FAILED: peer_id {args.peer_id!r} is not ACTIVE", file=sys.stderr)
+        return 1
+    if not peer_store.is_relationship_bound_to_peer(args.peer_id, args.relationship_id):
+        print(f"ISSUE_GRANT_FAILED: peer_id {args.peer_id!r} is not bound to relationship_id "
+              f"{args.relationship_id!r}", file=sys.stderr)
+        return 1
+    if args.ttl_seconds is not None:
+        if args.ttl_seconds <= 0:
+            print("ISSUE_GRANT_FAILED: --ttl-seconds must be positive", file=sys.stderr)
+            return 1
+        expires_at = (datetime.now(timezone.utc) + timedelta(seconds=args.ttl_seconds)).strftime(fi._TIMESTAMP_FORMAT)
+    else:
+        expires_at = args.expires_at
+    try:
+        grant_id = _grant_store(args).issue_grant(
+            args.peer_id, args.relationship_id, args.capability, expires_at,
+            issued_by=args.issued_by, reason=args.reason or None,
+        )
+    except fi.GrantStoreError as exc:
+        print(f"ISSUE_GRANT_FAILED: {exc}", file=sys.stderr)
+        return 1
+    print(f"GRANT_ISSUED grant_id={grant_id} expires_at={expires_at} capabilities={','.join(sorted(args.capability))}")
+    return 0
+
+
+def cmd_revoke_grant(args) -> int:
+    try:
+        _grant_store(args).revoke_grant(args.grant_id, reason=args.reason or "")
+    except fi.GrantStoreError as exc:
+        print(f"REVOKE_GRANT_FAILED: {exc}", file=sys.stderr)
+        return 1
+    print(f"GRANT_REVOKED grant_id={args.grant_id}")
+    return 0
+
+
+def cmd_list_grants(args) -> int:
+    for g in _grant_store(args).list_for(args.peer_id, args.relationship_id):
+        print(f"grant_id={g['grant_id']} event={g['event']} capabilities={','.join(g['capability_ids'])} "
+              f"expires_at={g['expires_at']} issued_by={g['issued_by']}")
+    return 0
+
+
+def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description="ForgeWorld PC-side physical pairing ceremony CLI.")
     parser.add_argument("--pairing-store-dir", required=True)
     parser.add_argument("--key-store-dir", required=True)
-    parser.add_argument("--peer-store-dir", default=None, help="required by register-peer/bind-peer/revoke-peer/status --peer-id")
+    parser.add_argument("--peer-store-dir", default=None, help="required by register-peer/bind-peer/revoke-peer/status --peer-id and the grant commands")
+    parser.add_argument("--grant-store-dir", default=None, help="required by issue-grant/revoke-grant/list-grants")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_offer = sub.add_parser("offer", help="create a new PENDING_CONFIRMATION relationship + fresh key")
@@ -190,9 +251,32 @@ def main() -> int:
     p_revoke_peer.add_argument("--reason", default="")
     p_revoke_peer.set_defaults(func=cmd_revoke_peer)
 
-    args = parser.parse_args()
-    if args.command in ("register-peer", "bind-peer", "revoke-peer") and not args.peer_store_dir:
+    p_issue = sub.add_parser("issue-grant", help="grant a bound, ACTIVE peer capabilities under one relationship, until an explicit expiry")
+    p_issue.add_argument("--peer-id", required=True)
+    p_issue.add_argument("--relationship-id", required=True)
+    p_issue.add_argument("--capability", required=True, action="append", help="repeat for each capability_id")
+    expiry = p_issue.add_mutually_exclusive_group(required=True)
+    expiry.add_argument("--expires-at", help="UTC timestamp, e.g. 2026-10-15T12:00:00Z")
+    expiry.add_argument("--ttl-seconds", type=int, help="expire this many seconds from now")
+    p_issue.add_argument("--issued-by", required=True, help="operator label (attribution only)")
+    p_issue.add_argument("--reason", default="")
+    p_issue.set_defaults(func=cmd_issue_grant)
+
+    p_revoke_grant = sub.add_parser("revoke-grant", help="revoke a grant (idempotent)")
+    p_revoke_grant.add_argument("--grant-id", required=True)
+    p_revoke_grant.add_argument("--reason", default="")
+    p_revoke_grant.set_defaults(func=cmd_revoke_grant)
+
+    p_list_grants = sub.add_parser("list-grants", help="show current grants for a peer_id + relationship_id")
+    p_list_grants.add_argument("--peer-id", required=True)
+    p_list_grants.add_argument("--relationship-id", required=True)
+    p_list_grants.set_defaults(func=cmd_list_grants)
+
+    args = parser.parse_args(argv)
+    if args.command in ("register-peer", "bind-peer", "revoke-peer", "issue-grant") and not args.peer_store_dir:
         parser.error(f"--peer-store-dir is required for '{args.command}'")
+    if args.command in ("issue-grant", "revoke-grant", "list-grants") and not args.grant_store_dir:
+        parser.error(f"--grant-store-dir is required for '{args.command}'")
     return args.func(args)
 
 

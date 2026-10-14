@@ -10,6 +10,7 @@ governance path."
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -187,11 +188,18 @@ class TestNegativeInvariants(unittest.TestCase):
                 relationship_id=offer["relationship_id"], source_peer_id=unknown_peer_id,
             )
             signed = fi.sign_request(req, key_bytes, key_id=offer["key_id"])
-            execution = si.execute_workflow_step(
-                plan, decision, "physical_ping", signed, transport,
-                pairing_store=pairing_store, key_store=key_store, peer_store=peer_store,
-            )
+            # FW-PHASE-0-IMPLEMENT-001: governed mode needs a grant store; the
+            # spy proves the request reached the peer gate rather than failing
+            # earlier on configuration.
+            grant_store = fi.LocalGrantStore(tmp / "grants")
+            with mock.patch.object(peer_store, "resolve_active", wraps=peer_store.resolve_active) as peer_gate:
+                execution = si.execute_workflow_step(
+                    plan, decision, "physical_ping", signed, transport,
+                    pairing_store=pairing_store, key_store=key_store, peer_store=peer_store,
+                    grant_store=grant_store,
+                )
             self.assertEqual(execution.fabric_result_status, fi.CAP_FAILED)
+            peer_gate.assert_called_once_with(unknown_peer_id)
 
     def test_expired_authority_zero_execution(self):
         with tempfile.TemporaryDirectory() as tmp:
