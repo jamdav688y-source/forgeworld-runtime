@@ -33,6 +33,7 @@ from substrate import event_fabric as ef
 from fabric import interface as fi
 from fabric import capabilities as fabric_capabilities  # noqa: F401
 from fabric.transports import InMemoryFabricTransport
+from substrate.tests._governed_fixture import GovernedFabric
 
 NODE_ID = "PC-NODE-ORGANISM-E2E"
 ACTOR_ID = "ORGANISM-ACTOR"
@@ -164,7 +165,9 @@ class TestSyntheticOrganismEndToEnd(unittest.TestCase):
                 artifact_id=env.artifact_id, capability_id="physical_ping", authority_context=authority,
                 correlation_id=corr, causation_id=xfer_result.transfer_id, timeout_seconds=5,
             )
-            execution = si.execute_workflow_step(executable_plan, governance_decision, "physical_ping", cap_req, transport)
+            governed = GovernedFabric(Path(tmp) / "governed", NODE_ID, ACTOR_ID)  # FW-PHASE-1-HARDENING-001
+            execution = si.execute_workflow_step(executable_plan, governance_decision, "physical_ping",
+                                                 governed.sign(cap_req), transport, **governed.kwargs())
             self.assertEqual(execution.fabric_result_status, fi.CAP_COMPLETED)
             self.assertIsNotNone(execution.fabric_receipt_id)
 

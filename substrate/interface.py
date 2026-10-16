@@ -1078,6 +1078,16 @@ def execute_workflow_step(workflow_plan: WorkflowPlan, governance_decision: Gove
         )
     if capability_id not in (workflow_plan.existing_capability_ids + workflow_plan.composable_capability_ids):
         raise GovernanceError(f"capability_id {capability_id!r} is not part of the approved workflow plan's usable capabilities")
+    # MISSION: FW-PHASE-1-HARDENING-001 -- a production execution entry point
+    # may only reach the fabric in governed mode (receiver-held grants).
+    try:
+        fi.require_governed_configuration(
+            key_store=fabric_kwargs.get("key_store"), pairing_store=fabric_kwargs.get("pairing_store"),
+            peer_store=fabric_kwargs.get("peer_store"), grant_store=fabric_kwargs.get("grant_store"),
+            integrity_key=fabric_kwargs.get("integrity_key"),
+        )
+    except fi.FabricError as exc:
+        raise GovernanceError(f"refusing to execute: {exc}") from exc
 
     started_at = _now()
     result, receipt = fi.process_remote_capability_request(fabric_request, transport, **fabric_kwargs)

@@ -48,6 +48,11 @@ same-machine test fixture doesn't need:
   - contains NO test hook, no debug backdoor, no way to crash or
     reconfigure this process from received data, no eval/exec, no
     pickle, no shell invocation of any kind.
+  - GOVERNED ONLY (MISSION: FW-PHASE-1-HARDENING-001): refuses to start
+    without --key-store-dir, --pairing-store-dir, --peer-store-dir and
+    --grant-store-dir, has no legacy --integrity-key mode, and requires an
+    authkey of at least fabric.interface.MIN_AUTHKEY_BYTES. run_server()
+    enforces the same rules for any direct caller.
 
 FIREWALL / LIFECYCLE: this script never touches Windows Firewall rules
 itself and never will. The operator opens a rule scoped to the exact
@@ -144,6 +149,11 @@ def run_server(host: str, port: int, authkey: bytes, node_id: str, lineage_dir: 
                integrity_key: Optional[bytes] = None, key_store_dir: Optional[str] = None,
                pairing_store_dir: Optional[str] = None, peer_store_dir: Optional[str] = None,
                capability_id: str = DEFAULT_CAPABILITY_ID, grant_store_dir: Optional[str] = None) -> None:
+    fi.require_minimum_authkey(authkey)
+    fi.require_governed_configuration(
+        key_store=key_store_dir, pairing_store=pairing_store_dir, peer_store=peer_store_dir,
+        grant_store=grant_store_dir, integrity_key=integrity_key,
+    )
     _enforce_capability_allowlist(capability_id)
     lineage_store = LineageStore(Path(lineage_dir))
     artifact_index = fi.FabricArtifactIndex()
@@ -209,11 +219,12 @@ def run_server(host: str, port: int, authkey: bytes, node_id: str, lineage_dir: 
     print("PC_NODE_EXITING", flush=True)
 
 
-def main() -> None:
+def main(argv=None) -> None:
     parser = argparse.ArgumentParser(description="ForgeWorld PC_NODE TCP fabric listener (bounded, one-shot, content_read only).")
     parser.add_argument("--host", required=True, help="LAN IP to bind, e.g. 192.168.1.85 -- never 0.0.0.0 or ::")
     parser.add_argument("--port", required=True, type=int)
-    parser.add_argument("--authkey", required=True, help="hex-encoded shared secret; generate a fresh one per session, never reuse")
+    parser.add_argument("--authkey", required=True,
+                        help=f"hex-encoded shared secret of at least {fi.MIN_AUTHKEY_BYTES} bytes; generate a fresh one per session, never reuse")
     parser.add_argument("--node-id", default="PC-NODE-MAIN")
     parser.add_argument("--lineage-dir", required=True)
     parser.add_argument("--max-messages", type=int, default=20)
@@ -221,26 +232,17 @@ def main() -> None:
     parser.add_argument("--max-runtime-seconds", type=float, default=120.0)
     parser.add_argument("--max-message-bytes", type=int, default=65536)
     parser.add_argument(
-        "--integrity-key", default=None,
-        help="hex-encoded HMAC key (MISSION: FW-MESSAGE-INTEGRITY-CONTRACT-001, legacy path). "
-             "Ignored if --key-store-dir is also given. Test-only key material -- omit for no "
-             "integrity verification (default, backward compatible).",
+        "--key-store-dir", required=True,
+        help="directory for a LocalKeyStore (MISSION: FW-LOCAL-KEY-PROVISIONING-CONTRACT-001).",
     )
     parser.add_argument(
-        "--key-store-dir", default=None,
-        help="directory for a LocalKeyStore (MISSION: FW-LOCAL-KEY-PROVISIONING-CONTRACT-001). "
-             "Takes precedence over --integrity-key when given.",
+        "--pairing-store-dir", required=True,
+        help="directory for a PairingStore (MISSION: FW-LOCAL-PAIRING-KEY-ESTABLISHMENT-001); "
+             "relationship keys are resolved through --key-store-dir.",
     )
     parser.add_argument(
-        "--pairing-store-dir", default=None,
-        help="directory for a PairingStore (MISSION: FW-LOCAL-PAIRING-KEY-ESTABLISHMENT-001). "
-             "Takes precedence over --key-store-dir/--integrity-key when given; --key-store-dir "
-             "must also be supplied so relationship keys can be resolved.",
-    )
-    parser.add_argument(
-        "--peer-store-dir", default=None,
-        help="directory for a PeerIdentityStore (MISSION: FW-PEER-IDENTITY-CONTRACT-001). "
-             "Requires --pairing-store-dir to also be supplied.",
+        "--peer-store-dir", required=True,
+        help="directory for a PeerIdentityStore (MISSION: FW-PEER-IDENTITY-CONTRACT-001).",
     )
     parser.add_argument(
         "--capability", default=DEFAULT_CAPABILITY_ID, choices=_KNOWN_CAPABILITY_IDS,
@@ -251,22 +253,25 @@ def main() -> None:
         ),
     )
     parser.add_argument(
-        "--grant-store-dir", default=None,
-        help="directory for a LocalGrantStore (MISSION: FW-PHASE-0-IMPLEMENT-001). Required whenever "
-             "--pairing-store-dir is given: execution then needs an operator-issued grant for the peer "
-             "and relationship (see pc_pairing_ceremony.py issue-grant).",
+        "--grant-store-dir", required=True,
+        help="directory for a LocalGrantStore (MISSION: FW-PHASE-0-IMPLEMENT-001): execution needs an "
+             "operator-issued grant for the peer and relationship (see pc_pairing_ceremony.py issue-grant).",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.host in ("0.0.0.0", "::", ""):
         parser.error("refusing to bind to 0.0.0.0/::/empty -- pass the specific LAN IP to bind as narrowly as possible")
+    try:
+        authkey = bytes.fromhex(args.authkey)
+        fi.require_minimum_authkey(authkey)
+    except (ValueError, fi.FabricError) as exc:
+        parser.error(f"invalid --authkey: {exc}")
 
     run_server(
-        host=args.host, port=args.port, authkey=bytes.fromhex(args.authkey),
+        host=args.host, port=args.port, authkey=authkey,
         node_id=args.node_id, lineage_dir=args.lineage_dir,
         max_messages=args.max_messages, idle_timeout=args.idle_timeout,
         max_runtime_seconds=args.max_runtime_seconds, max_message_bytes=args.max_message_bytes,
-        integrity_key=bytes.fromhex(args.integrity_key) if args.integrity_key else None,
         key_store_dir=args.key_store_dir, pairing_store_dir=args.pairing_store_dir,
         peer_store_dir=args.peer_store_dir, capability_id=args.capability,
         grant_store_dir=args.grant_store_dir,

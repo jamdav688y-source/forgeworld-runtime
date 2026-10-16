@@ -23,6 +23,7 @@ import tempfile
 import time
 import unittest
 import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -54,7 +55,7 @@ class _SpawnedServer:
                  lineage_dir=None, key_store_dir=None, pairing_store_dir=None):
         self.node_id = node_id
         self.address, self.family = make_loopback_address(f"pairing-test-{uuid.uuid4().hex[:8]}")
-        self.authkey = os.urandom(16)
+        self.authkey = os.urandom(32)
         self._owns_lineage_dir = lineage_dir is None
         self._lineage_tmp = tempfile.TemporaryDirectory() if lineage_dir is None else None
         self.lineage_dir = lineage_dir or self._lineage_tmp.name
@@ -64,6 +65,11 @@ class _SpawnedServer:
         self._owns_pairing_store_dir = pairing_store_dir is None
         self._pairing_store_tmp = tempfile.TemporaryDirectory() if pairing_store_dir is None else None
         self.pairing_store_dir = pairing_store_dir or self._pairing_store_tmp.name
+        # FW-PHASE-1-HARDENING-001: governed-only server needs peer and grant stores too.
+        self._peer_store_tmp = tempfile.TemporaryDirectory()
+        self.peer_store_dir = self._peer_store_tmp.name
+        self._grant_store_tmp = tempfile.TemporaryDirectory()
+        self.grant_store_dir = self._grant_store_tmp.name
         self.proc = None
         self._start(max_messages, idle_timeout)
 
@@ -76,6 +82,8 @@ class _SpawnedServer:
                 "--lineage-dir", self.lineage_dir,
                 "--key-store-dir", self.key_store_dir,
                 "--pairing-store-dir", self.pairing_store_dir,
+                "--peer-store-dir", self.peer_store_dir,
+                "--grant-store-dir", self.grant_store_dir,
                 "--max-messages", str(max_messages), "--idle-timeout", str(idle_timeout),
             ],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
@@ -113,6 +121,8 @@ class _SpawnedServer:
             self._key_store_tmp.cleanup()
         if self._owns_pairing_store_dir:
             self._pairing_store_tmp.cleanup()
+        self._peer_store_tmp.cleanup()
+        self._grant_store_tmp.cleanup()
         cleanup_loopback_address(self.address, self.family)
 
 
@@ -129,12 +139,41 @@ def _do_transfer(server, transport, payload=b"pairing loopback probe payload",
     return env, correlation_id, result
 
 
+_GRANT_EXPIRY = timedelta(hours=1)
+
+
+def _issue_test_grant(grant_store_dir, peer_id, relationship, capability_id="content_read"):
+    """FW-PHASE-1-HARDENING-001: the production server is governed-only, so
+    the test acts as the PC operator and issues an expiring receiver-held
+    grant before a request is sent (idempotent per peer + relationship)."""
+    grant_store = fi.LocalGrantStore(Path(grant_store_dir))
+    if grant_store.list_for(peer_id, relationship["relationship_id"]):
+        return
+    expires_at = (datetime.now(timezone.utc) + _GRANT_EXPIRY).strftime(fi._TIMESTAMP_FORMAT)
+    grant_store.issue_grant(peer_id, relationship["relationship_id"], [capability_id], expires_at,
+                            issued_by="test_operator")
+
+
+def _governed_peer(server, relationship):
+    """Register and bind one peer per (server, relationship) and grant it
+    content_read. Negative tests here are rejected at the pairing gate,
+    before peer identity or grants are consulted."""
+    peer_store = fi.PeerIdentityStore(Path(server.peer_store_dir))
+    cache = server.__dict__.setdefault("_peer_for_relationship", {})
+    if relationship["relationship_id"] not in cache:
+        peer_id = peer_store.register_peer()
+        peer_store.bind_relationship(peer_id, relationship["relationship_id"])
+        _issue_test_grant(server.grant_store_dir, peer_id, relationship)
+        cache[relationship["relationship_id"]] = peer_id
+    return cache[relationship["relationship_id"]]
+
+
 def _signed_capability_request(server, env, correlation_id, transfer_result, relationship, key_bytes):
     unsigned = fi.RemoteCapabilityRequest(
         request_id=fi._new_id("CAPREQ"), source_node_id=PHONE_ID, destination_node_id=server.node_id,
         artifact_id=env.artifact_id, capability_id="content_read", authority_context=_authority("content_read"),
         correlation_id=correlation_id, causation_id=transfer_result.transfer_id, timeout_seconds=5,
-        relationship_id=relationship["relationship_id"],
+        relationship_id=relationship["relationship_id"], source_peer_id=_governed_peer(server, relationship),
     )
     return fi.sign_request(unsigned, key_bytes, key_id=relationship["key_id"])
 

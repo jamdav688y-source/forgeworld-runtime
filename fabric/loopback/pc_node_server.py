@@ -18,13 +18,21 @@ Bounded by design: accepts exactly one connection, stops after
 --max-messages messages (default 100) or --idle-timeout seconds without
 a message (default 15s), and always exits on a SHUTDOWN message. This is
 a test fixture process, not a long-lived service.
+
+GOVERNED ONLY (MISSION: FW-PHASE-1-HARDENING-001): this production entry
+point refuses to start without --key-store-dir, --pairing-store-dir,
+--peer-store-dir and --grant-store-dir, has no legacy --integrity-key mode,
+requires an authkey of at least fabric.interface.MIN_AUTHKEY_BYTES, invokes
+only the capabilities named by --capability, and bounds each message to
+--max-message-bytes. It contains no test hooks: fault injection and the
+deliberately broken test capability live in the test-only wrapper
+fabric/tests/_loopback_test_server.py, which is the only caller of
+run_server()'s underscore-prefixed parameters.
 """
 from __future__ import annotations
 
 import argparse
-import os
 import sys
-import time
 from multiprocessing import connection
 from pathlib import Path
 from typing import Optional
@@ -35,8 +43,24 @@ if str(_ROOT) not in sys.path:
 from fabric import interface as fi  # noqa: E402
 from fabric.transports import InMemoryFabricTransport  # noqa: E402
 from fabric.loopback import wire  # noqa: E402
-from fabric import capabilities as fabric_capabilities  # noqa: E402,F401 -- registers content_read/echo_mock
+from fabric import capabilities as fabric_capabilities  # noqa: E402,F401 -- registers content_read/echo_mock/physical_ping
 from artifact_handoff.lineage_store import LineageStore  # noqa: E402
+
+DEFAULT_CAPABILITY_IDS = ("content_read",)
+_KNOWN_CAPABILITY_IDS = ("content_read", "echo_mock", "physical_ping")
+DEFAULT_MAX_MESSAGE_BYTES = 65536
+
+
+def _enforce_capability_allowlist(allowed_capability_ids) -> None:
+    """Removes every registered capability not in allowed_capability_ids from
+    fi.CAPABILITIES, so this process can only ever invoke what it was
+    started with -- whatever fabric.capabilities registers on import."""
+    allowed = set(allowed_capability_ids)
+    for capability_id in list(fi.CAPABILITIES):
+        if capability_id not in allowed:
+            fi.CAPABILITIES.pop(capability_id, None)
+    if not set(fi.CAPABILITIES) <= allowed:
+        raise fi.FabricError(f"refusing to start: unexpected capabilities registered {sorted(fi.CAPABILITIES)}")
 
 
 def _handle_artifact_envelope(payload: dict, node_id: str, local_transport: InMemoryFabricTransport) -> dict:
@@ -70,24 +94,28 @@ def _handle_capability_request(payload: dict, node_id: str, local_transport, lin
     return (result, receipt), None
 
 
-class _AlwaysIncompleteTestCapability:
-    """TEST-ONLY capability, registered unconditionally alongside the
-    real ones: claims COMPLETED but returns no structured_result. Exists
-    so "incomplete result" can be proven to survive a real subprocess
-    round trip, exercising process_remote_capability_request()'s
-    EXISTING (unmodified) incomplete-detection logic from across the
-    process boundary rather than only in-process."""
-
-    capability_id = "broken_incomplete_capability_for_testing"
-
-    def invoke(self, manifest_dict, payload):
-        return fi.CAP_COMPLETED, None, None
-
-
 def run_server(address: str, family: str, authkey: bytes, node_id: str, lineage_dir: str,
                max_messages: int = 100, idle_timeout: float = 15.0, integrity_key: Optional[bytes] = None,
                key_store_dir: Optional[str] = None, pairing_store_dir: Optional[str] = None,
-               peer_store_dir: Optional[str] = None, grant_store_dir: Optional[str] = None) -> None:
+               peer_store_dir: Optional[str] = None, grant_store_dir: Optional[str] = None,
+               capability_ids=DEFAULT_CAPABILITY_IDS, max_message_bytes: int = DEFAULT_MAX_MESSAGE_BYTES,
+               _allow_ungoverned: bool = False, _test_handlers: Optional[dict] = None,
+               _test_capabilities=()) -> None:
+    """Serve one connection. Refuses (FabricError) before listening unless
+    the configuration is governed and the authkey is long enough. The
+    underscore-prefixed parameters exist only for the test-only wrapper
+    fabric/tests/_loopback_test_server.py; main() never passes them."""
+    fi.require_minimum_authkey(authkey)
+    if not _allow_ungoverned:
+        fi.require_governed_configuration(
+            key_store=key_store_dir, pairing_store=pairing_store_dir, peer_store=peer_store_dir,
+            grant_store=grant_store_dir, integrity_key=integrity_key,
+        )
+    for provider in _test_capabilities:
+        fi.register_capability(provider)
+    _enforce_capability_allowlist(set(capability_ids) | {p.capability_id for p in _test_capabilities})
+    test_handlers = dict(_test_handlers or {})
+
     lineage_store = LineageStore(Path(lineage_dir))
     artifact_index = fi.FabricArtifactIndex()
     replay_guard = fi.RequestReplayGuard(Path(lineage_dir))
@@ -96,7 +124,6 @@ def run_server(address: str, family: str, authkey: bytes, node_id: str, lineage_
     pairing_store = fi.PairingStore(Path(pairing_store_dir)) if pairing_store_dir else None
     grant_store = fi.LocalGrantStore(Path(grant_store_dir)) if grant_store_dir else None
     local_transport = InMemoryFabricTransport(registered_nodes=(node_id,))
-    fi.register_capability(_AlwaysIncompleteTestCapability())
 
     listener = connection.Listener(address, family=family, authkey=authkey, backlog=1)
     print(f"PC_NODE_LISTENING {address}", flush=True)
@@ -109,7 +136,7 @@ def run_server(address: str, family: str, authkey: bytes, node_id: str, lineage_
     handled = 0
     try:
         while handled < max_messages:
-            kind, payload, error = wire.recv_message(conn, timeout=idle_timeout)
+            kind, payload, error = wire.recv_message(conn, timeout=idle_timeout, max_bytes=max_message_bytes)
             if error is not None:
                 print(f"PC_NODE_RECV_ERROR {error}", flush=True)
                 break
@@ -117,17 +144,8 @@ def run_server(address: str, family: str, authkey: bytes, node_id: str, lineage_
             if kind == "SHUTDOWN":
                 print("PC_NODE_SHUTDOWN_RECEIVED", flush=True)
                 break
-            elif kind == "TEST_HOOK":
-                # Deterministic test support only -- not part of the real
-                # wire protocol. "die" simulates process termination
-                # mid-request (no response is ever sent); "sleep_ms"
-                # simulates a slow/hung PC_NODE for bounded-timeout tests.
-                action = payload.get("action")
-                if action == "die":
-                    os._exit(1)
-                elif action == "sleep_ms":
-                    time.sleep(payload.get("ms", 0) / 1000.0)
-                    wire.send_message(conn, "TEST_HOOK_ACK", {})
+            elif kind in test_handlers:
+                test_handlers[kind](conn, payload)
             elif kind == "ARTIFACT_ENVELOPE":
                 outcome = _handle_artifact_envelope(payload, node_id, local_transport)
                 wire.send_message(conn, "ARTIFACT_ENVELOPE_ACK", outcome)
@@ -148,52 +166,44 @@ def run_server(address: str, family: str, authkey: bytes, node_id: str, lineage_
     print("PC_NODE_EXITING", flush=True)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
+def main(argv=None) -> None:
+    parser = argparse.ArgumentParser(description="ForgeWorld PC_NODE loopback listener (governed, bounded, one-shot).")
     parser.add_argument("--address", required=True)
     parser.add_argument("--family", required=True)
-    parser.add_argument("--authkey", required=True, help="hex-encoded shared secret")
+    parser.add_argument("--authkey", required=True,
+                        help=f"hex-encoded shared secret, at least {fi.MIN_AUTHKEY_BYTES} bytes")
     parser.add_argument("--node-id", required=True)
     parser.add_argument("--lineage-dir", required=True)
     parser.add_argument("--max-messages", type=int, default=100)
     parser.add_argument("--idle-timeout", type=float, default=15.0)
+    parser.add_argument("--max-message-bytes", type=int, default=DEFAULT_MAX_MESSAGE_BYTES)
+    parser.add_argument("--key-store-dir", required=True, help="directory for a LocalKeyStore")
+    parser.add_argument("--pairing-store-dir", required=True, help="directory for a PairingStore")
+    parser.add_argument("--peer-store-dir", required=True, help="directory for a PeerIdentityStore")
     parser.add_argument(
-        "--integrity-key", default=None,
-        help="hex-encoded HMAC key (MISSION: FW-MESSAGE-INTEGRITY-CONTRACT-001, legacy path). "
-             "Ignored if --key-store-dir is also given. Test-only key material -- omit for no "
-             "integrity verification (default, backward compatible).",
+        "--grant-store-dir", required=True,
+        help="directory for a LocalGrantStore: execution needs an operator-issued grant for the peer "
+             "and relationship (see pc_pairing_ceremony.py issue-grant)",
     )
     parser.add_argument(
-        "--key-store-dir", default=None,
-        help="directory for a LocalKeyStore (MISSION: FW-LOCAL-KEY-PROVISIONING-CONTRACT-001). "
-             "Takes precedence over --integrity-key when given.",
+        "--capability", action="append", choices=_KNOWN_CAPABILITY_IDS,
+        help=f"capability this listener may invoke; repeatable (default: {', '.join(DEFAULT_CAPABILITY_IDS)})",
     )
-    parser.add_argument(
-        "--pairing-store-dir", default=None,
-        help="directory for a PairingStore (MISSION: FW-LOCAL-PAIRING-KEY-ESTABLISHMENT-001). "
-             "Takes precedence over --key-store-dir/--integrity-key when given; --key-store-dir "
-             "must also be supplied so relationship keys can be resolved.",
-    )
-    parser.add_argument(
-        "--peer-store-dir", default=None,
-        help="directory for a PeerIdentityStore (MISSION: FW-PEER-IDENTITY-CONTRACT-001). "
-             "Requires --pairing-store-dir to also be supplied.",
-    )
-    parser.add_argument(
-        "--grant-store-dir", default=None,
-        help="directory for a LocalGrantStore (MISSION: FW-PHASE-0-IMPLEMENT-001). Required whenever "
-             "--pairing-store-dir is given: execution then needs an operator-issued grant for the peer "
-             "and relationship (see pc_pairing_ceremony.py issue-grant).",
-    )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+    try:
+        authkey = bytes.fromhex(args.authkey)
+        fi.require_minimum_authkey(authkey)
+    except (ValueError, fi.FabricError) as exc:
+        parser.error(f"invalid --authkey: {exc}")
 
     run_server(
-        address=args.address, family=args.family, authkey=bytes.fromhex(args.authkey),
+        address=args.address, family=args.family, authkey=authkey,
         node_id=args.node_id, lineage_dir=args.lineage_dir,
         max_messages=args.max_messages, idle_timeout=args.idle_timeout,
-        integrity_key=bytes.fromhex(args.integrity_key) if args.integrity_key else None,
         key_store_dir=args.key_store_dir, pairing_store_dir=args.pairing_store_dir,
         peer_store_dir=args.peer_store_dir, grant_store_dir=args.grant_store_dir,
+        capability_ids=tuple(args.capability or DEFAULT_CAPABILITY_IDS),
+        max_message_bytes=args.max_message_bytes,
     )
 
 

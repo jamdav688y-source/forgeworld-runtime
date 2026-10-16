@@ -41,7 +41,9 @@ from fabric import interface as fi
 from fabric.loopback.transport import LoopbackClientTransport, make_loopback_address, cleanup_loopback_address
 from artifact_handoff.lineage_store import LineageStore
 
-SERVER_SCRIPT = REPO_ROOT / "fabric" / "loopback" / "pc_node_server.py"
+# FW-PHASE-1-HARDENING-001: legacy ungoverned modes and fault injection are
+# test-only; the production pc_node_server.py is governed-only.
+SERVER_SCRIPT = REPO_ROOT / "fabric" / "tests" / "_loopback_test_server.py"
 PHONE_ID = "PHONE-NODE-REPLAY-LOOPBACK"
 
 
@@ -59,7 +61,7 @@ class _SpawnedServer:
     def __init__(self, node_id="PC-NODE-REPLAY-LOOPBACK", max_messages=100, idle_timeout=6.0, lineage_dir=None):
         self.node_id = node_id
         self.address, self.family = make_loopback_address(f"replay-test-{uuid.uuid4().hex[:8]}")
-        self.authkey = os.urandom(16)
+        self.authkey = os.urandom(32)
         self._owns_lineage_dir = lineage_dir is None
         self._tmp = tempfile.TemporaryDirectory() if lineage_dir is None else None
         self.lineage_dir = lineage_dir or self._tmp.name

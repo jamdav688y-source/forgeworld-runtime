@@ -1348,6 +1348,46 @@ RECEIVER_AUTHORIZATION_DENIED = "RECEIVER_AUTHORIZATION_DENIED"
 RECEIVER_AUTHORIZATION_CONFIG = "RECEIVER_AUTHORIZATION_CONFIG"
 
 
+# ---------------------------------------------------------------------------
+# production entry-point configuration: MISSION FW-PHASE-1-HARDENING-001
+#
+# Every production execution entry point (both pc_node_server scripts and
+# substrate.execute_workflow_step) calls these before doing anything else,
+# so none of them can run in an ungoverned mode. The ungoverned library
+# modes of process_remote_capability_request remain only for in-process
+# compatibility tests and test-only fixtures.
+# ---------------------------------------------------------------------------
+
+MIN_AUTHKEY_BYTES = 32
+GOVERNED_CONFIGURATION_REQUIRED = "GOVERNED_CONFIGURATION_REQUIRED"
+
+
+def require_minimum_authkey(authkey: Any) -> None:
+    """Raise FabricError unless authkey is at least MIN_AUTHKEY_BYTES of bytes."""
+    if not isinstance(authkey, (bytes, bytearray)) or len(authkey) < MIN_AUTHKEY_BYTES:
+        raise FabricError(
+            f"connection authkey must be at least {MIN_AUTHKEY_BYTES} bytes "
+            f"(got {len(authkey) if isinstance(authkey, (bytes, bytearray)) else type(authkey).__name__})"
+        )
+
+
+def require_governed_configuration(*, key_store: Any, pairing_store: Any, peer_store: Any, grant_store: Any,
+                                   integrity_key: Any = None) -> None:
+    """Raise FabricError unless key, pairing, peer and grant stores are all
+    configured (as store objects or directory paths) and no legacy
+    integrity_key is in use -- i.e. unless execution is governed."""
+    supplied = {"key_store": key_store, "pairing_store": pairing_store,
+                "peer_store": peer_store, "grant_store": grant_store}
+    missing = [name for name, value in supplied.items() if value is None or value == ""]
+    if missing:
+        raise FabricError(f"{GOVERNED_CONFIGURATION_REQUIRED}: missing {', '.join(missing)}")
+    if integrity_key is not None:
+        raise FabricError(
+            f"{GOVERNED_CONFIGURATION_REQUIRED}: the legacy integrity_key mode is not permitted "
+            "at a production entry point; use the key, pairing, peer and grant stores"
+        )
+
+
 class GrantStoreError(FabricError):
     """Operator-misuse only (invalid issuance input, revoking an unknown
     grant_id) -- never raised at request-evaluation time, where

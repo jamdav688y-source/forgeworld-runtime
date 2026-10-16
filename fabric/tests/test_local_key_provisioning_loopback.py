@@ -33,7 +33,9 @@ from fabric.loopback import wire
 from fabric.loopback.transport import LoopbackClientTransport, make_loopback_address, cleanup_loopback_address
 from artifact_handoff.lineage_store import LineageStore
 
-SERVER_SCRIPT = REPO_ROOT / "fabric" / "loopback" / "pc_node_server.py"
+# FW-PHASE-1-HARDENING-001: legacy ungoverned modes and fault injection are
+# test-only; the production pc_node_server.py is governed-only.
+SERVER_SCRIPT = REPO_ROOT / "fabric" / "tests" / "_loopback_test_server.py"
 PHONE_ID = "PHONE-NODE-KEYPROV-LOOPBACK"
 
 
@@ -52,7 +54,7 @@ class _SpawnedServer:
                  lineage_dir=None, key_store_dir=None):
         self.node_id = node_id
         self.address, self.family = make_loopback_address(f"keyprov-test-{uuid.uuid4().hex[:8]}")
-        self.authkey = os.urandom(16)
+        self.authkey = os.urandom(32)
         self._owns_lineage_dir = lineage_dir is None
         self._lineage_tmp = tempfile.TemporaryDirectory() if lineage_dir is None else None
         self.lineage_dir = lineage_dir or self._lineage_tmp.name

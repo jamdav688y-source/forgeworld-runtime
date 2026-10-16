@@ -50,7 +50,9 @@ from fabric.loopback import wire
 from fabric.loopback.transport import LoopbackClientTransport, make_loopback_address, cleanup_loopback_address
 from artifact_handoff.lineage_store import LineageStore
 
-SERVER_SCRIPT = REPO_ROOT / "fabric" / "loopback" / "pc_node_server.py"
+# FW-PHASE-1-HARDENING-001: legacy ungoverned modes and fault injection are
+# test-only; the production pc_node_server.py is governed-only.
+SERVER_SCRIPT = REPO_ROOT / "fabric" / "tests" / "_loopback_test_server.py"
 PHONE_ID = "PHONE-NODE-EXPIRY-LOOPBACK"
 
 # Fixed, not wall-clock-relative on purpose -- real UTC "now" will remain
@@ -78,7 +80,7 @@ class _SpawnedServer:
     def __init__(self, node_id="PC-NODE-EXPIRY-LOOPBACK", max_messages=100, idle_timeout=6.0):
         self.node_id = node_id
         self.address, self.family = make_loopback_address(f"expiry-test-{uuid.uuid4().hex[:8]}")
-        self.authkey = os.urandom(16)
+        self.authkey = os.urandom(32)
         self._tmp = tempfile.TemporaryDirectory()
         self.lineage_dir = self._tmp.name
         self.proc = None

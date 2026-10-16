@@ -20,6 +20,7 @@ import tempfile
 import time
 import unittest
 import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -50,7 +51,7 @@ class _SpawnedServer:
                  lineage_dir=None, key_store_dir=None, pairing_store_dir=None, peer_store_dir=None):
         self.node_id = node_id
         self.address, self.family = make_loopback_address(f"peerid-test-{uuid.uuid4().hex[:8]}")
-        self.authkey = os.urandom(16)
+        self.authkey = os.urandom(32)
         self._owns_lineage_dir = lineage_dir is None
         self._lineage_tmp = tempfile.TemporaryDirectory() if lineage_dir is None else None
         self.lineage_dir = lineage_dir or self._lineage_tmp.name
@@ -63,6 +64,9 @@ class _SpawnedServer:
         self._owns_peer_store_dir = peer_store_dir is None
         self._peer_store_tmp = tempfile.TemporaryDirectory() if peer_store_dir is None else None
         self.peer_store_dir = peer_store_dir or self._peer_store_tmp.name
+        # FW-PHASE-1-HARDENING-001: governed-only server needs a grant store too.
+        self._grant_store_tmp = tempfile.TemporaryDirectory()
+        self.grant_store_dir = self._grant_store_tmp.name
         self.proc = None
         self._start(max_messages, idle_timeout)
 
@@ -76,6 +80,7 @@ class _SpawnedServer:
                 "--key-store-dir", self.key_store_dir,
                 "--pairing-store-dir", self.pairing_store_dir,
                 "--peer-store-dir", self.peer_store_dir,
+                "--grant-store-dir", self.grant_store_dir,
                 "--max-messages", str(max_messages), "--idle-timeout", str(idle_timeout),
             ],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
@@ -115,6 +120,7 @@ class _SpawnedServer:
             self._pairing_store_tmp.cleanup()
         if self._owns_peer_store_dir:
             self._peer_store_tmp.cleanup()
+        self._grant_store_tmp.cleanup()
         cleanup_loopback_address(self.address, self.family)
 
 
@@ -131,7 +137,25 @@ def _do_transfer(server, transport, payload=b"peer identity loopback probe paylo
     return env, correlation_id, result
 
 
+_GRANT_EXPIRY = timedelta(hours=1)
+
+
+def _issue_test_grant(grant_store_dir, peer_id, relationship, capability_id="content_read"):
+    """FW-PHASE-1-HARDENING-001: the production server is governed-only, so
+    the test acts as the PC operator and issues an expiring receiver-held
+    grant before a request is sent (idempotent per peer + relationship)."""
+    grant_store = fi.LocalGrantStore(Path(grant_store_dir))
+    if grant_store.list_for(peer_id, relationship["relationship_id"]):
+        return
+    expires_at = (datetime.now(timezone.utc) + _GRANT_EXPIRY).strftime(fi._TIMESTAMP_FORMAT)
+    grant_store.issue_grant(peer_id, relationship["relationship_id"], [capability_id], expires_at,
+                            issued_by="test_operator")
+
+
 def _signed_capability_request(server, env, correlation_id, transfer_result, relationship, peer_id, key_bytes):
+    # Negative tests here (unknown or revoked peer) are rejected at the peer
+    # gate, before the receiver-held grant is consulted.
+    _issue_test_grant(server.grant_store_dir, peer_id, relationship)
     unsigned = fi.RemoteCapabilityRequest(
         request_id=fi._new_id("CAPREQ"), source_node_id=PHONE_ID, destination_node_id=server.node_id,
         artifact_id=env.artifact_id, capability_id="content_read", authority_context=_authority("content_read"),

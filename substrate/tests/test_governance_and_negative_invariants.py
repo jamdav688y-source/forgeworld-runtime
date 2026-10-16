@@ -21,6 +21,7 @@ from substrate import interface as si
 from fabric import interface as fi
 from fabric import capabilities as fabric_capabilities  # noqa: F401 -- registers physical_ping
 from fabric.transports import InMemoryFabricTransport
+from substrate.tests._governed_fixture import GovernedFabric
 
 NODE_ID = "PC-NODE-SUBSTRATE-TEST"
 ACTOR_ID = "SUBSTRATE-ACTOR"
@@ -155,11 +156,35 @@ class TestExecuteWorkflowStepRefusesWithoutApproval(unittest.TestCase):
             plan, _ = si.WorkflowCompiler().compile(obj, cg)
             authority = fi.AuthorityContext(actor_id=ACTOR_ID, granted_capability_ids=("physical_ping",), granted_by="policy")
             decision = si.GovernanceEngine().decide(plan, authority)
+            governed = GovernedFabric(Path(tmp) / "governed", NODE_ID, ACTOR_ID)
             transport = InMemoryFabricTransport(registered_nodes=(NODE_ID,))
-            req = _capability_request(b"nonce", transport, authority)
-            execution = si.execute_workflow_step(plan, decision, "physical_ping", req, transport)
+            req = governed.sign(_capability_request(b"nonce", transport, authority))
+            execution = si.execute_workflow_step(plan, decision, "physical_ping", req, transport, **governed.kwargs())
             self.assertEqual(execution.fabric_result_status, fi.CAP_COMPLETED)
             self.assertIsNotNone(execution.fabric_receipt_id)
+
+    def test_ungoverned_execution_is_refused_before_reaching_the_fabric(self):
+        # FW-PHASE-1-HARDENING-001: no stores, a missing grant store, or the
+        # legacy integrity_key mode must not reach process_remote_capability_request.
+        with tempfile.TemporaryDirectory() as tmp:
+            cg = _demonstrated_graph(tmp)
+            plan, _ = si.WorkflowCompiler().compile(_objective(), cg)
+            authority = fi.AuthorityContext(actor_id=ACTOR_ID, granted_capability_ids=("physical_ping",), granted_by="policy")
+            decision = si.GovernanceEngine().decide(plan, authority)
+            governed = GovernedFabric(Path(tmp) / "governed", NODE_ID, ACTOR_ID)
+            ungoverned_configurations = {
+                "no stores": {},
+                "no grant store": {k: v for k, v in governed.kwargs().items() if k != "grant_store"},
+                "legacy integrity key": {"integrity_key": b"k" * 32},
+            }
+            for label, kwargs in ungoverned_configurations.items():
+                with self.subTest(label), \
+                        mock.patch.object(fi, "process_remote_capability_request") as fabric_call:
+                    transport = InMemoryFabricTransport(registered_nodes=(NODE_ID,))
+                    req = governed.sign(_capability_request(b"nonce", transport, authority))
+                    with self.assertRaises(si.GovernanceError):
+                        si.execute_workflow_step(plan, decision, "physical_ping", req, transport, **kwargs)
+                    fabric_call.assert_not_called()
 
 
 class TestNegativeInvariants(unittest.TestCase):
@@ -213,9 +238,10 @@ class TestNegativeInvariants(unittest.TestCase):
                 actor_id=ACTOR_ID, granted_capability_ids=("physical_ping",), granted_by="policy",
                 granted_at="2020-01-01T00:00:00Z", expires_at="2020-01-01T00:05:00Z",
             )
+            governed = GovernedFabric(Path(tmp) / "governed", NODE_ID, ACTOR_ID)
             transport = InMemoryFabricTransport(registered_nodes=(NODE_ID,))
-            req = _capability_request(b"nonce", transport, expired_authority)
-            execution = si.execute_workflow_step(plan, decision, "physical_ping", req, transport)
+            req = governed.sign(_capability_request(b"nonce", transport, expired_authority))
+            execution = si.execute_workflow_step(plan, decision, "physical_ping", req, transport, **governed.kwargs())
             self.assertEqual(execution.fabric_result_status, fi.CAP_UNAUTHORIZED)
 
     def test_duplicate_request_zero_additional_execution(self):
@@ -228,16 +254,19 @@ class TestNegativeInvariants(unittest.TestCase):
             decision = si.GovernanceEngine().decide(plan, authority)
             replay_guard = fi.RequestReplayGuard(tmp / "lineage")
             lineage_store = None
+            governed = GovernedFabric(tmp / "governed", NODE_ID, ACTOR_ID)
 
             transport = InMemoryFabricTransport(registered_nodes=(NODE_ID,))
             fixed_request_id = fi._new_id("CAPREQ")
-            req1 = _capability_request(b"nonce-1", transport, authority, request_id_override=fixed_request_id)
-            exec1 = si.execute_workflow_step(plan, decision, "physical_ping", req1, transport, replay_guard=replay_guard, lineage_store=lineage_store)
+            req1 = governed.sign(_capability_request(b"nonce-1", transport, authority, request_id_override=fixed_request_id))
+            exec1 = si.execute_workflow_step(plan, decision, "physical_ping", req1, transport,
+                                             **governed.kwargs(replay_guard=replay_guard, lineage_store=lineage_store))
             self.assertEqual(exec1.fabric_result_status, fi.CAP_COMPLETED)
 
             transport2 = InMemoryFabricTransport(registered_nodes=(NODE_ID,))
-            req2 = _capability_request(b"nonce-1", transport2, authority, artifact_id_override=req1.artifact_id, request_id_override=fixed_request_id)
-            exec2 = si.execute_workflow_step(plan, decision, "physical_ping", req2, transport2, replay_guard=replay_guard, lineage_store=lineage_store)
+            req2 = governed.sign(_capability_request(b"nonce-1", transport2, authority, artifact_id_override=req1.artifact_id, request_id_override=fixed_request_id))
+            exec2 = si.execute_workflow_step(plan, decision, "physical_ping", req2, transport2,
+                                             **governed.kwargs(replay_guard=replay_guard, lineage_store=lineage_store))
             self.assertEqual(exec2.fabric_result_status, fi.CAP_DUPLICATE_COMPLETED)
 
     def test_capability_advertisement_cannot_invoke_anything(self):
