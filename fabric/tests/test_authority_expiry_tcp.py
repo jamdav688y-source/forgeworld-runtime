@@ -43,6 +43,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from fabric import interface as fi
+from fabric.tests._governed_tcp import AUTHKEY_BYTES, GovernedIdentity, SigningClientTransport  # FW-PHASE-1B-TCP-LOOPBACK-001
 from fabric.loopback import wire
 from fabric.loopback.transport import LoopbackClientTransport
 from artifact_handoff.lineage_store import LineageStore
@@ -70,9 +71,12 @@ class _SpawnedTCPServer:
     only transport authorization."""
 
     def __init__(self, node_id="PC-NODE-EXPIRY-TCP", max_messages=20, idle_timeout=6.0,
-                 max_runtime_seconds=30.0, max_message_bytes=65536):
+                 max_runtime_seconds=30.0, max_message_bytes=65536, identity=None):
         self.node_id = node_id
-        self.authkey = os.urandom(16)
+        self.authkey = os.urandom(AUTHKEY_BYTES)
+        # Governed-only server: confirmed relationship, bound peer, receiver-held grant.
+        self._owns_identity = identity is None
+        self.identity = identity or GovernedIdentity(PHONE_ID, node_id)
         self._tmp = tempfile.TemporaryDirectory()
         self.lineage_dir = self._tmp.name
         self.host = "127.0.0.1"
@@ -86,6 +90,7 @@ class _SpawnedTCPServer:
                 "--max-messages", str(max_messages), "--idle-timeout", str(idle_timeout),
                 "--max-runtime-seconds", str(max_runtime_seconds),
                 "--max-message-bytes", str(max_message_bytes),
+                *self.identity.server_args(),
             ],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
         )
@@ -105,7 +110,7 @@ class _SpawnedTCPServer:
         raise TimeoutError("server did not report PC_NODE_LISTENING in time")
 
     def client_transport(self, **kwargs) -> LoopbackClientTransport:
-        return LoopbackClientTransport((self.host, self.port), "AF_INET", self.authkey, **kwargs)
+        return SigningClientTransport(self.identity, (self.host, self.port), "AF_INET", self.authkey, **kwargs)
 
     def terminate(self):
         if self.proc.poll() is None:
@@ -119,6 +124,8 @@ class _SpawnedTCPServer:
             self.proc.stdout.close()
         if self.proc.stderr:
             self.proc.stderr.close()
+        if self._owns_identity:
+            self.identity.cleanup()
         self._tmp.cleanup()
 
 
@@ -224,6 +231,51 @@ class TestMalformedExpiryOverTCP(unittest.TestCase):
             self.assertEqual(result.status, fi.CAP_UNAUTHORIZED)
             lineage_store = LineageStore(Path(server.lineage_dir))
             self.assertEqual(len(lineage_store.list_all()), 0)
+        finally:
+            server.terminate()
+
+
+class TestReceiverHeldGrantOverTCP(unittest.TestCase):
+    """FW-PHASE-1B-TCP-LOOPBACK-001: the receiver's own grant, not the
+    requester's AuthorityContext, decides -- proven across a real TCP process
+    boundary. The requester context here never expires; the receiver-held
+    grant does (or is revoked)."""
+
+    def _send(self, server):
+        transport = server.client_transport()
+        env, correlation_id, transfer_result = _do_transfer(server, transport)
+        cap_request = fi.RemoteCapabilityRequest(
+            request_id=fi._new_id("CAPREQ"), source_node_id=PHONE_ID, destination_node_id=server.node_id,
+            artifact_id=env.artifact_id, capability_id="content_read",
+            authority_context=_authority(("content_read",), expires_at=None),
+            correlation_id=correlation_id, causation_id=transfer_result.transfer_id, timeout_seconds=5,
+        )
+        transport.send_capability_request(cap_request)
+        return transport.recv_capability_response(timeout=5)
+
+    def test_expired_receiver_grant_is_refused_with_zero_execution(self):
+        identity = GovernedIdentity(PHONE_ID, "PC-NODE-EXPIRY-TCP", grant_ttl_seconds=2)
+        server = _SpawnedTCPServer(identity=identity)
+        try:
+            time.sleep(3)  # let the receiver-held grant expire (receiver clock)
+            result, receipt, error = self._send(server)
+            self.assertIsNone(error)
+            self.assertEqual(result.status, fi.CAP_UNAUTHORIZED)
+            self.assertIn(f"{fi.RECEIVER_AUTHORIZATION_DENIED}:{fi.GRANT_EXPIRED}", result.error_detail)
+            self.assertEqual(len(LineageStore(Path(server.lineage_dir)).list_all()), 0)
+        finally:
+            server.terminate()
+            identity.cleanup()
+
+    def test_revoked_receiver_grant_is_refused_with_zero_execution(self):
+        server = _SpawnedTCPServer()
+        try:
+            server.identity.grant_store.revoke_grant(server.identity.relationship["grant_id"], reason="test")
+            result, receipt, error = self._send(server)
+            self.assertIsNone(error)
+            self.assertEqual(result.status, fi.CAP_UNAUTHORIZED)
+            self.assertIn(f"{fi.RECEIVER_AUTHORIZATION_DENIED}:{fi.GRANT_REVOKED}", result.error_detail)
+            self.assertEqual(len(LineageStore(Path(server.lineage_dir)).list_all()), 0)
         finally:
             server.terminate()
 

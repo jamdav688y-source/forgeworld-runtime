@@ -30,6 +30,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from fabric import interface as fi
+from fabric.tests._governed_tcp import AUTHKEY_BYTES  # FW-PHASE-1B-TCP-LOOPBACK-001
 from fabric.loopback.transport import LoopbackClientTransport
 from artifact_handoff.lineage_store import LineageStore
 
@@ -48,7 +49,8 @@ class _SpawnedTCPServer:
                  max_runtime_seconds=30.0, max_message_bytes=65536,
                  lineage_dir=None, key_store_dir=None, pairing_store_dir=None, peer_store_dir=None):
         self.node_id = node_id
-        self.authkey = os.urandom(16)
+        self.authkey = os.urandom(AUTHKEY_BYTES)
+        self.capability = capability
         self._owns_lineage_dir = lineage_dir is None
         self._lineage_tmp = tempfile.TemporaryDirectory() if lineage_dir is None else None
         self.lineage_dir = lineage_dir or self._lineage_tmp.name
@@ -61,6 +63,9 @@ class _SpawnedTCPServer:
         self._owns_peer_store_dir = peer_store_dir is None
         self._peer_store_tmp = tempfile.TemporaryDirectory() if peer_store_dir is None else None
         self.peer_store_dir = peer_store_dir or self._peer_store_tmp.name
+        # Governed-only server: grants live in a receiver-held grant store.
+        self._grant_store_tmp = tempfile.TemporaryDirectory()
+        self.grant_store_dir = self._grant_store_tmp.name
         self.host = "127.0.0.1"
         self.port = None
         self.proc = subprocess.Popen(
@@ -72,6 +77,7 @@ class _SpawnedTCPServer:
                 "--key-store-dir", self.key_store_dir,
                 "--pairing-store-dir", self.pairing_store_dir,
                 "--peer-store-dir", self.peer_store_dir,
+                "--grant-store-dir", self.grant_store_dir,
                 "--max-messages", str(max_messages), "--idle-timeout", str(idle_timeout),
                 "--max-runtime-seconds", str(max_runtime_seconds),
                 "--max-message-bytes", str(max_message_bytes),
@@ -116,6 +122,7 @@ class _SpawnedTCPServer:
             self._pairing_store_tmp.cleanup()
         if self._owns_peer_store_dir:
             self._peer_store_tmp.cleanup()
+        self._grant_store_tmp.cleanup()
 
 
 def _do_transfer(server, transport, payload=b"physical ping tcp probe payload", artifact_id=None):
@@ -151,6 +158,17 @@ def _paired_relationship(server):
     peer_store.bind_relationship(peer_id, offer["relationship_id"])
     pairing_store.confirm(offer["relationship_id"], offer["sas"])
     key_bytes = key_store.resolve_key(offer["key_id"])
+    # FW-PHASE-1B-TCP-LOOPBACK-001: the operator issues the receiver-held grant
+    # through the real ceremony CLI, as a subprocess.
+    issued = subprocess.run(
+        [sys.executable, str(CEREMONY_SCRIPT),
+         "--pairing-store-dir", server.pairing_store_dir, "--key-store-dir", server.key_store_dir,
+         "--peer-store-dir", server.peer_store_dir, "--grant-store-dir", server.grant_store_dir,
+         "issue-grant", "--peer-id", peer_id, "--relationship-id", offer["relationship_id"],
+         "--capability", server.capability, "--ttl-seconds", "3600", "--issued-by", "test_operator"],
+        capture_output=True, text=True, timeout=15,
+    )
+    assert issued.returncode == 0, issued.stderr
     return {"key_store": key_store, "pairing_store": pairing_store, "peer_store": peer_store,
             "offer": offer, "peer_id": peer_id, "key_bytes": key_bytes}
 

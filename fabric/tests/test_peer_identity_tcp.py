@@ -21,6 +21,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from fabric import interface as fi
+from fabric.tests._governed_tcp import AUTHKEY_BYTES, expiry_in  # FW-PHASE-1B-TCP-LOOPBACK-001
 from fabric.loopback.transport import LoopbackClientTransport
 from artifact_handoff.lineage_store import LineageStore
 
@@ -41,7 +42,7 @@ class _SpawnedTCPServer:
                  max_runtime_seconds=30.0, max_message_bytes=65536,
                  lineage_dir=None, key_store_dir=None, pairing_store_dir=None, peer_store_dir=None):
         self.node_id = node_id
-        self.authkey = os.urandom(16)
+        self.authkey = os.urandom(AUTHKEY_BYTES)
         self._owns_lineage_dir = lineage_dir is None
         self._lineage_tmp = tempfile.TemporaryDirectory() if lineage_dir is None else None
         self.lineage_dir = lineage_dir or self._lineage_tmp.name
@@ -54,6 +55,9 @@ class _SpawnedTCPServer:
         self._owns_peer_store_dir = peer_store_dir is None
         self._peer_store_tmp = tempfile.TemporaryDirectory() if peer_store_dir is None else None
         self.peer_store_dir = peer_store_dir or self._peer_store_tmp.name
+        # Governed-only server: a grant store is required too.
+        self._grant_store_tmp = tempfile.TemporaryDirectory()
+        self.grant_store_dir = self._grant_store_tmp.name
         self.host = "127.0.0.1"
         self.port = None
         self.proc = subprocess.Popen(
@@ -65,6 +69,7 @@ class _SpawnedTCPServer:
                 "--key-store-dir", self.key_store_dir,
                 "--pairing-store-dir", self.pairing_store_dir,
                 "--peer-store-dir", self.peer_store_dir,
+                "--grant-store-dir", self.grant_store_dir,
                 "--max-messages", str(max_messages), "--idle-timeout", str(idle_timeout),
                 "--max-runtime-seconds", str(max_runtime_seconds),
                 "--max-message-bytes", str(max_message_bytes),
@@ -109,6 +114,7 @@ class _SpawnedTCPServer:
             self._pairing_store_tmp.cleanup()
         if self._owns_peer_store_dir:
             self._peer_store_tmp.cleanup()
+        self._grant_store_tmp.cleanup()
 
 
 def _do_transfer(server, transport, payload=b"peer identity tcp probe payload",
@@ -124,7 +130,19 @@ def _do_transfer(server, transport, payload=b"peer identity tcp probe payload",
     return env, correlation_id, result
 
 
+def _issue_test_grant(grant_store_dir, peer_id, relationship, capability_id="content_read"):
+    """FW-PHASE-1B-TCP-LOOPBACK-001: the governed-only server needs an
+    operator-issued, expiring receiver-held grant (idempotent per peer +
+    relationship). Negative tests in this suite are rejected at the pairing
+    or peer gate, before any grant is consulted."""
+    grant_store = fi.LocalGrantStore(Path(grant_store_dir))
+    if not grant_store.list_for(peer_id, relationship["relationship_id"]):
+        grant_store.issue_grant(peer_id, relationship["relationship_id"], [capability_id], expiry_in(3600),
+                                issued_by="test_operator")
+
+
 def _signed_capability_request(server, env, correlation_id, transfer_result, relationship, peer_id, key_bytes):
+    _issue_test_grant(server.grant_store_dir, peer_id, relationship)
     unsigned = fi.RemoteCapabilityRequest(
         request_id=fi._new_id("CAPREQ"), source_node_id=PHONE_ID, destination_node_id=server.node_id,
         artifact_id=env.artifact_id, capability_id="content_read", authority_context=_authority("content_read"),

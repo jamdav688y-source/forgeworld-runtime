@@ -27,12 +27,12 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from fabric import interface as fi
+from fabric.tests._governed_tcp import AUTHKEY_BYTES, GovernedIdentity  # FW-PHASE-1B-TCP-LOOPBACK-001
 from fabric.loopback.transport import LoopbackClientTransport
 from artifact_handoff.lineage_store import LineageStore
 
 SERVER_SCRIPT = REPO_ROOT / "fabric" / "tcp" / "pc_node_server.py"
 PHONE_ID = "PHONE-NODE-INTEGRITY-TCP"
-TEST_KEY = os.urandom(32)
 
 
 def _authority(*capability_ids):
@@ -40,14 +40,18 @@ def _authority(*capability_ids):
 
 
 class _SpawnedTCPServer:
-    """Duplicated from fabric/tcp/tests/test_fabric_tcp.py's fixture,
-    extended with an integrity_key passed as --integrity-key. Binds ONLY
-    to 127.0.0.1 on an OS-assigned ephemeral port."""
+    """Duplicated from fabric/tcp/tests/test_fabric_tcp.py's fixture. The
+    server is governed-only (FW-PHASE-1B-TCP-LOOPBACK-001): integrity is
+    verified under the pairing relationship's key, replacing the removed
+    legacy --integrity-key mode. Binds ONLY to 127.0.0.1 on an OS-assigned
+    ephemeral port."""
 
     def __init__(self, node_id="PC-NODE-INTEGRITY-TCP", max_messages=20, idle_timeout=6.0,
-                 max_runtime_seconds=30.0, max_message_bytes=65536, integrity_key=TEST_KEY):
+                 max_runtime_seconds=30.0, max_message_bytes=65536, identity=None):
         self.node_id = node_id
-        self.authkey = os.urandom(16)
+        self.authkey = os.urandom(AUTHKEY_BYTES)
+        self._owns_identity = identity is None
+        self.identity = identity or GovernedIdentity(PHONE_ID, node_id)
         self._tmp = tempfile.TemporaryDirectory()
         self.lineage_dir = self._tmp.name
         self.host = "127.0.0.1"
@@ -61,8 +65,7 @@ class _SpawnedTCPServer:
             "--max-runtime-seconds", str(max_runtime_seconds),
             "--max-message-bytes", str(max_message_bytes),
         ]
-        if integrity_key is not None:
-            args += ["--integrity-key", integrity_key.hex()]
+        args += self.identity.server_args()
         self.proc = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         self._wait_for_listening()
 
@@ -95,6 +98,8 @@ class _SpawnedTCPServer:
         if self.proc.stderr:
             self.proc.stderr.close()
         self._tmp.cleanup()
+        if self._owns_identity:
+            self.identity.cleanup()
 
 
 def _do_transfer(server, transport, payload=b"integrity-contract tcp probe payload",
@@ -110,13 +115,17 @@ def _do_transfer(server, transport, payload=b"integrity-contract tcp probe paylo
     return env, correlation_id, result
 
 
-def _signed_capability_request(server, env, correlation_id, transfer_result, key=TEST_KEY):
+def _signed_capability_request(server, env, correlation_id, transfer_result, signed=True):
+    """Bound to the server's governed relationship and peer. signed=False
+    names the relationship's key but carries no integrity_tag."""
+    rel = server.identity.relationship
     unsigned = fi.RemoteCapabilityRequest(
         request_id=fi._new_id("CAPREQ"), source_node_id=PHONE_ID, destination_node_id=server.node_id,
         artifact_id=env.artifact_id, capability_id="content_read", authority_context=_authority("content_read"),
         correlation_id=correlation_id, causation_id=transfer_result.transfer_id, timeout_seconds=5,
+        relationship_id=rel["relationship_id"], source_peer_id=rel["peer_id"], integrity_key_id=rel["key_id"],
     )
-    return fi.sign_request(unsigned, key) if key is not None else unsigned
+    return fi.sign_request(unsigned, rel["key_bytes"], key_id=rel["key_id"]) if signed else unsigned
 
 
 class TestValidSignedRequestOverTCP(unittest.TestCase):
@@ -196,7 +205,7 @@ class TestMissingTagOverTCP(unittest.TestCase):
         try:
             transport = server.client_transport()
             env, correlation_id, transfer_result = _do_transfer(server, transport)
-            unsigned = _signed_capability_request(server, env, correlation_id, transfer_result, key=None)
+            unsigned = _signed_capability_request(server, env, correlation_id, transfer_result, signed=False)
             transport.send_capability_request(unsigned)
             result, receipt, error = transport.recv_capability_response(timeout=5)
             self.assertIsNone(error)

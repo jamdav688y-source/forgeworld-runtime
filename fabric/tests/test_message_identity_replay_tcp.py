@@ -29,6 +29,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from fabric import interface as fi
+from fabric.tests._governed_tcp import AUTHKEY_BYTES, GovernedIdentity, SigningClientTransport  # FW-PHASE-1B-TCP-LOOPBACK-001
 from fabric.loopback.transport import LoopbackClientTransport
 from artifact_handoff.lineage_store import LineageStore
 
@@ -48,9 +49,12 @@ class _SpawnedTCPServer:
     ONLY to 127.0.0.1 on an OS-assigned ephemeral port."""
 
     def __init__(self, node_id="PC-NODE-REPLAY-TCP", max_messages=20, idle_timeout=6.0,
-                 max_runtime_seconds=30.0, max_message_bytes=65536, lineage_dir=None):
+                 max_runtime_seconds=30.0, max_message_bytes=65536, lineage_dir=None, identity=None):
         self.node_id = node_id
-        self.authkey = os.urandom(16)
+        self.authkey = os.urandom(AUTHKEY_BYTES)
+        # Governed-only server: confirmed relationship, bound peer, receiver-held grant.
+        self._owns_identity = identity is None
+        self.identity = identity or GovernedIdentity(PHONE_ID, node_id)
         self._owns_lineage_dir = lineage_dir is None
         self._tmp = tempfile.TemporaryDirectory() if lineage_dir is None else None
         self.lineage_dir = lineage_dir or self._tmp.name
@@ -65,6 +69,7 @@ class _SpawnedTCPServer:
                 "--max-messages", str(max_messages), "--idle-timeout", str(idle_timeout),
                 "--max-runtime-seconds", str(max_runtime_seconds),
                 "--max-message-bytes", str(max_message_bytes),
+                *self.identity.server_args(),
             ],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
         )
@@ -84,7 +89,7 @@ class _SpawnedTCPServer:
         raise TimeoutError("server did not report PC_NODE_LISTENING in time")
 
     def client_transport(self, **kwargs) -> LoopbackClientTransport:
-        return LoopbackClientTransport((self.host, self.port), "AF_INET", self.authkey, **kwargs)
+        return SigningClientTransport(self.identity, (self.host, self.port), "AF_INET", self.authkey, **kwargs)
 
     def terminate(self):
         if self.proc.poll() is None:
@@ -98,6 +103,8 @@ class _SpawnedTCPServer:
             self.proc.stdout.close()
         if self.proc.stderr:
             self.proc.stderr.close()
+        if self._owns_identity:
+            self.identity.cleanup()
         if self._owns_lineage_dir:
             self._tmp.cleanup()
 
@@ -152,8 +159,9 @@ class TestProcessRestartPreservesReplayProtectionOverTCP(unittest.TestCase):
 
     def test_second_server_process_over_the_same_lineage_dir_recognizes_the_duplicate(self):
         shared_lineage_dir = tempfile.TemporaryDirectory()
+        shared_identity = GovernedIdentity(PHONE_ID, "PC-NODE-REPLAY-TCP")  # same stores across both processes
         try:
-            server1 = _SpawnedTCPServer(lineage_dir=shared_lineage_dir.name)
+            server1 = _SpawnedTCPServer(lineage_dir=shared_lineage_dir.name, identity=shared_identity)
             payload = b"tcp process-restart replay probe payload"
             try:
                 transport1 = server1.client_transport()
@@ -173,7 +181,7 @@ class TestProcessRestartPreservesReplayProtectionOverTCP(unittest.TestCase):
             finally:
                 server1.terminate()
 
-            server2 = _SpawnedTCPServer(node_id=server1.node_id, lineage_dir=shared_lineage_dir.name)
+            server2 = _SpawnedTCPServer(node_id=server1.node_id, lineage_dir=shared_lineage_dir.name, identity=shared_identity)
             try:
                 transport2 = server2.client_transport()
                 replay_request = fi.RemoteCapabilityRequest(
@@ -195,6 +203,7 @@ class TestProcessRestartPreservesReplayProtectionOverTCP(unittest.TestCase):
                 server2.terminate()
         finally:
             shared_lineage_dir.cleanup()
+            shared_identity.cleanup()
 
 
 if __name__ == "__main__":

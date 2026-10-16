@@ -24,6 +24,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from fabric import interface as fi
+from fabric.tests._governed_tcp import AUTHKEY_BYTES, GovernedIdentity  # FW-PHASE-1B-TCP-LOOPBACK-001
 from fabric.loopback import wire
 from fabric.loopback.transport import LoopbackClientTransport
 from artifact_handoff.lineage_store import LineageStore
@@ -37,20 +38,21 @@ def _authority(*capability_ids):
 
 
 class _SpawnedTCPServer:
-    """Duplicated from fabric/tcp/tests/test_fabric_tcp.py's fixture,
-    extended with a key_store_dir passed as --key-store-dir. Binds ONLY
+    """Duplicated from fabric/tcp/tests/test_fabric_tcp.py's fixture. The
+    server is governed-only (FW-PHASE-1B-TCP-LOOPBACK-001), so integrity keys
+    are exercised as pairing-relationship keys held in the identity's
+    LocalKeyStore; a hard key rotation is a relationship re-pair. Binds ONLY
     to 127.0.0.1 on an OS-assigned ephemeral port."""
 
     def __init__(self, node_id="PC-NODE-KEYPROV-TCP", max_messages=20, idle_timeout=6.0,
-                 max_runtime_seconds=30.0, max_message_bytes=65536, lineage_dir=None, key_store_dir=None):
+                 max_runtime_seconds=30.0, max_message_bytes=65536, lineage_dir=None, identity=None):
         self.node_id = node_id
-        self.authkey = os.urandom(16)
+        self.authkey = os.urandom(AUTHKEY_BYTES)
+        self._owns_identity = identity is None
+        self.identity = identity or GovernedIdentity(PHONE_ID, node_id)
         self._owns_lineage_dir = lineage_dir is None
         self._lineage_tmp = tempfile.TemporaryDirectory() if lineage_dir is None else None
         self.lineage_dir = lineage_dir or self._lineage_tmp.name
-        self._owns_key_store_dir = key_store_dir is None
-        self._key_store_tmp = tempfile.TemporaryDirectory() if key_store_dir is None else None
-        self.key_store_dir = key_store_dir or self._key_store_tmp.name
         self.host = "127.0.0.1"
         self.port = None
         self.proc = subprocess.Popen(
@@ -59,7 +61,7 @@ class _SpawnedTCPServer:
                 "--host", self.host, "--port", "0",  # 0 = OS-assigned ephemeral port
                 "--authkey", self.authkey.hex(), "--node-id", self.node_id,
                 "--lineage-dir", self.lineage_dir,
-                "--key-store-dir", self.key_store_dir,
+                *self.identity.server_args(),
                 "--max-messages", str(max_messages), "--idle-timeout", str(idle_timeout),
                 "--max-runtime-seconds", str(max_runtime_seconds),
                 "--max-message-bytes", str(max_message_bytes),
@@ -98,8 +100,8 @@ class _SpawnedTCPServer:
             self.proc.stderr.close()
         if self._owns_lineage_dir:
             self._lineage_tmp.cleanup()
-        if self._owns_key_store_dir:
-            self._key_store_tmp.cleanup()
+        if self._owns_identity:
+            self.identity.cleanup()
 
 
 def _do_transfer(server, transport, payload=b"key-provisioning tcp probe payload",
@@ -115,12 +117,14 @@ def _do_transfer(server, transport, payload=b"key-provisioning tcp probe payload
     return env, correlation_id, result
 
 
-def _signed_capability_request(server, env, correlation_id, transfer_result, key_id, key_bytes):
+def _signed_capability_request(server, env, correlation_id, transfer_result, key_id, key_bytes, relationship=None):
     unsigned = fi.RemoteCapabilityRequest(
         request_id=fi._new_id("CAPREQ"), source_node_id=PHONE_ID, destination_node_id=server.node_id,
         artifact_id=env.artifact_id, capability_id="content_read", authority_context=_authority("content_read"),
         correlation_id=correlation_id, causation_id=transfer_result.transfer_id, timeout_seconds=5,
     )
+    rel = relationship or server.identity.relationship
+    unsigned = fi.replace(unsigned, relationship_id=rel["relationship_id"], source_peer_id=rel["peer_id"])
     return fi.sign_request(unsigned, key_bytes, key_id=key_id)
 
 
@@ -128,9 +132,8 @@ class TestActiveKeyOverTCP(unittest.TestCase):
     def test_active_key_signed_request_executes_and_secret_never_crosses_wire(self):
         server = _SpawnedTCPServer()
         try:
-            operator_store = fi.LocalKeyStore(Path(server.key_store_dir))
-            key_id = operator_store.provision_key()
-            key_bytes = operator_store.resolve_key(key_id)
+            rel = server.identity.relationship  # the relationship's ACTIVE key
+            key_id, key_bytes = rel["key_id"], rel["key_bytes"]
 
             transport = server.client_transport()
             payload = b"valid active-key tcp probe"
@@ -178,9 +181,9 @@ class TestRevokedKeyOverTCP(unittest.TestCase):
     def test_revoked_key_rejected_with_zero_lineage_writes(self):
         server = _SpawnedTCPServer()
         try:
-            operator_store = fi.LocalKeyStore(Path(server.key_store_dir))
-            key_id = operator_store.provision_key()
-            key_bytes = operator_store.resolve_key(key_id)
+            operator_store = server.identity.key_store
+            rel = server.identity.relationship
+            key_id, key_bytes = rel["key_id"], rel["key_bytes"]
 
             transport = server.client_transport()
             env, correlation_id, transfer_result = _do_transfer(server, transport)
@@ -202,19 +205,21 @@ class TestRotationOverTCP(unittest.TestCase):
     def test_new_key_accepted_old_key_rejected_after_rotation(self):
         server = _SpawnedTCPServer()
         try:
-            operator_store = fi.LocalKeyStore(Path(server.key_store_dir))
-            k1 = operator_store.provision_key()
-            k1_secret = operator_store.resolve_key(k1)
+            identity = server.identity
+            old_rel = identity.relationship
+            k1, k1_secret = old_rel["key_id"], old_rel["key_bytes"]
 
             transport = server.client_transport()
             env1, corr1, xfer1 = _do_transfer(server, transport, artifact_id=fi.ah_interface.new_artifact_id())
-            old_key_request = _signed_capability_request(server, env1, corr1, xfer1, k1, k1_secret)
+            old_key_request = _signed_capability_request(server, env1, corr1, xfer1, k1, k1_secret, old_rel)
 
-            k2 = operator_store.provision_key(supersedes=k1)  # hard cutover
-            k2_secret = operator_store.resolve_key(k2)
+            # Governed hard cutover: re-pair (old relationship REPLACED, fresh key), confirm, bind, grant.
+            offer = identity.pairing_store.re_pair(old_rel["relationship_id"], PHONE_ID, server.node_id, identity.key_store)
+            new_rel = identity.new_relationship(offer=offer)
+            k2, k2_secret = new_rel["key_id"], new_rel["key_bytes"]
 
             env2, corr2, xfer2 = _do_transfer(server, transport, artifact_id=fi.ah_interface.new_artifact_id())
-            new_key_request = _signed_capability_request(server, env2, corr2, xfer2, k2, k2_secret)
+            new_key_request = _signed_capability_request(server, env2, corr2, xfer2, k2, k2_secret, new_rel)
 
             transport.send_capability_request(new_key_request)
             new_result, _, new_error = transport.recv_capability_response(timeout=5)
@@ -235,13 +240,12 @@ class TestRotationOverTCP(unittest.TestCase):
 class TestProcessRestartKeyLifecycleOverTCP(unittest.TestCase):
     def test_revoked_key_remains_rejected_after_server_restart(self):
         shared_lineage_dir = tempfile.TemporaryDirectory()
-        shared_key_store_dir = tempfile.TemporaryDirectory()
+        shared_identity = GovernedIdentity(PHONE_ID, "PC-NODE-KEYPROV-TCP")  # same stores across both processes
         try:
-            operator_store = fi.LocalKeyStore(Path(shared_key_store_dir.name))
-            key_id = operator_store.provision_key()
-            key_bytes = operator_store.resolve_key(key_id)
+            operator_store = shared_identity.key_store
+            key_id, key_bytes = shared_identity.relationship["key_id"], shared_identity.relationship["key_bytes"]
 
-            server1 = _SpawnedTCPServer(lineage_dir=shared_lineage_dir.name, key_store_dir=shared_key_store_dir.name)
+            server1 = _SpawnedTCPServer(lineage_dir=shared_lineage_dir.name, identity=shared_identity)
             try:
                 transport1 = server1.client_transport()
                 env, corr, xfer = _do_transfer(server1, transport1)
@@ -259,7 +263,7 @@ class TestProcessRestartKeyLifecycleOverTCP(unittest.TestCase):
             operator_store.revoke_key(key_id, reason="test: revoke between server restarts")
 
             server2 = _SpawnedTCPServer(
-                node_id=server1.node_id, lineage_dir=shared_lineage_dir.name, key_store_dir=shared_key_store_dir.name,
+                node_id=server1.node_id, lineage_dir=shared_lineage_dir.name, identity=shared_identity,
             )
             try:
                 transport2 = server2.client_transport()
@@ -276,7 +280,7 @@ class TestProcessRestartKeyLifecycleOverTCP(unittest.TestCase):
                 server2.terminate()
         finally:
             shared_lineage_dir.cleanup()
-            shared_key_store_dir.cleanup()
+            shared_identity.cleanup()
 
 
 if __name__ == "__main__":

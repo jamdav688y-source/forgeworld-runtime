@@ -31,6 +31,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from fabric import interface as fi
+from fabric.tests._governed_tcp import AUTHKEY_BYTES, GovernedIdentity, SigningClientTransport  # FW-PHASE-1B-TCP-LOOPBACK-001
 from fabric.loopback import wire
 from fabric.loopback.transport import LoopbackClientTransport, verify_capability_response
 from artifact_handoff.lineage_store import LineageStore
@@ -46,9 +47,12 @@ def _authority(*capability_ids):
 
 class _SpawnedTCPServer:
     def __init__(self, node_id="PC-NODE-MAIN", max_messages=20, idle_timeout=6.0,
-                 max_runtime_seconds=30.0, max_message_bytes=DEFAULT_MAX_MESSAGE_BYTES):
+                 max_runtime_seconds=30.0, max_message_bytes=DEFAULT_MAX_MESSAGE_BYTES, identity=None):
         self.node_id = node_id
-        self.authkey = os.urandom(16)
+        self.authkey = os.urandom(AUTHKEY_BYTES)
+        # Governed-only server: confirmed relationship, bound peer, receiver-held grant.
+        self._owns_identity = identity is None
+        self.identity = identity or GovernedIdentity(PHONE_ID, node_id)
         self._tmp = tempfile.TemporaryDirectory()
         self.lineage_dir = self._tmp.name
         self.host = "127.0.0.1"
@@ -62,6 +66,7 @@ class _SpawnedTCPServer:
                 "--max-messages", str(max_messages), "--idle-timeout", str(idle_timeout),
                 "--max-runtime-seconds", str(max_runtime_seconds),
                 "--max-message-bytes", str(max_message_bytes),
+                *self.identity.server_args(),
             ],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
         )
@@ -81,7 +86,7 @@ class _SpawnedTCPServer:
         raise TimeoutError("server did not report PC_NODE_LISTENING in time")
 
     def client_transport(self, **kwargs) -> LoopbackClientTransport:
-        return LoopbackClientTransport((self.host, self.port), "AF_INET", self.authkey, **kwargs)
+        return SigningClientTransport(self.identity, (self.host, self.port), "AF_INET", self.authkey, **kwargs)
 
     def terminate(self):
         if self.proc.poll() is None:
@@ -95,6 +100,8 @@ class _SpawnedTCPServer:
             self.proc.stdout.close()
         if self.proc.stderr:
             self.proc.stderr.close()
+        if self._owns_identity:
+            self.identity.cleanup()
         self._tmp.cleanup()
 
 
@@ -323,7 +330,12 @@ class TestTermuxClientScriptLocalProof(unittest.TestCase):
     this sandbox; it does not and cannot substitute for output from the
     real phone (see the mission's evidence-class distinction)."""
 
-    def test_termux_client_subprocess_completes_a_verified_round_trip(self):
+    def test_ungoverned_termux_client_is_refused_by_the_governed_server(self):
+        # FW-PHASE-1B-TCP-LOOPBACK-001: termux_phone_client.py sends unsigned,
+        # self-granted requests and has no relationship/peer/key support, so the
+        # governed-only server must refuse it with zero execution. The governed
+        # client round trip is covered by test_physical_ping_harness.py's
+        # test_client_subprocess_completes_a_verified_physical_ping.
         server = _SpawnedTCPServer()
         client_script = REPO_ROOT / "fabric" / "tcp" / "termux_phone_client.py"
         try:
@@ -336,8 +348,12 @@ class TestTermuxClientScriptLocalProof(unittest.TestCase):
                 ],
                 capture_output=True, text=True, timeout=30,
             )
-            self.assertEqual(proc.returncode, 0, msg=f"stdout={proc.stdout}\nstderr={proc.stderr}")
-            self.assertIn("PHONE_TO_PC_GOVERNED_ROUND_TRIP_VERIFIED", proc.stdout)
+            # The client's own PASS/FAIL verdict only checks receipt binding, not the
+            # capability status (it reports "VERIFIED" even for a refused request), so
+            # assert on the server's actual decision instead.
+            self.assertIn("received capability result status='FAILED'", proc.stdout, msg=proc.stderr)
+            self.assertIn("integrity verification failed", proc.stdout)
+            self.assertEqual(len(LineageStore(Path(server.lineage_dir)).list_all()), 0)
         finally:
             server.terminate()
 
@@ -361,8 +377,13 @@ class TestTermuxClientScriptLocalProof(unittest.TestCase):
 
 class TestDestinationAbsentOverTCP(unittest.TestCase):
     def test_no_listener_on_port_is_reported_unreachable(self):
-        # Bind nothing; pick a port unlikely to be in use and connect to it.
-        transport = LoopbackClientTransport(("127.0.0.1", 18765 + (os.getpid() % 500)), "AF_INET", os.urandom(16), connect_timeout=1.0)
+        # A genuinely closed endpoint: the port of a governed test server that
+        # has shut down. (Under the audit harness the guard also refuses
+        # connections to stale endpoints; either way nothing is listening.)
+        closed = _SpawnedTCPServer()
+        closed_port = closed.port
+        closed.terminate()
+        transport = LoopbackClientTransport(("127.0.0.1", closed_port), "AF_INET", os.urandom(AUTHKEY_BYTES), connect_timeout=1.0)
         env = fi.build_artifact_envelope(PHONE_ID, b"x", declared_content_type="text/plain")
         request = fi.TransferRequest(
             request_id=fi._new_id("XFERREQ"), envelope=env, source_node_id=PHONE_ID,
