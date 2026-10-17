@@ -72,7 +72,7 @@ class TestInvalidEventRejection(unittest.TestCase):
         rejects(self, raw, cxp.E_PAYLOAD_TOO_LARGE)
 
     def test_reserved_kind_is_not_enabled(self):
-        rejects(self, ev.observation(kind="EPISODE_CANDIDATE"), cxp.E_KIND_NOT_ENABLED)
+        rejects(self, ev.observation(kind="HYPOTHESIS"), cxp.E_KIND_NOT_ENABLED)
 
     def test_observation_cannot_derive(self):
         rejects(self, ev.observation(derived_from=["cxp-rec-" + "0" * 64]), cxp.E_KIND_RULE)

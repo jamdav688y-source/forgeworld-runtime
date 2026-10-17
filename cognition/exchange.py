@@ -231,6 +231,10 @@ class CognitiveExchange:
                             commerce.commerce_metadata(record.payload()),
                             {rid: m["commerce"] for rid, m in state.records.items() if "commerce" in m},
                             state.erased)
+                    elif record.kind in (cxp.KIND_EPISODE_CANDIDATE, cxp.KIND_EPISODE_REVIEW):
+                        from cognition import episode
+                        episode.check_transition(record.kind, record.payload(),
+                                                 {rid: state.lookup(rid) for rid in state.records}, state.lookup)
                 except cxp.CXPError as exc:
                     return IngestReceipt(status=REJECTED, record_id=record.record_id, error_code=exc.code,
                                          detail=exc.detail)
@@ -271,6 +275,12 @@ class CognitiveExchange:
         elif record.kind == cxp.KIND_AUDIENCE_QUESTION:
             from cognition import audience
             meta["audience"] = audience.audience_metadata(record.payload())
+        elif record.kind == cxp.KIND_EPISODE_CANDIDATE:
+            from cognition import episode
+            meta["episode"] = episode.candidate_metadata(record.payload())
+        elif record.kind == cxp.KIND_EPISODE_REVIEW:
+            from cognition import episode
+            meta["episode_review"] = episode.review_metadata(record.payload())
         self._payload_dir.mkdir(parents=True, exist_ok=True)
         payload_path = self._payload_dir / f"{record.record_id}.json"
         envelope._atomic_write_bytes(payload_path, record.payload_json.encode("utf-8"))

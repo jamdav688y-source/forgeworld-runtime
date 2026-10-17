@@ -116,12 +116,14 @@ KIND_CONTRADICTION = "CONTRADICTION"
 KIND_LENS_OUTPUT = "LENS_OUTPUT"
 KIND_COMMERCIAL_SIGNAL = "COMMERCIAL_SIGNAL"
 KIND_AUDIENCE_QUESTION = "AUDIENCE_QUESTION"
+KIND_EPISODE_CANDIDATE = "EPISODE_CANDIDATE"
+KIND_EPISODE_REVIEW = "EPISODE_REVIEW"
 ENABLED_KINDS = (KIND_OBSERVATION, KIND_CLAIM, KIND_VERIFICATION_RESULT, KIND_CONTRADICTION, KIND_LENS_OUTPUT,
-                 KIND_COMMERCIAL_SIGNAL, KIND_AUDIENCE_QUESTION)
+                 KIND_COMMERCIAL_SIGNAL, KIND_AUDIENCE_QUESTION, KIND_EPISODE_CANDIDATE, KIND_EPISODE_REVIEW)
 # Named so the vocabulary is stable, but refused until a later slice defines
 # their payload schemas (KIND_NOT_ENABLED).
 RESERVED_KINDS = (
-    "HYPOTHESIS", "EXPERIMENT", "EPISODE_CANDIDATE",
+    "HYPOTHESIS", "EXPERIMENT",
     "OUTCOME_MEASUREMENT",
 )
 MAX_CONTRADICTION_CLAIMS = 16
@@ -474,6 +476,12 @@ def _parse_payload(kind: str, payload) -> str:
     elif kind == KIND_AUDIENCE_QUESTION:
         from cognition import audience  # deferred: audience builds on this module
         audience.check_payload(payload)
+    elif kind == KIND_EPISODE_CANDIDATE:
+        from cognition import episode  # deferred: episode builds on this module
+        episode.check_candidate_payload(payload)
+    elif kind == KIND_EPISODE_REVIEW:
+        from cognition import episode
+        episode.check_review_payload(payload)
     return encoded.decode("utf-8")
 
 
@@ -623,6 +631,14 @@ def parse_event(raw) -> tuple:
     elif kind == KIND_AUDIENCE_QUESTION:
         from cognition import audience
         audience.check_labels(json.loads(payload_json), provenance, representation, verification, sources)
+    elif kind == KIND_EPISODE_CANDIDATE:
+        from cognition import episode
+        episode.check_candidate_labels(json.loads(payload_json), provenance, representation, evidence, verification,
+                                       derived_from)
+    elif kind == KIND_EPISODE_REVIEW:
+        from cognition import episode
+        episode.check_review_labels(json.loads(payload_json), provenance, representation, evidence, verification,
+                                    derived_from)
 
     # verification rules that need no lookup
     if verification in _REQUIRES_VERIFICATION_REF:
@@ -699,8 +715,9 @@ def resolve_lineage(record: CognitiveRecord, lookup: Callable[[str], Optional[di
                 raise CXPError(E_LINEAGE_UNRESOLVED, f"parent {parent_id} has not been accepted")
             if parent.get("erased"):
                 raise CXPError(E_ERASED, f"parent {parent_id} has been erased")
-            if record.kind == KIND_LENS_OUTPUT and parent.get("kind") in (KIND_LENS_OUTPUT, KIND_CONTRADICTION):
-                # Recursion guard: lens output is never lens input.
+            if record.kind == KIND_LENS_OUTPUT and parent.get("kind") in (KIND_LENS_OUTPUT, KIND_CONTRADICTION,
+                                                                          KIND_EPISODE_CANDIDATE, KIND_EPISODE_REVIEW):
+                # Recursion guard: cognitive and creative output is never lens input.
                 raise CXPError(E_KIND_RULE, f"a LENS_OUTPUT cannot derive from a {parent['kind']}")
             parents.append(parent)
             for source in parent["root_sources"]:
