@@ -45,6 +45,21 @@ def verification_result(target_content_id, outcome=cxp.VER_VERIFIED, **overrides
     return event
 
 
+def contradiction(claims, summary="These claims cannot both hold.", conditions=None, **overrides):
+    claims = sorted(claims)
+    event = {
+        "schema_version": cxp.SCHEMA_VERSION, "kind": cxp.KIND_CONTRADICTION, "representation": cxp.REP_INFERENCE,
+        "evidence": cxp.EV_SINGLE_SOURCE, "verification": cxp.VER_UNVERIFIED, "provenance": cxp.DERIVED,
+        "privacy": cxp.PRIV_INTERNAL,
+        "payload": {"claims": claims, "summary": summary,
+                    "resolution_conditions": conditions or ["an operator-reviewed test run decides between them"]},
+        "sources": [], "derived_from": claims, "verification_ref": None, "consent_ref": None,
+        "occurrence": {"emitter_id": "synthetic-emitter-1", "observed_at": "2026-10-17T00:03:00Z"},
+    }
+    event.update(overrides)
+    return event
+
+
 def source(locator, source_type="synthetic_fixture", independence_key=None):
     s = {"source_type": source_type, "locator": locator}
     if independence_key is not None:

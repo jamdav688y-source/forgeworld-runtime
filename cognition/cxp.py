@@ -58,7 +58,7 @@ are different content.
 LINEAGE (no derivative may masquerade as independent evidence):
   - Root kinds (OBSERVATION, VERIFICATION_RESULT) cite their own sources
     and derive from nothing.
-  - Derived kinds (CLAIM) cite parents (derived_from) and NO sources of
+  - Derived kinds (CLAIM, CONTRADICTION) cite parents (derived_from) and NO sources of
     their own; their root sources are COMPUTED as the union of their
     parents' root sources, never supplied by the caller.
   - The evidence ceiling is computed from the root sources: 0 independence
@@ -112,13 +112,16 @@ SUPPORTED_SCHEMA_VERSIONS = (1,)
 KIND_OBSERVATION = "OBSERVATION"
 KIND_CLAIM = "CLAIM"
 KIND_VERIFICATION_RESULT = "VERIFICATION_RESULT"
-ENABLED_KINDS = (KIND_OBSERVATION, KIND_CLAIM, KIND_VERIFICATION_RESULT)
+KIND_CONTRADICTION = "CONTRADICTION"
+ENABLED_KINDS = (KIND_OBSERVATION, KIND_CLAIM, KIND_VERIFICATION_RESULT, KIND_CONTRADICTION)
 # Named so the vocabulary is stable, but refused until a later slice defines
 # their payload schemas (KIND_NOT_ENABLED).
 RESERVED_KINDS = (
-    "HYPOTHESIS", "CONTRADICTION", "EXPERIMENT", "LENS_OUTPUT", "EPISODE_CANDIDATE",
+    "HYPOTHESIS", "EXPERIMENT", "LENS_OUTPUT", "EPISODE_CANDIDATE",
     "AUDIENCE_QUESTION", "COMMERCIAL_SIGNAL", "OUTCOME_MEASUREMENT",
 )
+MAX_CONTRADICTION_CLAIMS = 16
+MAX_RESOLUTION_CONDITIONS = 16
 _ROOT_KINDS = (KIND_OBSERVATION, KIND_VERIFICATION_RESULT)
 
 # --- representation --------------------------------------------------------
@@ -187,11 +190,12 @@ E_LINEAGE_UNRESOLVED = "LINEAGE_UNRESOLVED"
 E_EVIDENCE_INFLATION = "EVIDENCE_INFLATION"
 E_VERIFICATION_UNSUPPORTED = "VERIFICATION_UNSUPPORTED"
 E_ERASED = "RECORD_ERASED"
+E_DUPLICATE_CONTRADICTION = "DUPLICATE_CONTRADICTION"
 ERROR_CODES = (
     E_MALFORMED, E_VERSION_UNSUPPORTED, E_KIND_NOT_ENABLED, E_KIND_RULE, E_PAYLOAD_TOO_LARGE,
     E_AUTHORITY_FIELD_FORBIDDEN, E_PRIVACY_CONSENT_REQUIRED, E_PRIVACY_DOWNGRADE,
     E_PRIVACY_PERSISTENCE_UNSUPPORTED, E_LINEAGE_UNRESOLVED, E_EVIDENCE_INFLATION,
-    E_VERIFICATION_UNSUPPORTED, E_ERASED,
+    E_VERIFICATION_UNSUPPORTED, E_ERASED, E_DUPLICATE_CONTRADICTION,
 )
 
 _ID_PREFIXES = {"source": "cxp-src-", "content": "cxp-content-", "record": "cxp-rec-", "occurrence": "cxp-occ-",
@@ -423,6 +427,22 @@ def _parse_payload(kind: str, payload) -> str:
             raise CXPError(E_MALFORMED, "VERIFICATION_RESULT outcome must be VERIFIED, REFUTED or CONTESTED")
         if not isinstance(payload["method"], str) or not payload["method"]:
             raise CXPError(E_MALFORMED, "VERIFICATION_RESULT method must be a non-empty string")
+    elif kind == KIND_CONTRADICTION:
+        if set(payload) != {"claims", "resolution_conditions", "summary"}:
+            raise CXPError(E_MALFORMED, "CONTRADICTION payload requires exactly claims, resolution_conditions, summary")
+        claims = payload["claims"]
+        if (not isinstance(claims, list) or not 2 <= len(claims) <= MAX_CONTRADICTION_CLAIMS
+                or len(set(claims)) != len(claims)
+                or not all(isinstance(c, str) and _RECORD_ID_PATTERN.match(c) for c in claims)):
+            raise CXPError(E_MALFORMED, f"CONTRADICTION claims must be 2-{MAX_CONTRADICTION_CLAIMS} distinct record ids")
+        if claims != sorted(claims):
+            raise CXPError(E_MALFORMED, "CONTRADICTION claims must be sorted (one canonical form per claim set)")
+        conditions = payload["resolution_conditions"]
+        if (not isinstance(conditions, list) or not 1 <= len(conditions) <= MAX_RESOLUTION_CONDITIONS
+                or not all(isinstance(c, str) and c.strip() and len(c) <= MAX_STATEMENT_CHARS for c in conditions)):
+            raise CXPError(E_MALFORMED, "CONTRADICTION resolution_conditions must be 1-16 non-empty strings")
+        if not isinstance(payload["summary"], str) or not payload["summary"].strip() or len(payload["summary"]) > MAX_STATEMENT_CHARS:
+            raise CXPError(E_MALFORMED, "CONTRADICTION summary must be a non-empty string")
     return encoded.decode("utf-8")
 
 
@@ -506,6 +526,20 @@ def parse_event(raw) -> tuple:
             raise CXPError(E_KIND_RULE, "VERIFICATION_RESULT provenance must be HUMAN_ASSERTED or AUTHORIZED_CONCLUSION")
         if verification != VER_UNVERIFIED:
             raise CXPError(E_KIND_RULE, "a VERIFICATION_RESULT cannot itself claim to be verified")
+    elif kind == KIND_CONTRADICTION:
+        # A contradiction is an interpretation that its claims conflict. It
+        # derives from exactly the claims it names (so lineage covers every
+        # side) and carries no truth status of its own: resolution is
+        # computed by cognition.contradiction from admissible verification,
+        # never declared on the record.
+        if list(derived_from) != json.loads(payload_json)["claims"]:
+            raise CXPError(E_KIND_RULE, "CONTRADICTION derived_from must equal its claims")
+        if provenance not in (DERIVED, UNVERIFIED_INTERPRETATION, HUMAN_ASSERTED):
+            raise CXPError(E_KIND_RULE, "CONTRADICTION provenance must be DERIVED, UNVERIFIED_INTERPRETATION or HUMAN_ASSERTED")
+        if representation != REP_INFERENCE:
+            raise CXPError(E_KIND_RULE, "CONTRADICTION representation must be INFERENCE")
+        if verification != VER_UNVERIFIED:
+            raise CXPError(E_KIND_RULE, "a CONTRADICTION carries no verification status of its own")
 
     # verification rules that need no lookup
     if verification in _REQUIRES_VERIFICATION_REF:

@@ -15,6 +15,8 @@ PROCESSING CONTRACT
                                               occurrence is recorded)
          otherwise resolve_lineage(), then -> ACCEPTED (record + occurrence
                                               committed in one atomic write)
+         a CONTRADICTION over a claim set that already has a live
+         contradiction                     -> REJECTED (DUPLICATE_CONTRADICTION)
     3. dispatch: every registered consumer that has no CONSUMED result for
        this record_id is called; consumers that already consumed it are not
        (idempotency is keyed on record_id, never on occurrence_id). A
@@ -219,6 +221,8 @@ class CognitiveExchange:
             else:
                 try:
                     root_sources = cxp.resolve_lineage(record, state.lookup)
+                    if record.kind == cxp.KIND_CONTRADICTION:
+                        self._refuse_duplicate_contradiction(record, state)
                 except cxp.CXPError as exc:
                     return IngestReceipt(status=REJECTED, record_id=record.record_id, error_code=exc.code,
                                          detail=exc.detail)
@@ -229,12 +233,25 @@ class CognitiveExchange:
         return IngestReceipt(status=status, record_id=record.record_id, occurrence_id=occurrence.occurrence_id,
                              consumer_results=results)
 
+    @staticmethod
+    def _refuse_duplicate_contradiction(record: cxp.CognitiveRecord, state: _State) -> None:
+        """One live contradiction per claim set: re-asserting a known
+        disagreement in new words must not make it look more established."""
+        for record_id, meta in sorted(state.records.items()):
+            if (meta.get("contradiction_claims") == list(record.derived_from)
+                    and record_id not in state.erased):
+                raise cxp.CXPError(cxp.E_DUPLICATE_CONTRADICTION,
+                                   f"claim set already recorded as contradiction {record_id}")
+
     def _commit_new_record(self, record: cxp.CognitiveRecord, occurrence: cxp.Occurrence, root_sources: tuple) -> None:
         meta = {**record.metadata(), "root_sources": list(root_sources)}
         if record.kind == cxp.KIND_VERIFICATION_RESULT:
             payload = record.payload()
             meta["verification_target"] = payload["target_content_id"]
             meta["verification_outcome"] = payload["outcome"]
+            meta["verification_method"] = payload["method"]
+        elif record.kind == cxp.KIND_CONTRADICTION:
+            meta["contradiction_claims"] = list(record.derived_from)
         self._payload_dir.mkdir(parents=True, exist_ok=True)
         payload_path = self._payload_dir / f"{record.record_id}.json"
         envelope._atomic_write_bytes(payload_path, record.payload_json.encode("utf-8"))
@@ -295,6 +312,12 @@ class CognitiveExchange:
 
     def record_metadata(self, record_id: str) -> Optional[dict]:
         return self._load().lookup(record_id)
+
+    def all_record_metadata(self) -> tuple:
+        """Every accepted record's payload-free metadata (erased ones flagged),
+        sorted by record_id."""
+        state = self._load()
+        return tuple(state.lookup(record_id) for record_id in sorted(state.records))
 
     def get_record(self, record_id: str) -> Optional[cxp.CognitiveRecord]:
         """The full record, or None if unknown or erased. Fails closed if the
