@@ -252,6 +252,11 @@ class CognitiveExchange:
             meta["verification_method"] = payload["method"]
         elif record.kind == cxp.KIND_CONTRADICTION:
             meta["contradiction_claims"] = list(record.derived_from)
+        elif record.kind == cxp.KIND_LENS_OUTPUT:
+            payload = record.payload()
+            meta["lens_id"] = payload["lens_id"]
+            meta["lens_version"] = payload["lens_version"]
+            meta["lens_positions"] = payload["positions"]
         self._payload_dir.mkdir(parents=True, exist_ok=True)
         payload_path = self._payload_dir / f"{record.record_id}.json"
         envelope._atomic_write_bytes(payload_path, record.payload_json.encode("utf-8"))

@@ -58,7 +58,7 @@ are different content.
 LINEAGE (no derivative may masquerade as independent evidence):
   - Root kinds (OBSERVATION, VERIFICATION_RESULT) cite their own sources
     and derive from nothing.
-  - Derived kinds (CLAIM, CONTRADICTION) cite parents (derived_from) and NO sources of
+  - Derived kinds (CLAIM, CONTRADICTION, LENS_OUTPUT) cite parents (derived_from) and NO sources of
     their own; their root sources are COMPUTED as the union of their
     parents' root sources, never supplied by the caller.
   - The evidence ceiling is computed from the root sources: 0 independence
@@ -113,15 +113,31 @@ KIND_OBSERVATION = "OBSERVATION"
 KIND_CLAIM = "CLAIM"
 KIND_VERIFICATION_RESULT = "VERIFICATION_RESULT"
 KIND_CONTRADICTION = "CONTRADICTION"
-ENABLED_KINDS = (KIND_OBSERVATION, KIND_CLAIM, KIND_VERIFICATION_RESULT, KIND_CONTRADICTION)
+KIND_LENS_OUTPUT = "LENS_OUTPUT"
+ENABLED_KINDS = (KIND_OBSERVATION, KIND_CLAIM, KIND_VERIFICATION_RESULT, KIND_CONTRADICTION, KIND_LENS_OUTPUT)
 # Named so the vocabulary is stable, but refused until a later slice defines
 # their payload schemas (KIND_NOT_ENABLED).
 RESERVED_KINDS = (
-    "HYPOTHESIS", "EXPERIMENT", "LENS_OUTPUT", "EPISODE_CANDIDATE",
+    "HYPOTHESIS", "EXPERIMENT", "EPISODE_CANDIDATE",
     "AUDIENCE_QUESTION", "COMMERCIAL_SIGNAL", "OUTCOME_MEASUREMENT",
 )
 MAX_CONTRADICTION_CLAIMS = 16
 MAX_RESOLUTION_CONDITIONS = 16
+
+# --- lens outputs (R3) -----------------------------------------------------
+LENS_IDS = ("MUSE", "SCIENTIST", "ARCHITECT", "CHALLENGER", "STORYWEAVER", "EMPATH", "CATALYST")
+Q_READY_FOR_EPISODE = "ready_for_episode_planning"
+Q_CLAIM_ESTABLISHED = "claim_established"
+Q_NEEDS_EXPERIMENT = "needs_experiment"
+LENS_QUESTIONS = (Q_CLAIM_ESTABLISHED, Q_NEEDS_EXPERIMENT, Q_READY_FOR_EPISODE)
+POS_SUPPORT = "SUPPORT"
+POS_OPPOSE = "OPPOSE"
+POS_UNCERTAIN = "UNCERTAIN"
+POSITIONS = (POS_SUPPORT, POS_OPPOSE, POS_UNCERTAIN)
+MAX_LENS_LIST_ITEMS = 32
+_LENS_VERSION_PATTERN = re.compile(r"^[0-9]{1,6}$")
+_LENS_OUTPUT_KEYS = frozenset({"lens_id", "lens_version", "statement", "positions", "uncertainties",
+                               "unsupported_claims", "next_action", "details"})
 _ROOT_KINDS = (KIND_OBSERVATION, KIND_VERIFICATION_RESULT)
 
 # --- representation --------------------------------------------------------
@@ -199,7 +215,7 @@ ERROR_CODES = (
 )
 
 _ID_PREFIXES = {"source": "cxp-src-", "content": "cxp-content-", "record": "cxp-rec-", "occurrence": "cxp-occ-",
-                "result": "cxp-res-"}
+                "result": "cxp-res-", "brief": "cxp-brief-", "assembly": "cxp-asm-"}
 _RECORD_ID_PATTERN = re.compile(r"^cxp-rec-[0-9a-f]{64}$")
 _CONTENT_ID_PATTERN = re.compile(r"^cxp-content-[0-9a-f]{64}$")
 _TIMESTAMP_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,9})?(Z|[+-]\d{2}:\d{2})$")
@@ -443,7 +459,46 @@ def _parse_payload(kind: str, payload) -> str:
             raise CXPError(E_MALFORMED, "CONTRADICTION resolution_conditions must be 1-16 non-empty strings")
         if not isinstance(payload["summary"], str) or not payload["summary"].strip() or len(payload["summary"]) > MAX_STATEMENT_CHARS:
             raise CXPError(E_MALFORMED, "CONTRADICTION summary must be a non-empty string")
+    elif kind == KIND_LENS_OUTPUT:
+        _check_lens_payload(payload)
     return encoded.decode("utf-8")
+
+
+def _short_strings(value, what: str) -> None:
+    if (not isinstance(value, list) or len(value) > MAX_LENS_LIST_ITEMS
+            or not all(isinstance(v, str) and v.strip() and len(v) <= MAX_STATEMENT_CHARS for v in value)):
+        raise CXPError(E_MALFORMED, f"LENS_OUTPUT {what} must be a list of at most {MAX_LENS_LIST_ITEMS} non-empty strings")
+
+
+def _check_lens_payload(payload: dict) -> None:
+    """A lens output carries an interpretation, positions on a fixed set of
+    questions, and its own doubts. It has no field for evidence, verification
+    or authority: those are labels on the record, set and checked by CXP."""
+    if set(payload) != _LENS_OUTPUT_KEYS:
+        raise CXPError(E_MALFORMED, f"LENS_OUTPUT payload requires exactly {sorted(_LENS_OUTPUT_KEYS)}")
+    if payload["lens_id"] not in LENS_IDS:
+        raise CXPError(E_MALFORMED, f"LENS_OUTPUT lens_id must be one of {LENS_IDS}")
+    if not isinstance(payload["lens_version"], str) or not _LENS_VERSION_PATTERN.match(payload["lens_version"]):
+        raise CXPError(E_MALFORMED, "LENS_OUTPUT lens_version must be a short numeric string")
+    statement = payload["statement"]
+    if not isinstance(statement, str) or not statement.strip() or len(statement) > MAX_STATEMENT_CHARS:
+        raise CXPError(E_MALFORMED, "LENS_OUTPUT statement must be a non-empty string")
+    positions = payload["positions"]
+    if (not isinstance(positions, dict) or set(positions) - set(LENS_QUESTIONS)
+            or not all(p in POSITIONS for p in positions.values())):
+        raise CXPError(E_MALFORMED, f"LENS_OUTPUT positions map {LENS_QUESTIONS} to {POSITIONS}")
+    _short_strings(payload["uncertainties"], "uncertainties")
+    _short_strings(payload["unsupported_claims"], "unsupported_claims")
+    if payload["next_action"] is not None and not (isinstance(payload["next_action"], str) and payload["next_action"].strip()):
+        raise CXPError(E_MALFORMED, "LENS_OUTPUT next_action must be a non-empty string or null")
+    details = payload["details"]
+    if not isinstance(details, dict) or len(details) > MAX_LENS_LIST_ITEMS:
+        raise CXPError(E_MALFORMED, "LENS_OUTPUT details must be an object")
+    for value in details.values():
+        if isinstance(value, list):
+            _short_strings(value, "details list")
+        elif not (isinstance(value, str) and value.strip() and len(value) <= MAX_STATEMENT_CHARS):
+            raise CXPError(E_MALFORMED, "LENS_OUTPUT details values must be strings or lists of strings")
 
 
 def _parse_sources(raw_sources) -> tuple:
@@ -540,6 +595,14 @@ def parse_event(raw) -> tuple:
             raise CXPError(E_KIND_RULE, "CONTRADICTION representation must be INFERENCE")
         if verification != VER_UNVERIFIED:
             raise CXPError(E_KIND_RULE, "a CONTRADICTION carries no verification status of its own")
+    elif kind == KIND_LENS_OUTPUT:
+        # A lens interprets; it never observes, quotes, or verifies.
+        if provenance != UNVERIFIED_INTERPRETATION:
+            raise CXPError(E_KIND_RULE, "LENS_OUTPUT provenance must be UNVERIFIED_INTERPRETATION")
+        if representation == REP_QUOTATION:
+            raise CXPError(E_KIND_RULE, "a LENS_OUTPUT cannot be a QUOTATION")
+        if verification != VER_UNVERIFIED:
+            raise CXPError(E_KIND_RULE, "a LENS_OUTPUT is never verified")
 
     # verification rules that need no lookup
     if verification in _REQUIRES_VERIFICATION_REF:
@@ -616,6 +679,9 @@ def resolve_lineage(record: CognitiveRecord, lookup: Callable[[str], Optional[di
                 raise CXPError(E_LINEAGE_UNRESOLVED, f"parent {parent_id} has not been accepted")
             if parent.get("erased"):
                 raise CXPError(E_ERASED, f"parent {parent_id} has been erased")
+            if record.kind == KIND_LENS_OUTPUT and parent.get("kind") in (KIND_LENS_OUTPUT, KIND_CONTRADICTION):
+                # Recursion guard: lens output is never lens input.
+                raise CXPError(E_KIND_RULE, f"a LENS_OUTPUT cannot derive from a {parent['kind']}")
             parents.append(parent)
             for source in parent["root_sources"]:
                 roots[source["source_id"]] = source
