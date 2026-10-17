@@ -37,9 +37,11 @@ human to consider; nothing here executes them.
 """
 from __future__ import annotations
 
+from contextlib import nullcontext
 from dataclasses import dataclass
 
 from cognition import contradiction, cxp, lineage, lenses as lenses_module
+from cognition import governor as governor_module
 
 COORDINATOR_VERSION = "1"
 
@@ -55,6 +57,8 @@ E_RECURSION_REFUSED = "RECURSION_REFUSED"
 E_BAD_INPUT = "BAD_INPUT"
 E_INPUT_KIND = "INPUT_KIND_NOT_ALLOWED"
 E_BUDGET = "BUDGET_EXCEEDED"
+
+GOVERNED_PURPOSE = "lens-assembly"
 
 ASSEMBLY_SCHEMA = "forgeworld.cognition.assembly.v1"
 _INPUT_KINDS = (cxp.KIND_OBSERVATION, cxp.KIND_CLAIM)
@@ -97,7 +101,7 @@ def _most_restrictive(values) -> str:
 
 
 class LensCoordinator:
-    def __init__(self, exchange, lenses=lenses_module.LENSES, budget: LensBudget = LensBudget()):
+    def __init__(self, exchange, lenses=lenses_module.LENSES, budget: LensBudget = LensBudget(), governor=None):
         seen = set()
         for lens in lenses:
             if lens.lens_id not in cxp.LENS_IDS or lens.lens_id in seen:
@@ -108,18 +112,24 @@ class LensCoordinator:
         self.exchange = exchange
         self.lenses = tuple(sorted(lenses, key=lambda l: cxp.LENS_IDS.index(l.lens_id)))
         self.budget = budget
+        self.governor = governor
         self._running = False
 
     @property
     def grants_execution_authority(self) -> bool:
         return False
 
-    def run(self, input_record_ids, topic: str, observed_at: str) -> dict:
+    def run(self, input_record_ids, topic: str, observed_at: str, parent_cycle_id: str = None,
+            approval_id: str = None) -> dict:
+        """With a governor (R4), no lens is invoked unless the governor
+        commits an ADMIT for this exact cycle; actual usage is reported back
+        to it even if the run fails part-way. parent_cycle_id and
+        approval_id are only meaningful with a governor."""
         if self._running:
             raise CoordinatorError(E_RECURSION_REFUSED, "the coordinator does not invoke itself")
         self._running = True
         try:
-            return self._run(input_record_ids, topic, observed_at)
+            return self._run(input_record_ids, topic, observed_at, parent_cycle_id, approval_id)
         finally:
             self._running = False
 
@@ -173,7 +183,7 @@ class LensCoordinator:
 
     # -- run ------------------------------------------------------------------
 
-    def _run(self, input_record_ids, topic: str, observed_at: str) -> dict:
+    def _run(self, input_record_ids, topic: str, observed_at: str, parent_cycle_id=None, approval_id=None) -> dict:
         if not isinstance(topic, str) or not topic.strip() or len(topic) > 256:
             raise CoordinatorError(E_BAD_INPUT, "topic must be a non-empty string of at most 256 chars")
         ids = self._inputs(input_record_ids)
@@ -187,23 +197,48 @@ class LensCoordinator:
                 if key not in prior or (prior[key]["erased"] and not meta["erased"]):
                     prior[key] = meta
 
-        runs, invocations = [], 0
-        for lens in self.lenses:
-            run = {"lens_id": lens.lens_id, "lens_version": lens.lens_version, "record_id": None, "error": None}
-            existing = prior.get((lens.lens_id, lens.lens_version))
-            if existing is not None:
-                run.update(status=ERASED if existing["erased"] else ALREADY_PROCESSED, record_id=existing["record_id"])
-            elif invocations >= self.budget.max_lens_invocations:
-                run["status"] = BUDGET_EXHAUSTED
-            else:
-                invocations += 1
-                run.update(self._invoke(lens, brief, ids, input_meta, observed_at))
-            runs.append(run)
+        decision = None
+        if self.governor is None:
+            if parent_cycle_id is not None or approval_id is not None:
+                raise CoordinatorError(E_BAD_INPUT, "cycle lineage and approvals require a governor")
+        else:
+            decision = self.governor.admit(governor_module.CycleRequest(
+                purpose=GOVERNED_PURPOSE, input_record_ids=tuple(ids),
+                planned_lens_invocations=min(len(self.lenses), self.budget.max_lens_invocations),
+                parent_cycle_id=parent_cycle_id, approval_id=approval_id))
+            if decision.decision != governor_module.ADMIT:
+                return {"brief_id": brief.brief_id, "governor_decision": decision.to_dict(), "lens_runs": [],
+                        "invocations_used": 0, "contradictions_created": 0, "assembly": None,
+                        "grants_execution_authority": False}
+
+        runs, invocations, settled = [], 0, 0
+        try:
+            with self.governor.running() if decision else nullcontext():
+                for lens in self.lenses:
+                    run = {"lens_id": lens.lens_id, "lens_version": lens.lens_version, "record_id": None, "error": None}
+                    existing = prior.get((lens.lens_id, lens.lens_version))
+                    if existing is not None:
+                        run.update(status=ERASED if existing["erased"] else ALREADY_PROCESSED,
+                                   record_id=existing["record_id"])
+                    elif invocations >= self.budget.max_lens_invocations:
+                        run["status"] = BUDGET_EXHAUSTED
+                    else:
+                        invocations += 1
+                        run.update(self._invoke(lens, brief, ids, input_meta, observed_at))
+                        settled += 1
+                    runs.append(run)
+        finally:
+            if decision is not None:
+                # FAILED/REJECTED lenses, plus an invocation interrupted by an
+                # exception escaping this loop, all count as failures
+                failures = sum(r.get("status") in (FAILED, REJECTED) for r in runs) + (invocations - settled)
+                self.governor.complete(decision.cycle_id, invocations, failures)
 
         disagreements, unopposed, created = self._disagreements(runs, brief, observed_at)
         assembly = self._assemble(brief, ids, runs, disagreements, unopposed)
         return {
             "brief_id": brief.brief_id,
+            "governor_decision": None if decision is None else decision.to_dict(),
             "lens_runs": runs,
             "invocations_used": invocations,
             "budget": {"max_inputs": self.budget.max_inputs, "max_lens_invocations": self.budget.max_lens_invocations},

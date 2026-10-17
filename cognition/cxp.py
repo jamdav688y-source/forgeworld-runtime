@@ -219,7 +219,8 @@ ERROR_CODES = (
 )
 
 _ID_PREFIXES = {"source": "cxp-src-", "content": "cxp-content-", "record": "cxp-rec-", "occurrence": "cxp-occ-",
-                "result": "cxp-res-", "brief": "cxp-brief-", "assembly": "cxp-asm-"}
+                "result": "cxp-res-", "brief": "cxp-brief-", "assembly": "cxp-asm-",
+                "cycle": "cxp-cycle-", "approval": "cxp-approval-"}
 _RECORD_ID_PATTERN = re.compile(r"^cxp-rec-[0-9a-f]{64}$")
 _CONTENT_ID_PATTERN = re.compile(r"^cxp-content-[0-9a-f]{64}$")
 _TIMESTAMP_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,9})?(Z|[+-]\d{2}:\d{2})$")
