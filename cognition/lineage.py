@@ -55,7 +55,7 @@ E_DEPTH_EXCEEDED = "DEPTH_EXCEEDED"
 MAX_DEPTH = 256
 
 _INFERENTIAL_REPRESENTATIONS = (cxp.REP_INFERENCE, cxp.REP_HYPOTHESIS, cxp.REP_SIMULATION, cxp.REP_DRAMATIZATION)
-_ROOT_KINDS = (cxp.KIND_OBSERVATION, cxp.KIND_VERIFICATION_RESULT)
+_ROOT_KINDS = (cxp.KIND_OBSERVATION, cxp.KIND_VERIFICATION_RESULT, cxp.KIND_COMMERCIAL_SIGNAL)
 _REQUIRED_KEYS = ("record_id", "kind", "representation", "provenance", "evidence", "verification", "privacy",
                   "sources", "root_sources", "derived_from", "erased")
 

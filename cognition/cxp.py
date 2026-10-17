@@ -56,7 +56,7 @@ would silently alter quotations), so NFC and NFD spellings of the same text
 are different content.
 
 LINEAGE (no derivative may masquerade as independent evidence):
-  - Root kinds (OBSERVATION, VERIFICATION_RESULT) cite their own sources
+  - Root kinds (OBSERVATION, VERIFICATION_RESULT, COMMERCIAL_SIGNAL) cite their own sources
     and derive from nothing.
   - Derived kinds (CLAIM, CONTRADICTION, LENS_OUTPUT) cite parents (derived_from) and NO sources of
     their own; their root sources are COMPUTED as the union of their
@@ -114,12 +114,14 @@ KIND_CLAIM = "CLAIM"
 KIND_VERIFICATION_RESULT = "VERIFICATION_RESULT"
 KIND_CONTRADICTION = "CONTRADICTION"
 KIND_LENS_OUTPUT = "LENS_OUTPUT"
-ENABLED_KINDS = (KIND_OBSERVATION, KIND_CLAIM, KIND_VERIFICATION_RESULT, KIND_CONTRADICTION, KIND_LENS_OUTPUT)
+KIND_COMMERCIAL_SIGNAL = "COMMERCIAL_SIGNAL"
+ENABLED_KINDS = (KIND_OBSERVATION, KIND_CLAIM, KIND_VERIFICATION_RESULT, KIND_CONTRADICTION, KIND_LENS_OUTPUT,
+                 KIND_COMMERCIAL_SIGNAL)
 # Named so the vocabulary is stable, but refused until a later slice defines
 # their payload schemas (KIND_NOT_ENABLED).
 RESERVED_KINDS = (
     "HYPOTHESIS", "EXPERIMENT", "EPISODE_CANDIDATE",
-    "AUDIENCE_QUESTION", "COMMERCIAL_SIGNAL", "OUTCOME_MEASUREMENT",
+    "AUDIENCE_QUESTION", "OUTCOME_MEASUREMENT",
 )
 MAX_CONTRADICTION_CLAIMS = 16
 MAX_RESOLUTION_CONDITIONS = 16
@@ -138,7 +140,7 @@ MAX_LENS_LIST_ITEMS = 32
 _LENS_VERSION_PATTERN = re.compile(r"^[0-9]{1,6}$")
 _LENS_OUTPUT_KEYS = frozenset({"lens_id", "lens_version", "statement", "positions", "uncertainties",
                                "unsupported_claims", "next_action", "details"})
-_ROOT_KINDS = (KIND_OBSERVATION, KIND_VERIFICATION_RESULT)
+_ROOT_KINDS = (KIND_OBSERVATION, KIND_VERIFICATION_RESULT, KIND_COMMERCIAL_SIGNAL)
 
 # --- representation --------------------------------------------------------
 REP_QUOTATION = "QUOTATION"
@@ -207,11 +209,13 @@ E_EVIDENCE_INFLATION = "EVIDENCE_INFLATION"
 E_VERIFICATION_UNSUPPORTED = "VERIFICATION_UNSUPPORTED"
 E_ERASED = "RECORD_ERASED"
 E_DUPLICATE_CONTRADICTION = "DUPLICATE_CONTRADICTION"
+E_TRANSITION_REFUSED = "TRANSITION_REFUSED"
+E_SENSITIVE_DATA = "SENSITIVE_DATA_REFUSED"
 ERROR_CODES = (
     E_MALFORMED, E_VERSION_UNSUPPORTED, E_KIND_NOT_ENABLED, E_KIND_RULE, E_PAYLOAD_TOO_LARGE,
     E_AUTHORITY_FIELD_FORBIDDEN, E_PRIVACY_CONSENT_REQUIRED, E_PRIVACY_DOWNGRADE,
     E_PRIVACY_PERSISTENCE_UNSUPPORTED, E_LINEAGE_UNRESOLVED, E_EVIDENCE_INFLATION,
-    E_VERIFICATION_UNSUPPORTED, E_ERASED, E_DUPLICATE_CONTRADICTION,
+    E_VERIFICATION_UNSUPPORTED, E_ERASED, E_DUPLICATE_CONTRADICTION, E_TRANSITION_REFUSED, E_SENSITIVE_DATA,
 )
 
 _ID_PREFIXES = {"source": "cxp-src-", "content": "cxp-content-", "record": "cxp-rec-", "occurrence": "cxp-occ-",
@@ -461,6 +465,9 @@ def _parse_payload(kind: str, payload) -> str:
             raise CXPError(E_MALFORMED, "CONTRADICTION summary must be a non-empty string")
     elif kind == KIND_LENS_OUTPUT:
         _check_lens_payload(payload)
+    elif kind == KIND_COMMERCIAL_SIGNAL:
+        from cognition import commerce  # deferred: commerce builds on this module
+        commerce.check_payload(payload)
     return encoded.decode("utf-8")
 
 
@@ -603,6 +610,10 @@ def parse_event(raw) -> tuple:
             raise CXPError(E_KIND_RULE, "a LENS_OUTPUT cannot be a QUOTATION")
         if verification != VER_UNVERIFIED:
             raise CXPError(E_KIND_RULE, "a LENS_OUTPUT is never verified")
+    elif kind == KIND_COMMERCIAL_SIGNAL:
+        # Stage-specific: who may assert it, in what form (cognition.commerce).
+        from cognition import commerce
+        commerce.check_labels(json.loads(payload_json), provenance, representation, verification, consent_ref)
 
     # verification rules that need no lookup
     if verification in _REQUIRES_VERIFICATION_REF:

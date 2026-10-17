@@ -17,6 +17,8 @@ PROCESSING CONTRACT
                                               committed in one atomic write)
          a CONTRADICTION over a claim set that already has a live
          contradiction                     -> REJECTED (DUPLICATE_CONTRADICTION)
+         a COMMERCIAL_SIGNAL the engagement's current state does not
+         allow (cognition.commerce)        -> REJECTED (TRANSITION_REFUSED)
     3. dispatch: every registered consumer that has no CONSUMED result for
        this record_id is called; consumers that already consumed it are not
        (idempotency is keyed on record_id, never on occurrence_id). A
@@ -223,6 +225,12 @@ class CognitiveExchange:
                     root_sources = cxp.resolve_lineage(record, state.lookup)
                     if record.kind == cxp.KIND_CONTRADICTION:
                         self._refuse_duplicate_contradiction(record, state)
+                    elif record.kind == cxp.KIND_COMMERCIAL_SIGNAL:
+                        from cognition import commerce  # deferred: commerce reads exchange state, never imports it
+                        commerce.check_transition(
+                            commerce.commerce_metadata(record.payload()),
+                            {rid: m["commerce"] for rid, m in state.records.items() if "commerce" in m},
+                            state.erased)
                 except cxp.CXPError as exc:
                     return IngestReceipt(status=REJECTED, record_id=record.record_id, error_code=exc.code,
                                          detail=exc.detail)
@@ -257,6 +265,9 @@ class CognitiveExchange:
             meta["lens_id"] = payload["lens_id"]
             meta["lens_version"] = payload["lens_version"]
             meta["lens_positions"] = payload["positions"]
+        elif record.kind == cxp.KIND_COMMERCIAL_SIGNAL:
+            from cognition import commerce
+            meta["commerce"] = commerce.commerce_metadata(record.payload())
         self._payload_dir.mkdir(parents=True, exist_ok=True)
         payload_path = self._payload_dir / f"{record.record_id}.json"
         envelope._atomic_write_bytes(payload_path, record.payload_json.encode("utf-8"))
