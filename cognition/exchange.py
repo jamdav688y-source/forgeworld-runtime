@@ -231,6 +231,9 @@ class CognitiveExchange:
                             commerce.commerce_metadata(record.payload()),
                             {rid: m["commerce"] for rid, m in state.records.items() if "commerce" in m},
                             state.erased)
+                    elif record.kind == cxp.KIND_PRODUCTION_PACKAGE:
+                        from cognition import production
+                        production.check_transition(record.payload(), state.lookup)
                     elif record.kind in (cxp.KIND_EPISODE_CANDIDATE, cxp.KIND_EPISODE_REVIEW):
                         from cognition import episode
                         episode.check_transition(record.kind, record.payload(),
@@ -281,6 +284,9 @@ class CognitiveExchange:
         elif record.kind == cxp.KIND_EPISODE_REVIEW:
             from cognition import episode
             meta["episode_review"] = episode.review_metadata(record.payload())
+        elif record.kind == cxp.KIND_PRODUCTION_PACKAGE:
+            payload = record.payload()
+            meta["production_package"] = {k: payload[k] for k in ("package_id", "candidate_id", "review_id", "cycle_id")}
         self._payload_dir.mkdir(parents=True, exist_ok=True)
         payload_path = self._payload_dir / f"{record.record_id}.json"
         envelope._atomic_write_bytes(payload_path, record.payload_json.encode("utf-8"))
