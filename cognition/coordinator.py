@@ -61,7 +61,7 @@ E_BUDGET = "BUDGET_EXCEEDED"
 GOVERNED_PURPOSE = "lens-assembly"
 
 ASSEMBLY_SCHEMA = "forgeworld.cognition.assembly.v1"
-_INPUT_KINDS = (cxp.KIND_OBSERVATION, cxp.KIND_CLAIM)
+_INPUT_KINDS = (cxp.KIND_OBSERVATION, cxp.KIND_CLAIM, cxp.KIND_AUDIENCE_QUESTION)
 _UNSUPPORTED_REPRESENTATIONS = (cxp.REP_HYPOTHESIS, cxp.REP_SIMULATION, cxp.REP_DRAMATIZATION)
 _FINDING_KEYS = frozenset({"statement", "positions", "uncertainties", "unsupported_claims", "next_action", "details"})
 _RESOLUTION_CONDITIONS = {

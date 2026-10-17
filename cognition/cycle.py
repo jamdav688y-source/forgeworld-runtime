@@ -27,7 +27,7 @@ WHAT THIS CYCLE DELIBERATELY DOES NOT DO
   - Re-enter itself. A next cycle is only *proposed*: it must be started by
     a caller with a NEW observation, and R4 decides it like any other.
 
-Only OBSERVATION events are accepted as cycle sources; commercial records
+Only OBSERVATION and AUDIENCE_QUESTION events are accepted as cycle sources; commercial records
 and cognitive outputs can enter a cycle only as already-accepted inputs,
 where R4 applies its NEEDS_HUMAN rules.
 """
@@ -51,6 +51,8 @@ SOURCE_REJECTED = "SOURCE_REJECTED"
 
 CANDIDATE_RESOLVE_CONTRADICTION = "RESOLVE_CONTRADICTION"
 CANDIDATE_EXPERIMENT = "EXPERIMENT"
+
+SOURCE_KINDS = (cxp.KIND_OBSERVATION, cxp.KIND_AUDIENCE_QUESTION)
 
 
 class CycleArtifactError(Exception):
@@ -95,12 +97,12 @@ class CycleRunner:
             approval_id: str = None, extra_input_ids=()) -> dict:
         base = {"topic": topic, "parent_cycle_id": parent_cycle_id}
 
-        # OBSERVE / RECORD EXPERIENCE: only OBSERVATION events are cycle sources
+        # OBSERVE / RECORD EXPERIENCE: only observation-like events are cycle sources
         input_ids, intake = list(extra_input_ids), []
         for event in source_events:
-            if not isinstance(event, dict) or event.get("kind") != cxp.KIND_OBSERVATION:
+            if not isinstance(event, dict) or event.get("kind") not in SOURCE_KINDS:
                 return self._persist({**base, "termination": SOURCE_REJECTED, "source_intake": intake,
-                                      "detail": "cycle sources must be OBSERVATION events"})
+                                      "detail": "cycle sources must be OBSERVATION or AUDIENCE_QUESTION events"})
             receipt = self.exchange.ingest(event)
             intake.append({"status": receipt.status, "record_id": receipt.record_id, "error_code": receipt.error_code})
             if receipt.status == "REJECTED":

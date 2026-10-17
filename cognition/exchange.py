@@ -268,6 +268,9 @@ class CognitiveExchange:
         elif record.kind == cxp.KIND_COMMERCIAL_SIGNAL:
             from cognition import commerce
             meta["commerce"] = commerce.commerce_metadata(record.payload())
+        elif record.kind == cxp.KIND_AUDIENCE_QUESTION:
+            from cognition import audience
+            meta["audience"] = audience.audience_metadata(record.payload())
         self._payload_dir.mkdir(parents=True, exist_ok=True)
         payload_path = self._payload_dir / f"{record.record_id}.json"
         envelope._atomic_write_bytes(payload_path, record.payload_json.encode("utf-8"))

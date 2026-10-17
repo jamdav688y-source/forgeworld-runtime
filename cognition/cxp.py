@@ -56,7 +56,7 @@ would silently alter quotations), so NFC and NFD spellings of the same text
 are different content.
 
 LINEAGE (no derivative may masquerade as independent evidence):
-  - Root kinds (OBSERVATION, VERIFICATION_RESULT, COMMERCIAL_SIGNAL) cite their own sources
+  - Root kinds (OBSERVATION, VERIFICATION_RESULT, COMMERCIAL_SIGNAL, AUDIENCE_QUESTION) cite their own sources
     and derive from nothing.
   - Derived kinds (CLAIM, CONTRADICTION, LENS_OUTPUT) cite parents (derived_from) and NO sources of
     their own; their root sources are COMPUTED as the union of their
@@ -115,13 +115,14 @@ KIND_VERIFICATION_RESULT = "VERIFICATION_RESULT"
 KIND_CONTRADICTION = "CONTRADICTION"
 KIND_LENS_OUTPUT = "LENS_OUTPUT"
 KIND_COMMERCIAL_SIGNAL = "COMMERCIAL_SIGNAL"
+KIND_AUDIENCE_QUESTION = "AUDIENCE_QUESTION"
 ENABLED_KINDS = (KIND_OBSERVATION, KIND_CLAIM, KIND_VERIFICATION_RESULT, KIND_CONTRADICTION, KIND_LENS_OUTPUT,
-                 KIND_COMMERCIAL_SIGNAL)
+                 KIND_COMMERCIAL_SIGNAL, KIND_AUDIENCE_QUESTION)
 # Named so the vocabulary is stable, but refused until a later slice defines
 # their payload schemas (KIND_NOT_ENABLED).
 RESERVED_KINDS = (
     "HYPOTHESIS", "EXPERIMENT", "EPISODE_CANDIDATE",
-    "AUDIENCE_QUESTION", "OUTCOME_MEASUREMENT",
+    "OUTCOME_MEASUREMENT",
 )
 MAX_CONTRADICTION_CLAIMS = 16
 MAX_RESOLUTION_CONDITIONS = 16
@@ -140,7 +141,7 @@ MAX_LENS_LIST_ITEMS = 32
 _LENS_VERSION_PATTERN = re.compile(r"^[0-9]{1,6}$")
 _LENS_OUTPUT_KEYS = frozenset({"lens_id", "lens_version", "statement", "positions", "uncertainties",
                                "unsupported_claims", "next_action", "details"})
-_ROOT_KINDS = (KIND_OBSERVATION, KIND_VERIFICATION_RESULT, KIND_COMMERCIAL_SIGNAL)
+_ROOT_KINDS = (KIND_OBSERVATION, KIND_VERIFICATION_RESULT, KIND_COMMERCIAL_SIGNAL, KIND_AUDIENCE_QUESTION)
 
 # --- representation --------------------------------------------------------
 REP_QUOTATION = "QUOTATION"
@@ -177,7 +178,7 @@ PRIVACY_CLASSES = (PRIV_PUBLIC, PRIV_INTERNAL, PRIV_PERSONAL, PRIV_RESTRICTED)
 SOURCE_TYPE_EXPERIMENT = "experiment"
 SOURCE_TYPES = (
     "git_commit", "repository_file", "test_run", "document", "human_statement",
-    SOURCE_TYPE_EXPERIMENT, "synthetic_fixture",
+    SOURCE_TYPE_EXPERIMENT, "synthetic_fixture", "platform_event",
 )
 
 # Authority-shaped keys refused anywhere in a payload or consumer output
@@ -470,6 +471,9 @@ def _parse_payload(kind: str, payload) -> str:
     elif kind == KIND_COMMERCIAL_SIGNAL:
         from cognition import commerce  # deferred: commerce builds on this module
         commerce.check_payload(payload)
+    elif kind == KIND_AUDIENCE_QUESTION:
+        from cognition import audience  # deferred: audience builds on this module
+        audience.check_payload(payload)
     return encoded.decode("utf-8")
 
 
@@ -616,6 +620,9 @@ def parse_event(raw) -> tuple:
         # Stage-specific: who may assert it, in what form (cognition.commerce).
         from cognition import commerce
         commerce.check_labels(json.loads(payload_json), provenance, representation, verification, consent_ref)
+    elif kind == KIND_AUDIENCE_QUESTION:
+        from cognition import audience
+        audience.check_labels(json.loads(payload_json), provenance, representation, verification, sources)
 
     # verification rules that need no lookup
     if verification in _REQUIRES_VERIFICATION_REF:

@@ -31,14 +31,16 @@ CHECK ORDER (first failure decides):
     UNACCOUNTED_USAGE          an admitted cycle in this lineage never
                                reported its usage: its spend is unknown
     DEPTH_EXCEEDED / FAILURE_LIMIT / BUDGET_EXHAUSTED
-    NO_NEW_EVIDENCE            a child cycle must add an OBSERVATION root
-                               citing a source origin its whole ancestry
-                               has never used. Paraphrases, inferences,
+    NO_NEW_EVIDENCE            a child cycle must add an OBSERVATION or
+                               AUDIENCE_QUESTION root citing a source
+                               origin its whole ancestry has never used.
+                               Paraphrases, inferences,
                                contradictions, lens outputs and
                                dramatizations add no roots; a new record
                                of an already-used origin adds no origin.
     COMMERCIAL_INPUT           (NEEDS_HUMAN) any input traces to a
-                               COMMERCIAL_SIGNAL
+                               COMMERCIAL_SIGNAL, or to an AUDIENCE_QUESTION
+                               marked commercial_interest
     RECYCLED_INPUTS_ONLY       (NEEDS_HUMAN) every input incorporates a
                                LENS_OUTPUT or CONTRADICTION
     otherwise ADMITTED.
@@ -95,6 +97,7 @@ APPROVABLE_REASONS = (R_COMMERCIAL, R_RECYCLED)
 _PURPOSE = re.compile(r"^[a-z][a-z0-9-]{2,63}$")
 _CYCLE_ID = re.compile(r"^cxp-cycle-[0-9a-f]{64}$")
 _COGNITIVE_KINDS = (cxp.KIND_LENS_OUTPUT, cxp.KIND_CONTRADICTION)
+_EVIDENCE_ROOT_KINDS = (cxp.KIND_OBSERVATION, cxp.KIND_AUDIENCE_QUESTION)
 _ENTRY_ADMITTED, _ENTRY_COMPLETED, _ENTRY_APPROVAL = "ADMITTED", "COMPLETED", "APPROVAL"
 
 
@@ -289,10 +292,13 @@ class RecursionGovernor:
     def _input_profile(self, record_id: str) -> dict:
         t = lineage.trace(self.exchange.record_metadata, record_id)
         kinds = {n["record_id"]: n["kind"] for n in t["nodes"]}
-        observation_roots = sorted(r for r in t["observation_roots"] if kinds[r] == cxp.KIND_OBSERVATION)
+        # Evidence roots: what was observed, or what an audience was observed to ask.
+        observation_roots = sorted(r for r in t["observation_roots"] if kinds[r] in _EVIDENCE_ROOT_KINDS)
         origins = sorted({s["origin"] for s in t["sources"] if set(s["cited_by"]) & set(observation_roots)})
         return {"observation_roots": observation_roots, "origins": origins,
-                "commercial": sorted(r for r, k in kinds.items() if k == cxp.KIND_COMMERCIAL_SIGNAL),
+                "commercial": sorted(r for r, k in kinds.items() if k == cxp.KIND_COMMERCIAL_SIGNAL
+                                    or (k == cxp.KIND_AUDIENCE_QUESTION
+                                        and self.exchange.record_metadata(r)["audience"]["commercial_interest"])),
                 "recycled": sorted(r for r, k in kinds.items() if k in _COGNITIVE_KINDS)}
 
     def _decide(self, state: dict, request: CycleRequest) -> CycleDecision:
@@ -312,7 +318,9 @@ class RecursionGovernor:
                 return CycleDecision(REFUSE, R_INVALID_INPUT, input_record_ids=ids, detail=f"{rid} is not an accepted record")
             if meta["erased"]:
                 return CycleDecision(REFUSE, R_INPUT_ERASED, input_record_ids=ids, detail=f"{rid} has been erased")
-            content_ids.append(meta["content_id"])
+            # research-topic identity: an audience question contributes its
+            # question text only, so equal questions are one topic
+            content_ids.append(meta["audience"]["topic_id"] if meta.get("audience") else meta["content_id"])
 
         parent = request.parent_cycle_id
         if parent is not None:
