@@ -233,7 +233,11 @@ class CognitiveExchange:
                             state.erased)
                     elif record.kind == cxp.KIND_PRODUCTION_PACKAGE:
                         from cognition import production
-                        production.check_transition(record.payload(), state.lookup)
+                        production.check_transition(record.payload(), state.lookup,
+                                                    {rid: state.lookup(rid) for rid in state.records})
+                    elif record.kind == cxp.KIND_PACKAGE_REVIEW:
+                        from cognition import package_revision
+                        package_revision.check_review_transition(record.payload(), state.lookup)
                     elif record.kind in (cxp.KIND_EPISODE_CANDIDATE, cxp.KIND_EPISODE_REVIEW):
                         from cognition import episode
                         episode.check_transition(record.kind, record.payload(),
@@ -286,7 +290,11 @@ class CognitiveExchange:
             meta["episode_review"] = episode.review_metadata(record.payload())
         elif record.kind == cxp.KIND_PRODUCTION_PACKAGE:
             payload = record.payload()
-            meta["production_package"] = {k: payload[k] for k in ("package_id", "candidate_id", "review_id", "cycle_id")}
+            meta["production_package"] = {k: payload[k] for k in ("package_id", "candidate_id", "review_id", "cycle_id",
+                                                                  "package_revision", "predecessor_record_id")}
+        elif record.kind == cxp.KIND_PACKAGE_REVIEW:
+            payload = record.payload()
+            meta["package_review"] = {k: payload[k] for k in ("package_record_id", "package_id", "decision", "reviewer")}
         self._payload_dir.mkdir(parents=True, exist_ok=True)
         payload_path = self._payload_dir / f"{record.record_id}.json"
         envelope._atomic_write_bytes(payload_path, record.payload_json.encode("utf-8"))

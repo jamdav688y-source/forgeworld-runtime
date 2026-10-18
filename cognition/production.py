@@ -72,7 +72,8 @@ P_TAMPERED = "PACKAGE_TAMPERED"
 P_BAD_AUDIENCE = "UNKNOWN_SCENE_AUDIENCE"
 
 _PAYLOAD_KEYS = frozenset({"package_id", "package_sha256", "markdown_sha256", "candidate_id", "review_id", "cycle_id",
-                           "package_version", "status", "publication_authorized"})
+                           "package_version", "status", "publication_authorized", "package_revision",
+                           "predecessor_record_id", "predecessor_package_id", "editor"})
 _PACKAGE_ID = re.compile(r"^cxp-pkg-[0-9a-f]{64}$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _RECORD_ID = re.compile(r"^cxp-rec-[0-9a-f]{64}$")
@@ -120,6 +121,16 @@ def check_record_payload(payload: dict) -> None:
         raise cxp.CXPError(cxp.E_KIND_RULE, "a production package is always DRAFT_PACKAGE with publication_authorized false")
     if not isinstance(payload["package_version"], int) or isinstance(payload["package_version"], bool) or payload["package_version"] < 1:
         raise cxp.CXPError(cxp.E_MALFORMED, "package_version must be a positive integer")
+    revision = payload["package_revision"]
+    if not isinstance(revision, int) or isinstance(revision, bool) or revision < 1:
+        raise cxp.CXPError(cxp.E_MALFORMED, "package_revision must be a positive integer")
+    chain = (payload["predecessor_record_id"], payload["predecessor_package_id"], payload["editor"])
+    if revision == 1:
+        if chain != (None, None, None):
+            raise cxp.CXPError(cxp.E_MALFORMED, "a first package version has no predecessor and no editor")
+    elif not (isinstance(chain[0], str) and _RECORD_ID.match(chain[0]) and isinstance(chain[1], str)
+              and _PACKAGE_ID.match(chain[1]) and isinstance(chain[2], str) and ep._REVIEWER.match(chain[2])):
+        raise cxp.CXPError(cxp.E_MALFORMED, "a package revision names its predecessor and a human operator editor")
 
 
 def check_record_labels(payload, provenance, representation, evidence, verification, derived_from) -> None:
@@ -127,11 +138,14 @@ def check_record_labels(payload, provenance, representation, evidence, verificat
             cxp.REP_DRAMATIZATION, cxp.EV_NONE, cxp.VER_UNVERIFIED, cxp.UNVERIFIED_INTERPRETATION):
         raise cxp.CXPError(cxp.E_KIND_RULE, "a PRODUCTION_PACKAGE is DRAMATIZATION, evidence NONE, UNVERIFIED, "
                                             "UNVERIFIED_INTERPRETATION: assembling material adds no evidence")
-    if list(derived_from) != sorted([payload["candidate_id"], payload["review_id"]]):
-        raise cxp.CXPError(cxp.E_KIND_RULE, "a PRODUCTION_PACKAGE derives from exactly its candidate and its approving review")
+    expected = [payload["candidate_id"], payload["review_id"]] + (
+        [payload["predecessor_record_id"]] if payload["predecessor_record_id"] else [])
+    if list(derived_from) != sorted(expected):
+        raise cxp.CXPError(cxp.E_KIND_RULE, "a PRODUCTION_PACKAGE derives from exactly its candidate, its approving review "
+                                            "and, for a revision, its predecessor")
 
 
-def check_transition(payload: dict, lookup) -> None:
+def check_transition(payload: dict, lookup, records: dict) -> None:
     candidate, review = lookup(payload["candidate_id"]), lookup(payload["review_id"])
     if candidate is None or candidate["kind"] != cxp.KIND_EPISODE_CANDIDATE:
         raise cxp.CXPError(cxp.E_TRANSITION_REFUSED, "candidate_id is not an accepted EPISODE_CANDIDATE")
@@ -141,6 +155,16 @@ def check_transition(payload: dict, lookup) -> None:
         raise cxp.CXPError(cxp.E_TRANSITION_REFUSED, "review_id is not an APPROVED review of this exact candidate")
     if candidate["episode"]["cycle_id"] != payload["cycle_id"]:
         raise cxp.CXPError(cxp.E_TRANSITION_REFUSED, "cycle_id does not match the candidate's cycle")
+    previous = payload["predecessor_record_id"]
+    if previous is not None:
+        prior = lookup(previous)
+        if (prior is None or prior["kind"] != cxp.KIND_PRODUCTION_PACKAGE or prior["erased"]
+                or prior["production_package"]["candidate_id"] != payload["candidate_id"]
+                or prior["production_package"]["package_id"] != payload["predecessor_package_id"]
+                or prior["production_package"]["package_revision"] + 1 != payload["package_revision"]):
+            raise cxp.CXPError(cxp.E_TRANSITION_REFUSED, "a package revision must follow the previous version of the same package")
+        if any((m.get("production_package") or {}).get("predecessor_record_id") == previous for m in records.values()):
+            raise cxp.CXPError(cxp.E_TRANSITION_REFUSED, "that package version has already been revised")
 
 
 # ---------------------------------------------------------------------------
@@ -246,22 +270,35 @@ class PackageBuilder:
         records = {rid: self._record(rid) for rid in cited}
 
         package = self._assemble(candidate, c, review, r, artifact, records)
+        package["revision"] = {"package_revision": 1, "predecessor_package_id": None, "predecessor_record_id": None,
+                               "editor": None, "changes": []}
+        return self._store(package, candidate, c, approval["review_id"], r, records, observed_at)
+
+    def _store(self, package, candidate, c, review_id, r, records, observed_at) -> dict:
+        """Validate, anchor in CXP, and write the three export files. Never
+        overwrites a different file: package ids are content addresses."""
         problems = validate_package(package)
         if problems:
             raise PackageError(problems)
+        rev = package["revision"]
+        candidate_id = candidate.record_id
+        cited = sorted(records)
         package_json = cxp.canonical_bytes(package)
         package_id = cxp.digest_id("package", package)
         markdown = render_markdown(package_id, package).encode("utf-8")
         payload = {"package_id": package_id, "package_sha256": _sha(package_json), "markdown_sha256": _sha(markdown),
-                   "candidate_id": candidate_id, "review_id": approval["review_id"], "cycle_id": c["cycle_id"],
-                   "package_version": c["revision"], "status": DRAFT_PACKAGE, "publication_authorized": False}
+                   "candidate_id": candidate_id, "review_id": review_id, "cycle_id": c["cycle_id"],
+                   "package_version": c["revision"], "status": DRAFT_PACKAGE, "publication_authorized": False,
+                   "package_revision": rev["package_revision"], "predecessor_record_id": rev["predecessor_record_id"],
+                   "predecessor_package_id": rev["predecessor_package_id"], "editor": rev["editor"]}
         receipt = self.exchange.ingest({
             "schema_version": cxp.SCHEMA_VERSION, "kind": cxp.KIND_PRODUCTION_PACKAGE,
             "representation": cxp.REP_DRAMATIZATION, "evidence": cxp.EV_NONE, "verification": cxp.VER_UNVERIFIED,
             "provenance": cxp.UNVERIFIED_INTERPRETATION, "privacy": candidate.privacy, "payload": payload,
-            "sources": [], "derived_from": sorted([candidate_id, approval["review_id"]]), "verification_ref": None,
-            "consent_ref": None,
-            "occurrence": {"emitter_id": "package-builder", "observed_at": observed_at, "correlation_id": c["cycle_id"],
+            "sources": [], "verification_ref": None, "consent_ref": None,
+            "derived_from": sorted([candidate_id, review_id] + ([rev["predecessor_record_id"]] if rev["predecessor_record_id"] else [])),
+            "occurrence": {"emitter_id": rev["editor"] or "package-builder", "observed_at": observed_at,
+                           "correlation_id": c["cycle_id"],
                            "causation_id": None}})
         if receipt.status == "REJECTED":
             raise PackageError([f"{receipt.error_code}: {receipt.detail}"])
@@ -269,8 +306,9 @@ class PackageBuilder:
             "schema": PACKAGE_SCHEMA, "package_id": package_id, "package_record_id": receipt.record_id,
             "package_version": c["revision"], "status": DRAFT_PACKAGE, "publication_authorized": False,
             "generated_media_exists": False,
+            "revision": {k: rev[k] for k in ("package_revision", "predecessor_package_id", "predecessor_record_id", "editor")},
             "files": {"package.json": _sha(package_json), "package.md": _sha(markdown)},
-            "approval": {"review_id": approval["review_id"], "reviewer": r["reviewer"],
+            "approval": {"review_id": review_id, "reviewer": r["reviewer"],
                          "accepted_uncertainties": r["accepted_uncertainties"], "acceptance_is_not_verification": True},
             "lineage": {"candidate_id": candidate_id, "candidate_content_id": candidate.content_id,
                         "cycle_id": c["cycle_id"], "cycle_artifact_id": c["cycle_artifact_id"],
@@ -457,6 +495,9 @@ def render_markdown(package_id: str, package: dict) -> str:
     out = [f"# {package['episode_title']}", "",
            f"`{package_id}` | status **{package['status']}** | publication authorized: **no** | "
            "generated media exists: **no**", "",
+           f"Package revision {package['revision']['package_revision']}"
+           + (f" by `{package['revision']['editor']}`, superseding `{package['revision']['predecessor_package_id']}`"
+              if package['revision']['editor'] else " (as assembled; no producer edits)"), "",
            f"> {package['disclosures']['dramatization']}", "",
            f"Intended audience: {package['intended_audience']['description']} "
            f"({package['intended_audience']['basis']})", "", "## Scenes", ""]
@@ -496,6 +537,9 @@ def render_markdown(package_id: str, package: dict) -> str:
     out += ["", "## YouTube description (draft)", "", "```", package["youtube_description_draft"], "```",
             "", "## Pinned comment (draft)", "", package["pinned_comment_draft"],
             "", "## Questions for future audience intake"] + [f"- {q['question']}" for q in package["future_intake_questions"]]
+    if package["revision"]["changes"]:
+        out += ["", "## Producer changes in this revision"] + [
+            f"- {c['op']}: {c['summary']} ({c['class']})" for c in package["revision"]["changes"]]
     out += ["", "---", "Production approval is not publication approval. Nothing here has been published, "
             "uploaded or scheduled.", ""]
     return "\n".join(out)
