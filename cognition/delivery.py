@@ -30,6 +30,12 @@ version, or by the wrong person. A revision is a new package version
 its predecessor, so no review, signature, delivery or acceptance carries
 forward to changed content.
 
+ODCC-1: a package may bind an OUTCOME_SPEC (cognition.destination) fixed
+before the work. A bound package cites the spec in its lineage and carries
+its project, customer, synthetic flag and acceptance-criteria hash; the
+exchange refuses any difference, and refuses a real-customer package with no
+spec. Synthetic and internal packages keep the optional-spec behaviour.
+
 Synthetic and real work never mix: synthetic=True requires
 project-synthetic-* / customer-synthetic-* refs, the SYNTHETIC_FIXTURE
 delivery channel and synthetic_fixture customer evidence; synthetic=False
@@ -100,9 +106,13 @@ _ARTIFACT_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$")
 _MEDIA_TYPES = {".json": "application/json", ".md": "text/markdown", ".csv": "text/csv", ".txt": "text/plain",
                 ".svg": "image/svg+xml", ".html": "text/html", ".pdf": "application/pdf", ".png": "image/png"}
 
-_PACKAGE_KEYS = frozenset({"package_id", "version", "predecessor_package_id", "predecessor_record_id", "project_ref",
-                           "customer_ref", "synthetic", "editor_id", "sums_sha256", "delivery_sha256",
-                           "source_artifact_ids", "validation_passed", "human_judgement_criteria"})
+_PACKAGE_KEYS_R2A = frozenset({"package_id", "version", "predecessor_package_id", "predecessor_record_id",
+                               "project_ref", "customer_ref", "synthetic", "editor_id", "sums_sha256",
+                               "delivery_sha256", "source_artifact_ids", "validation_passed",
+                               "human_judgement_criteria"})
+# ODCC-1 adds the outcome-spec binding; R2a-shaped payloads still parse (replay compatibility)
+_PACKAGE_KEYS = _PACKAGE_KEYS_R2A | {"outcome_spec_id", "criteria_sha256"}
+_SPEC_ID = re.compile(r"^cxp-osp-[0-9a-f]{64}$")
 _EVENT_KEYS = frozenset({"package_record_id", "package_id", "event", "actor_id", "criteria_judged",
                          "delivered_sums_sha256", "channel", "evidence_record_id", "document_digest", "notes"})
 # event -> payload fields that must be non-null (all others except notes must be null)
@@ -117,6 +127,14 @@ class DeliveryRefused(Exception):
     def __init__(self, reasons):
         super().__init__(", ".join(reasons))
         self.reasons = list(reasons)
+
+
+def media_type(name: str) -> str:
+    return _MEDIA_TYPES.get(Path(name).suffix.lower(), "application/octet-stream")
+
+
+def criteria_sha256(criteria) -> str:
+    return bundle.sha256_hex(cxp.canonical_bytes(criteria))
 
 
 def _text(value, what: str) -> None:
@@ -150,8 +168,14 @@ def ref_problems(project_ref, customer_ref, synthetic) -> list:
 # ---------------------------------------------------------------------------
 
 def check_package_payload(payload: dict) -> None:
-    if set(payload) != _PACKAGE_KEYS:
+    if set(payload) not in (_PACKAGE_KEYS, _PACKAGE_KEYS_R2A):
         raise cxp.CXPError(cxp.E_MALFORMED, f"DELIVERY_PACKAGE payload requires exactly {sorted(_PACKAGE_KEYS)}")
+    if "criteria_sha256" in payload:
+        if not isinstance(payload["criteria_sha256"], str) or not _SHA256.match(payload["criteria_sha256"]):
+            raise cxp.CXPError(cxp.E_MALFORMED, "criteria_sha256 must be a sha256 hex digest")
+        if payload["outcome_spec_id"] is not None and not (
+                isinstance(payload["outcome_spec_id"], str) and _SPEC_ID.match(payload["outcome_spec_id"])):
+            raise cxp.CXPError(cxp.E_MALFORMED, "outcome_spec_id is malformed")
     if not isinstance(payload["package_id"], str) or not _PACKAGE_ID.match(payload["package_id"]):
         raise cxp.CXPError(cxp.E_MALFORMED, "package_id is malformed")
     problems = ref_problems(payload["project_ref"], payload["customer_ref"], payload["synthetic"])
@@ -240,9 +264,9 @@ def check_event_labels(payload, provenance, representation, evidence, verificati
 
 
 def package_metadata(payload: dict) -> dict:
-    return {k: payload[k] for k in ("package_id", "version", "predecessor_record_id", "project_ref", "customer_ref",
-                                    "synthetic", "editor_id", "sums_sha256", "validation_passed",
-                                    "human_judgement_criteria")}
+    return {k: payload.get(k) for k in ("package_id", "version", "predecessor_record_id", "project_ref", "customer_ref",
+                                        "synthetic", "editor_id", "sums_sha256", "validation_passed",
+                                        "human_judgement_criteria", "outcome_spec_id", "criteria_sha256")}
 
 
 def event_metadata(payload: dict) -> dict:
@@ -259,9 +283,26 @@ def _live(records: dict):
 
 
 def check_package_transition(payload: dict, lookup, records: dict) -> None:
+    spec_id = payload.get("outcome_spec_id")
+    bound = None
     for rid in payload["source_artifact_ids"]:
-        if lookup(rid)["kind"] in (cxp.KIND_DELIVERY_PACKAGE, cxp.KIND_DELIVERY_EVENT):
+        meta = lookup(rid)
+        if meta["kind"] in (cxp.KIND_DELIVERY_PACKAGE, cxp.KIND_DELIVERY_EVENT):
             _refuse("a delivery package's source artifacts are work records, not delivery records")
+        if meta["kind"] == cxp.KIND_OUTCOME_SPEC:
+            if meta["outcome_spec"]["spec_id"] != spec_id:
+                _refuse("a package cites an outcome spec it is not bound to")
+            bound = meta["outcome_spec"]
+    if spec_id is not None:
+        if bound is None:
+            _refuse("the bound outcome spec is absent from the package's source lineage")
+        for field in ("project_ref", "customer_ref", "synthetic"):
+            if bound[field] != payload[field]:
+                _refuse(f"the package's {field} differs from its outcome spec")
+        if bound["criteria_sha256"] != payload["criteria_sha256"]:
+            _refuse("the package's acceptance criteria differ from its outcome spec")
+    elif not payload["synthetic"]:
+        _refuse("a real customer package requires an outcome specification")
     previous = payload["predecessor_record_id"]
     if previous is None:
         return
@@ -273,6 +314,8 @@ def check_package_transition(payload: dict, lookup, records: dict) -> None:
             or (p["project_ref"], p["customer_ref"], p["synthetic"])
             != (payload["project_ref"], payload["customer_ref"], payload["synthetic"])):
         _refuse("a revision follows the previous version of the same project, customer and synthetic flag")
+    if p.get("outcome_spec_id") != spec_id:
+        _refuse("a revision keeps its predecessor's outcome spec")
     if any((m.get("delivery_package") or {}).get("predecessor_record_id") == previous for m in _live(records)):
         _refuse("that package version has already been revised")
 
@@ -433,9 +476,16 @@ class DeliveryDesk:
 
     def assemble(self, *, project_ref, customer_ref, synthetic, editor_id, artifacts: dict, source_artifact_ids,
                  acceptance_criteria, known_limitations, created_at: str, predecessor_package_id=None,
-                 descriptions=None) -> dict:
+                 descriptions=None, outcome_spec_id=None) -> dict:
         self._guard(editor_id, "EDITOR")
         problems = ref_problems(project_ref, customer_ref, synthetic)
+        spec_record_id = None
+        if outcome_spec_id is not None:
+            spec_record_id, spec_problems = self._spec_problems(outcome_spec_id, project_ref, customer_ref, synthetic,
+                                                                acceptance_criteria, artifacts, known_limitations)
+            problems += spec_problems
+        elif synthetic is False:
+            problems.append("OUTCOME_SPEC_REQUIRED: a real customer package binds to an outcome specification")
         if not isinstance(artifacts, dict) or not artifacts or len(artifacts) > MAX_ARTIFACTS:
             problems.append(f"ARTIFACTS_REQUIRED: 1..{MAX_ARTIFACTS} artifacts")
             artifacts = {}
@@ -446,7 +496,7 @@ class DeliveryDesk:
                 problems.append(f"MISSING_ARTIFACT:{name}")
             elif len(data) > MAX_ARTIFACT_BYTES:
                 problems.append(f"ARTIFACT_TOO_LARGE:{name}")
-        sources = sorted(set(source_artifact_ids or ()))
+        sources = sorted(set(source_artifact_ids or ()) | ({spec_record_id} - {None}))
         if not sources:
             problems.append("SOURCE_ARTIFACTS_REQUIRED")
         for rid in sources:
@@ -485,11 +535,12 @@ class DeliveryDesk:
             "created_at": created_at, "source_artifact_ids": sources,
             "artifact_manifest": [{"path": f"{ARTIFACT_DIR}/{name}", "sha256": bundle.sha256_hex(artifacts[name]),
                                    "bytes": len(artifacts[name]),
-                                   "media_type": _MEDIA_TYPES.get(Path(name).suffix.lower(), "application/octet-stream"),
+                                   "media_type": media_type(name),
                                    "description": descriptions.get(name)} for name in sorted(artifacts)],
             "checksums": {"file": bundle.SUMS, "algorithm": "sha256",
                           "anchor": "sha256(SHA256SUMS) is recorded in this version's DELIVERY_PACKAGE record"},
-            "acceptance_criteria": acceptance_criteria, "validation_results": results,
+            "acceptance_criteria": acceptance_criteria, "criteria_sha256": criteria_sha256(acceptance_criteria),
+            "outcome_spec_id": outcome_spec_id, "validation_results": results,
             "known_limitations": limitations,
             "statements": {"delivery_is_not_acceptance": True, "acceptance_is_not_payment": True,
                            "identities_are_not_authenticated": True, "publication_authorized": False},
@@ -508,7 +559,8 @@ class DeliveryDesk:
                    "sums_sha256": bundle.sha256_hex(files[bundle.SUMS]),
                    "delivery_sha256": bundle.sha256_hex(files[DELIVERY_FILE]), "source_artifact_ids": sources,
                    "validation_passed": all(r["result"] != FAIL for r in results),
-                   "human_judgement_criteria": sorted(r["criterion_id"] for r in results if r["result"] == HUMAN)}
+                   "human_judgement_criteria": sorted(r["criterion_id"] for r in results if r["result"] == HUMAN),
+                   "outcome_spec_id": outcome_spec_id, "criteria_sha256": criteria_sha256(acceptance_criteria)}
         receipt = self._ingest(cxp.KIND_DELIVERY_PACKAGE, payload,
                                sorted(set(sources) | ({predecessor_record_id} - {None})), editor_id, created_at)
         if receipt.status == "REJECTED":
@@ -516,6 +568,25 @@ class DeliveryDesk:
             raise DeliveryRefused([f"{receipt.error_code}: {receipt.detail}"])
         return {"package_id": package_id, "package_record_id": receipt.record_id, "directory": str(directory),
                 "delivery": body, "sums": files[bundle.SUMS].decode("ascii")}
+
+    def _spec_problems(self, spec_id, project_ref, customer_ref, synthetic, criteria, artifacts, limitations):
+        meta = next((m for m in self.exchange.all_record_metadata()
+                     if not m["erased"] and (m.get("outcome_spec") or {}).get("spec_id") == spec_id), None)
+        if meta is None:
+            return None, ["UNKNOWN_OUTCOME_SPEC"]
+        spec = self.exchange.get_record(meta["record_id"]).payload()
+        problems = [f"OUTCOME_SPEC_MISMATCH:{field}" for field, value in
+                    (("project_ref", project_ref), ("customer_ref", customer_ref), ("synthetic", synthetic))
+                    if spec[field] != value]
+        if criteria != spec["acceptance_criteria"]:
+            problems.append("CRITERIA_DIFFER_FROM_OUTCOME_SPEC")
+        for d in spec["required_deliverables"]:
+            if not isinstance(artifacts, dict) or d["name"] not in artifacts:
+                problems.append(f"MISSING_REQUIRED_DELIVERABLE:{d['name']}")
+        for disclosure in spec["disclosures"]:
+            if disclosure not in (limitations or ()):
+                problems.append("MISSING_REQUIRED_DISCLOSURE")
+        return meta["record_id"], problems
 
     def _ingest(self, kind, payload, derived_from, emitter, observed_at):
         return self.exchange.ingest({
@@ -589,6 +660,9 @@ class DeliveryDesk:
             elif present is not None and [a["sha256"] for a in body["artifact_manifest"]] != [
                     bundle.sha256_hex(present.get(a["path"], b"")) for a in body["artifact_manifest"]]:
                 problems.append("ARTIFACT_MANIFEST_MISMATCH")
+            elif meta and meta["delivery_package"].get("criteria_sha256") not in (
+                    None, criteria_sha256(body["acceptance_criteria"])):
+                problems.append("CRITERIA_HASH_MISMATCH")
             elif present is not None and evaluate(body["acceptance_criteria"], {
                     a["path"][len(ARTIFACT_DIR) + 1:]: present[a["path"]] for a in body["artifact_manifest"]}) != body["validation_results"]:
                 problems.append("VALIDATION_RESULTS_DO_NOT_REPRODUCE")

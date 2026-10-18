@@ -247,6 +247,9 @@ class CognitiveExchange:
                         check = (delivery.check_package_transition if record.kind == cxp.KIND_DELIVERY_PACKAGE
                                  else delivery.check_event_transition)
                         check(record.payload(), state.lookup, {rid: state.lookup(rid) for rid in state.records})
+                    elif record.kind == cxp.KIND_OUTCOME_SPEC:
+                        from cognition import destination
+                        destination.check_spec_transition(record.payload(), state.lookup)
                     elif record.kind in (cxp.KIND_EPISODE_CANDIDATE, cxp.KIND_EPISODE_REVIEW):
                         from cognition import episode
                         episode.check_transition(record.kind, record.payload(),
@@ -314,6 +317,9 @@ class CognitiveExchange:
         elif record.kind == cxp.KIND_DELIVERY_EVENT:
             from cognition import delivery
             meta["delivery_event"] = delivery.event_metadata(record.payload())
+        elif record.kind == cxp.KIND_OUTCOME_SPEC:
+            from cognition import destination
+            meta["outcome_spec"] = destination.spec_metadata(record.payload())
         self._payload_dir.mkdir(parents=True, exist_ok=True)
         payload_path = self._payload_dir / f"{record.record_id}.json"
         envelope._atomic_write_bytes(payload_path, record.payload_json.encode("utf-8"))

@@ -420,7 +420,15 @@ class TestCustomerEvidence(DeliveryTestCase):
         real = dict(project_ref="project-intake-diagnostic", customer_ref="customer-northwind-repairs", synthetic=False)
         self.refused(lambda: self.generic(**{**real, "synthetic": True}), "SYNTHETIC_REFS_REQUIRED")
         self.refused(lambda: self.generic(synthetic=False), "SYNTHETIC_REF_ON_REAL_PACKAGE")
-        pid = self.generic(**real)["package_id"]  # structurally valid; nothing here is a real customer
+        self.refused(lambda: self.generic(**real), "OUTCOME_SPEC_REQUIRED")  # ODCC-1: real packages bind a spec
+        from cognition import destination, origin
+        brief = origin.origin_brief(self.x, self.runner, self.artifact["artifact_id"], capability_registry={},
+                                    required_tags=["analysis"])
+        spec = destination.OutcomeDesk(self.x, self.runner, self.desk).propose(
+            brief, intended_outcome="Show where requests are lost.", acceptance_criteria=copy.deepcopy(CRITERIA),
+            required_deliverables=["findings.csv", "report.md"], disclosures=[], author_id="operator-account-lead",
+            observed_at=T0, **real)
+        pid = self.generic(**real, outcome_spec_id=spec["spec_id"])["package_id"]  # real-shaped; no real customer
         self.approve_delivery(pid)
         self.desk.sign_handoff(pid, SIGNER_D, T2)
         self.refused(lambda: self.desk.record_delivery(pid, COURIER, dv.CHANNEL_SYNTHETIC, T3), "SYNTHETIC_FIXTURE channel")
