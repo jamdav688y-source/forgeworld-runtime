@@ -242,6 +242,11 @@ class CognitiveExchange:
                         from cognition import handoff
                         handoff.check_transition(record.payload(), state.lookup,
                                                  {rid: state.lookup(rid) for rid in state.records})
+                    elif record.kind in (cxp.KIND_DELIVERY_PACKAGE, cxp.KIND_DELIVERY_EVENT):
+                        from cognition import delivery
+                        check = (delivery.check_package_transition if record.kind == cxp.KIND_DELIVERY_PACKAGE
+                                 else delivery.check_event_transition)
+                        check(record.payload(), state.lookup, {rid: state.lookup(rid) for rid in state.records})
                     elif record.kind in (cxp.KIND_EPISODE_CANDIDATE, cxp.KIND_EPISODE_REVIEW):
                         from cognition import episode
                         episode.check_transition(record.kind, record.payload(),
@@ -303,6 +308,12 @@ class CognitiveExchange:
             payload = record.payload()
             meta["production_handoff"] = {k: payload[k] for k in ("handoff_id", "package_record_id", "package_id",
                                                                   "package_review_id", "signer")}
+        elif record.kind == cxp.KIND_DELIVERY_PACKAGE:
+            from cognition import delivery
+            meta["delivery_package"] = delivery.package_metadata(record.payload())
+        elif record.kind == cxp.KIND_DELIVERY_EVENT:
+            from cognition import delivery
+            meta["delivery_event"] = delivery.event_metadata(record.payload())
         self._payload_dir.mkdir(parents=True, exist_ok=True)
         payload_path = self._payload_dir / f"{record.record_id}.json"
         envelope._atomic_write_bytes(payload_path, record.payload_json.encode("utf-8"))

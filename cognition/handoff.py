@@ -37,14 +37,12 @@ messaging or network code here.
 """
 from __future__ import annotations
 
-import hashlib
 import json
-import os
 import re
 import shutil
 from pathlib import Path
 
-from cognition import cxp, episode as ep, package_revision as rv, production as pr
+from cognition import bundle, cxp, episode as ep, package_revision as rv, production as pr
 
 HANDOFF_SCHEMA = "forgeworld.production.handoff.v1"
 HANDED_OFF = "HANDED_OFF_FOR_PRODUCTION_PREPARATION"
@@ -77,13 +75,8 @@ class HandoffRefused(Exception):
         self.reasons = list(reasons)
 
 
-def _sha(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
-
-
-def render_sums(files: dict) -> bytes:
-    """sha256sum-compatible checksum list, sorted by file name."""
-    return "".join(f"{_sha(files[name])}  {name}\n" for name in sorted(files)).encode("ascii")
+_sha = bundle.sha256_hex
+render_sums = bundle.render_sums
 
 
 # ---------------------------------------------------------------------------
@@ -245,26 +238,10 @@ class HandoffExporter:
                 "handoff": body, "sums": files["SHA256SUMS"].decode("ascii")}
 
     def _write_bundle(self, handoff_id: str, files: dict) -> Path:
-        final = self.root / handoff_id
-        if final.exists():  # a re-run after a crash before ingest: identical bytes or refuse
-            if {p.name: p.read_bytes() for p in final.iterdir()} != files:
-                raise HandoffRefused([f"BUNDLE_CONFLICT: existing bundle {handoff_id} differs"])
-            return final
-        staging = self.root / f".staging-{handoff_id}"
-        shutil.rmtree(staging, ignore_errors=True)
-        staging.mkdir()
         try:
-            for name, data in files.items():
-                (staging / name).write_bytes(data)
-            for name, data in files.items():  # re-read: what landed on disk is what was checksummed
-                if (staging / name).read_bytes() != data:
-                    raise HandoffRefused([f"WRITE_VERIFICATION_FAILED:{name}"])
-                os.chmod(staging / name, 0o444)
-            os.replace(staging, final)
-        except BaseException:
-            shutil.rmtree(staging, ignore_errors=True)
-            raise
-        return final
+            return bundle.write(self.root, handoff_id, files)
+        except bundle.BundleError as exc:
+            raise HandoffRefused(exc.reasons) from None
 
     # -- verification -------------------------------------------------------------
 
@@ -275,22 +252,9 @@ class HandoffExporter:
         anchored = self.exchange.get_record(meta["record_id"]).payload() if meta else None
         if anchored is None:
             integrity.append("NOT_ANCHORED")
-        try:
-            present = {p.name: p.read_bytes() for p in directory.iterdir()}
-        except OSError:
-            present = {}
-            integrity.append("BUNDLE_MISSING")
+        present = bundle.read(directory)
+        integrity += bundle.check(present, BUNDLE_FILES, anchored["sums_sha256"] if anchored else None)
         if present:
-            integrity += [f"UNEXPECTED_FILE:{n}" for n in sorted(set(present) - set(BUNDLE_FILES))]
-            integrity += [f"FILE_MISSING:{n}" for n in BUNDLE_FILES if n not in present]
-            sums = present.get("SHA256SUMS", b"")
-            if anchored and _sha(sums) != anchored["sums_sha256"]:
-                integrity.append("CHECKSUM_LIST_NOT_ANCHORED")
-            listed = dict(reversed(line.split("  ", 1)) for line in sums.decode("ascii", "replace").splitlines()
-                          if "  " in line)
-            for name in BUNDLE_FILES:
-                if name != "SHA256SUMS" and name in present and listed.get(name) != _sha(present[name]):
-                    integrity.append(f"FILE_TAMPERED:{name}")
             try:
                 body = json.loads(present.get("handoff.json", b"null"))
                 if cxp.digest_id("handoff", body) != handoff_id:
@@ -311,3 +275,33 @@ class HandoffExporter:
         verdict = INVALID if integrity else (STALE if currency else HANDED_OFF)
         return {"handoff_id": handoff_id, "status": verdict, "intact": not integrity, "current": not currency,
                 "integrity_problems": integrity, "currency_problems": currency, "publication_authorized": False}
+
+    # -- first DeliveryPackage consumer (R2a) ---------------------------------------
+
+    def package_inputs(self, handoff_id: str) -> dict:
+        """Generic DeliveryDesk.assemble() inputs for one CURRENT, INTACT
+        handoff: its five files as artifacts, its CXP record as the source
+        artifact, and acceptance criteria that re-check the handoff's own
+        guarantees. Nothing production-specific enters the delivery core."""
+        result = self.verify(handoff_id)
+        if result["status"] != HANDED_OFF:
+            raise HandoffRefused([f"HANDOFF_NOT_DELIVERABLE:{result['status']}"]
+                                 + result["integrity_problems"] + result["currency_problems"])
+        files = bundle.read(self.root / handoff_id)
+        criteria = [{"criterion_id": f"ac-present-{name.lower().replace('.', '-')}", "check": "artifact_present",
+                     "path": name, "description": f"{name} is included"} for name in BUNDLE_FILES]
+        criteria += [
+            {"criterion_id": "ac-not-publication-approval", "check": "json_equals", "path": "handoff.json",
+             "key": "publication_authorized", "value": False,
+             "description": "The handoff does not authorize publication"},
+            {"criterion_id": "ac-handed-off", "check": "json_equals", "path": "handoff.json", "key": "status",
+             "value": HANDED_OFF, "description": "The handoff record states production-preparation handoff"},
+            {"criterion_id": "ac-production-lead-confirms", "check": "human_judgement",
+             "description": "The receiving production lead confirms the package is complete for preparation"},
+        ]
+        return {"artifacts": files, "source_artifact_ids": [self._handoff_of(handoff_id=handoff_id)["record_id"]],
+                "acceptance_criteria": criteria, "known_limitations": list(KNOWN_LIMITATIONS),
+                "descriptions": {"package.json": "Production package (machine-readable)",
+                                 "package.md": "Production package (human-readable)",
+                                 "manifest.json": "Package manifest", "handoff.json": "Human sign-off record",
+                                 "SHA256SUMS": "Original handoff checksum list"}}
