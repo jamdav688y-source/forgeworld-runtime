@@ -238,6 +238,10 @@ class CognitiveExchange:
                     elif record.kind == cxp.KIND_PACKAGE_REVIEW:
                         from cognition import package_revision
                         package_revision.check_review_transition(record.payload(), state.lookup)
+                    elif record.kind == cxp.KIND_PRODUCTION_HANDOFF:
+                        from cognition import handoff
+                        handoff.check_transition(record.payload(), state.lookup,
+                                                 {rid: state.lookup(rid) for rid in state.records})
                     elif record.kind in (cxp.KIND_EPISODE_CANDIDATE, cxp.KIND_EPISODE_REVIEW):
                         from cognition import episode
                         episode.check_transition(record.kind, record.payload(),
@@ -291,10 +295,14 @@ class CognitiveExchange:
         elif record.kind == cxp.KIND_PRODUCTION_PACKAGE:
             payload = record.payload()
             meta["production_package"] = {k: payload[k] for k in ("package_id", "candidate_id", "review_id", "cycle_id",
-                                                                  "package_revision", "predecessor_record_id")}
+                                                                  "package_revision", "predecessor_record_id", "editor")}
         elif record.kind == cxp.KIND_PACKAGE_REVIEW:
             payload = record.payload()
             meta["package_review"] = {k: payload[k] for k in ("package_record_id", "package_id", "decision", "reviewer")}
+        elif record.kind == cxp.KIND_PRODUCTION_HANDOFF:
+            payload = record.payload()
+            meta["production_handoff"] = {k: payload[k] for k in ("handoff_id", "package_record_id", "package_id",
+                                                                  "package_review_id", "signer")}
         self._payload_dir.mkdir(parents=True, exist_ok=True)
         payload_path = self._payload_dir / f"{record.record_id}.json"
         envelope._atomic_write_bytes(payload_path, record.payload_json.encode("utf-8"))

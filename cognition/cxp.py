@@ -120,9 +120,10 @@ KIND_EPISODE_CANDIDATE = "EPISODE_CANDIDATE"
 KIND_EPISODE_REVIEW = "EPISODE_REVIEW"
 KIND_PRODUCTION_PACKAGE = "PRODUCTION_PACKAGE"
 KIND_PACKAGE_REVIEW = "PACKAGE_REVIEW"
+KIND_PRODUCTION_HANDOFF = "PRODUCTION_HANDOFF"
 ENABLED_KINDS = (KIND_OBSERVATION, KIND_CLAIM, KIND_VERIFICATION_RESULT, KIND_CONTRADICTION, KIND_LENS_OUTPUT,
                  KIND_COMMERCIAL_SIGNAL, KIND_AUDIENCE_QUESTION, KIND_EPISODE_CANDIDATE, KIND_EPISODE_REVIEW,
-                 KIND_PRODUCTION_PACKAGE, KIND_PACKAGE_REVIEW)
+                 KIND_PRODUCTION_PACKAGE, KIND_PACKAGE_REVIEW, KIND_PRODUCTION_HANDOFF)
 # Named so the vocabulary is stable, but refused until a later slice defines
 # their payload schemas (KIND_NOT_ENABLED).
 RESERVED_KINDS = (
@@ -227,7 +228,7 @@ ERROR_CODES = (
 _ID_PREFIXES = {"source": "cxp-src-", "content": "cxp-content-", "record": "cxp-rec-", "occurrence": "cxp-occ-",
                 "result": "cxp-res-", "brief": "cxp-brief-", "assembly": "cxp-asm-",
                 "cycle": "cxp-cycle-", "approval": "cxp-approval-", "cycle_artifact": "cxp-art-",
-                "candidate": "cxp-cand-", "package": "cxp-pkg-"}
+                "candidate": "cxp-cand-", "package": "cxp-pkg-", "handoff": "cxp-hof-"}
 _RECORD_ID_PATTERN = re.compile(r"^cxp-rec-[0-9a-f]{64}$")
 _CONTENT_ID_PATTERN = re.compile(r"^cxp-content-[0-9a-f]{64}$")
 _TIMESTAMP_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,9})?(Z|[+-]\d{2}:\d{2})$")
@@ -491,6 +492,9 @@ def _parse_payload(kind: str, payload) -> str:
     elif kind == KIND_PACKAGE_REVIEW:
         from cognition import package_revision  # deferred: builds on this module
         package_revision.check_review_payload(payload)
+    elif kind == KIND_PRODUCTION_HANDOFF:
+        from cognition import handoff  # deferred: builds on this module
+        handoff.check_record_payload(payload)
     return encoded.decode("utf-8")
 
 
@@ -656,6 +660,10 @@ def parse_event(raw) -> tuple:
         from cognition import package_revision
         package_revision.check_review_labels(json.loads(payload_json), provenance, representation, evidence,
                                              verification, derived_from)
+    elif kind == KIND_PRODUCTION_HANDOFF:
+        from cognition import handoff
+        handoff.check_record_labels(json.loads(payload_json), provenance, representation, evidence,
+                                    verification, derived_from)
 
     # verification rules that need no lookup
     if verification in _REQUIRES_VERIFICATION_REF:
@@ -734,7 +742,8 @@ def resolve_lineage(record: CognitiveRecord, lookup: Callable[[str], Optional[di
                 raise CXPError(E_ERASED, f"parent {parent_id} has been erased")
             if record.kind == KIND_LENS_OUTPUT and parent.get("kind") in (KIND_LENS_OUTPUT, KIND_CONTRADICTION,
                                                                           KIND_EPISODE_CANDIDATE, KIND_EPISODE_REVIEW,
-                                                                          KIND_PRODUCTION_PACKAGE, KIND_PACKAGE_REVIEW):
+                                                                          KIND_PRODUCTION_PACKAGE, KIND_PACKAGE_REVIEW,
+                                                                          KIND_PRODUCTION_HANDOFF):
                 # Recursion guard: cognitive and creative output is never lens input.
                 raise CXPError(E_KIND_RULE, f"a LENS_OUTPUT cannot derive from a {parent['kind']}")
             parents.append(parent)
