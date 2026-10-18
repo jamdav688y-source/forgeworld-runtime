@@ -47,9 +47,9 @@ import re
 from pathlib import Path
 
 from evidence_envelope import envelope
-from cognition import contradiction, cxp, episode as ep, lineage
+from cognition import contradiction, cxp, episode as ep, lineage, presentation
 
-PACKAGE_SCHEMA = "forgeworld.production.package.v1"
+PACKAGE_SCHEMA = "forgeworld.production.package.v2"  # v2: lens v2 presentation
 DRAFT_PACKAGE = "DRAFT_PACKAGE"
 
 QUOTED_SOURCE = "QUOTED_SOURCE"
@@ -69,6 +69,7 @@ P_OPEN_QUESTION_UNDISCLOSED = "OPEN_QUESTION_UNDISCLOSED"
 P_PRESENTED_AS_VERIFIED = "PRESENTED_AS_VERIFIED"
 P_PUBLICATION_FLAG = "PUBLICATION_FLAG_ALTERED"
 P_TAMPERED = "PACKAGE_TAMPERED"
+P_BAD_AUDIENCE = "UNKNOWN_SCENE_AUDIENCE"
 
 _PAYLOAD_KEYS = frozenset({"package_id", "package_sha256", "markdown_sha256", "candidate_id", "review_id", "cycle_id",
                            "package_version", "status", "publication_authorized"})
@@ -76,6 +77,17 @@ _PACKAGE_ID = re.compile(r"^cxp-pkg-[0-9a-f]{64}$")
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _RECORD_ID = re.compile(r"^cxp-rec-[0-9a-f]{64}$")
 _VERIFICATION_LANGUAGE = ep._VERIFICATION_LANGUAGE
+_NEGATION = re.compile(r"\b(not|no|never|isn't|wasn't|aren't|nothing)\b[^.;:]{0,30}$", re.IGNORECASE)
+
+
+def asserts_verification(text: str) -> bool:
+    """True when text claims something is verified/proven/confirmed. A
+    negated mention ("no input is verified", "not proven") discloses
+    uncertainty and does not count."""
+    for match in _VERIFICATION_LANGUAGE.finditer(text):
+        if not _NEGATION.search(text[:match.start()]):
+            return True
+    return False
 _TEXT_FIELDS = ("title", "on_screen_text", "narration_guidance", "transition")
 
 
@@ -141,8 +153,13 @@ def validate_package(package: dict) -> list:
         problems.append(P_PUBLICATION_FLAG)
     disclosures = package.get("disclosures", {})
     disclosed_contradictions = {d["contradiction_id"] for d in disclosures.get("contradictions", [])}
+    audience_of = {c["contradiction_id"]: c["audience"]
+                   for c in package.get("presentation", {}).get("contradiction_disclosures", [])}
     for cid in package.get("lineage", {}).get("contradiction_ids", []):
-        if cid not in disclosed_contradictions or not any(cid in s["source_refs"] for s in package.get("scenes", [])):
+        # every contradiction stays disclosed; a VIEWER-facing one must also stay on screen
+        in_scene = any(cid in s["source_refs"] for s in package.get("scenes", []))
+        if (cid not in disclosed_contradictions or cid not in audience_of
+                or (audience_of[cid] == presentation.VIEWER and not in_scene)):
             problems.append(P_CONTRADICTION_SUPPRESSED)
             break
     disclosed_claims = {d["claim"] for d in disclosures.get("unsupported_claims", [])}
@@ -153,13 +170,15 @@ def validate_package(package: dict) -> list:
     for scene in package.get("scenes", []):
         if scene.get("label") not in SCENE_LABELS:
             problems.append(P_BAD_LABEL)
+        if scene.get("audience") not in (presentation.VIEWER, presentation.INTERNAL_ONLY):
+            problems.append(P_BAD_AUDIENCE)
         if not scene.get("source_refs"):
             problems.append(P_UNCITED_SCENE)
         texts = [scene.get(k, "") for k in _TEXT_FIELDS] + [line for line in scene.get("narration_lines", [])]
-        if any(_VERIFICATION_LANGUAGE.search(t) for t in texts):
+        if any(asserts_verification(t) for t in texts):
             problems.append(P_PRESENTED_AS_VERIFIED)
     for field in ("youtube_description_draft", "pinned_comment_draft"):
-        if _VERIFICATION_LANGUAGE.search(package.get(field, "")):
+        if asserts_verification(package.get(field, "")):
             problems.append(P_PRESENTED_AS_VERIFIED)
     return sorted(set(problems))
 
@@ -169,9 +188,10 @@ def validate_package(package: dict) -> list:
 # ---------------------------------------------------------------------------
 
 def _scene(index: int, title: str, label: str, refs, citations, disclosures, narration, on_screen, transition,
-           shots, visual, audio) -> dict:
+           shots, visual, audio, audience: str = presentation.VIEWER) -> dict:
     stable = hashlib.sha256(f"{index}|{label}|{title}".encode("utf-8")).hexdigest()[:12]
     return {"scene_id": f"scene-{index:02d}-{stable}", "order": index, "title": title, "label": label,
+            "audience": audience,
             "source_refs": sorted(set(refs)), "citations": sorted(set(citations)), "disclosures": disclosures,
             "narration_guidance": narration["guidance"], "narration_lines": narration["lines"],
             "on_screen_text": on_screen, "transition": transition, "shot_list": shots,
@@ -281,6 +301,8 @@ class PackageBuilder:
         open_contradictions = [d for d in artifact["preserved_disagreements"] if d["contradiction_id"] in c["contradiction_ids"]]
         experiments = [k for k in artifact.get("research_candidates", []) if k["type"] == "EXPERIMENT"]
         questions = [records[q].payload()["statement"] for q in c["audience_question_ids"]]
+        pres = presentation.present(c, open_contradictions, questions, experiments)
+        audience_of = {d["contradiction_id"]: d for d in pres["contradiction_disclosures"]}
         uncertainty_note = (f"Disclose on screen: {len(open_contradictions)} open disagreement(s) and "
                             f"{len(unsupported)} unsupported claim(s); none is settled by this episode.")
         scenes, i = [], 0
@@ -314,30 +336,35 @@ class PackageBuilder:
             refs = [d["contradiction_id"]] + [by_lens[l]["record_id"] for p in d["positions"].values() for l in p if l in by_lens]
             lines = [f"{lens}: {by_lens[lens]['statement']}" for p in ("SUPPORT", "OPPOSE") for lens in d["positions"].get(p, [])
                      if lens in by_lens]
-            add(f"Where the analysis disagrees: {d['question'].replace('_', ' ')}", INTERPRETATION, refs, [],
+            view = audience_of[d["contradiction_id"]]
+            internal = view["audience"] == presentation.INTERNAL_ONLY
+            add(("Production note (internal): " if internal else "Where the analysis disagrees: ") + view["viewer_phrasing"],
+                INTERPRETATION, refs, [],
                 [f"OPEN contradiction {d['contradiction_id']}: the lenses disagree and nothing has resolved it.",
-                 "These are rule-based interpretations, not findings."],
+                 "These are rule-based interpretations, not findings."]
+                + (["Internal production question: not intended for broadcast; it stays in the production notes."]
+                   if internal else []),
                 {"guidance": "Present both sides with equal weight. Do not pick a winner.", "lines": lines},
-                f"Unresolved: {d['question'].replace('_', ' ')}", "Hold on the split screen, then cut.",
+                "Not for broadcast" if internal else f"Unresolved: {view['viewer_phrasing']}",
+                "Hold on the split screen, then cut.",
                 ["Split screen: SUPPORT on the left, OPPOSE on the right.", "Lower third: OPEN, UNRESOLVED."],
                 ["Two-column typographic layout labelled SUPPORT and OPPOSE; neutral colours, no winner implied."],
-                {"music": "pause or near-silence", "pacing": "slow, let both sides breathe"})
+                {"music": "pause or near-silence", "pacing": "slow, let both sides breathe"},
+                presentation.INTERNAL_ONLY if internal else presentation.VIEWER)
         add("What we do not know yet", HYPOTHESIS,
             [candidate.record_id] + ([by_lens["SCIENTIST"]["record_id"]] if "SCIENTIST" in by_lens else [])
             + ([by_lens["CATALYST"]["record_id"]] if "CATALYST" in by_lens else []), [],
             ["Hypotheses and proposed experiments only; nothing here has been run."] +
-            [f"UNSUPPORTED: {claim}" for claim in unsupported],
+            [f"UNSUPPORTED: {claim}" for claim in pres["claims_requiring_disclosure"]] +
+            [f"AUDIENCE QUESTION (asked, not a claim): {q}" for q in pres["audience_questions_asked"]],
             {"guidance": "Frame each item as an open question or a test we could run, never as a result.",
-             "lines": [k["proposal"] for k in experiments if k.get("proposal")] + c["open_questions"][:3]},
+             "lines": [k["proposal"] for k in experiments if k.get("proposal")] + pres["uncertainty_disclosures"][:3]},
             "Open questions", "Fade to end card.",
             ["Slow list build of open questions on screen.", "End card: invitation to ask questions."],
             ["Clean list layout of open questions with a 'not yet tested' tag on each."],
             {"music": "light, curious", "pacing": "medium"})
 
-        intake_questions = [{"question": f"What would convince you either way on: {d['question'].replace('_', ' ')}?",
-                             "targets": d["contradiction_id"]} for d in open_contradictions]
-        intake_questions += [{"question": f"Have you seen evidence on this? {q}", "targets": "open_question"}
-                             for q in c["open_questions"][:3]]
+        intake_questions = pres["viewer_open_questions"]
         return {
             "schema": PACKAGE_SCHEMA,
             "status": DRAFT_PACKAGE,
@@ -360,7 +387,9 @@ class PackageBuilder:
                 "contradictions": [{"contradiction_id": d["contradiction_id"], "question": d["question"],
                                     "status": contradiction.assess(self.exchange, d["contradiction_id"])["status"],
                                     "positions": d["positions"]} for d in open_contradictions],
-                "unsupported_claims": [{"claim": claim, "label": "UNSUPPORTED: do not present as fact"} for claim in unsupported],
+                "unsupported_claims": [{"claim": claim, "label": "AUDIENCE QUESTION: shown as asked, asserts nothing"
+                                        if claim in pres["audience_questions_asked"]
+                                        else "UNSUPPORTED: do not present as fact"} for claim in unsupported],
                 "open_questions": c["open_questions"],
                 "accepted_uncertainty": {"reviewer": r["reviewer"], "accepted": r["accepted_uncertainties"],
                                          "note": "Acceptance means the reviewer chose to proceed with these "
@@ -384,6 +413,7 @@ class PackageBuilder:
             "pinned_comment_draft": "What would change your mind on the open questions in this episode? "
                                     "Your questions may shape the next one.",
             "future_intake_questions": intake_questions,
+            "presentation": pres,
             "lineage": {"candidate_id": candidate.record_id, "candidate_revision": c["revision"],
                         "cycle_id": c["cycle_id"], "cycle_artifact_id": c["cycle_artifact_id"],
                         "assembly_id": c["assembly_id"], "lens_output_ids": c["lens_output_ids"],
@@ -431,7 +461,8 @@ def render_markdown(package_id: str, package: dict) -> str:
            f"Intended audience: {package['intended_audience']['description']} "
            f"({package['intended_audience']['basis']})", "", "## Scenes", ""]
     for s in package["scenes"]:
-        out += [f"### {s['order']:02d}. {s['title']}  [{s['label']}]", f"`{s['scene_id']}`", "",
+        out += [f"### {s['order']:02d}. {s['title']}  [{s['label']}]" + ("  (INTERNAL ONLY)" if s["audience"] == presentation.INTERNAL_ONLY else ""),
+                f"`{s['scene_id']}`", "",
                 f"- **Narration guidance:** {s['narration_guidance']}"]
         out += [f"  - \"{line}\"" for line in s["narration_lines"]]
         out += [f"- **On screen:** {s['on_screen_text']}", f"- **Transition:** {s['transition']}",
@@ -449,6 +480,9 @@ def render_markdown(package_id: str, package: dict) -> str:
             for c in d["contradictions"]] or ["- none"]
     out += ["", "### Unsupported claims"] + [f"- {u['claim']} ({u['label']})" for u in d["unsupported_claims"]]
     out += ["", "### Open questions"] + [f"- {q}" for q in d["open_questions"]]
+    pres = package["presentation"]
+    out += ["", "### Production notes (methodology, not for broadcast)"] + [f"- {n}" for n in pres["methodology_notes"]]
+    out += ["", "### Uncertainty to disclose to viewers"] + [f"- {u}" for u in pres["uncertainty_disclosures"]]
     out += ["", f"### Accepted uncertainty", f"Reviewer `{d['accepted_uncertainty']['reviewer']}`: "
             f"{d['accepted_uncertainty']['note']}", "", "## Citation sheet", "",
             "| record | kind | evidence | verification | source |", "|---|---|---|---|---|"]

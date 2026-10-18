@@ -165,8 +165,21 @@ class TestValidator(ProductionTestCase):
 
     def test_suppressed_contradictions(self):
         self.assertIn(pr.P_CONTRADICTION_SUPPRESSED, self.broken(lambda p: p["disclosures"].update(contradictions=[])))
-        self.assertIn(pr.P_CONTRADICTION_SUPPRESSED, self.broken(
-            lambda p: p.update(scenes=[s for s in p["scenes"] if s["label"] != pr.INTERPRETATION])))
+        self.assertIn(pr.P_CONTRADICTION_SUPPRESSED, self.broken(lambda p: p["presentation"].update(contradiction_disclosures=[])))
+
+        def drop_scenes(p):
+            p.update(scenes=[s for s in p["scenes"] if s["label"] != pr.INTERPRETATION])
+        # lens v2: an INTERNAL_ONLY (production-process) contradiction may leave the screen but stays disclosed...
+        self.assertEqual({c["audience"] for c in self.package["presentation"]["contradiction_disclosures"]},
+                         {"INTERNAL_ONLY"})
+        self.assertEqual(self.broken(drop_scenes), [])
+
+        def drop_viewer_scene(p):
+            for c in p["presentation"]["contradiction_disclosures"]:
+                c["audience"] = "VIEWER"
+            drop_scenes(p)
+        # ...a VIEWER-facing contradiction may not
+        self.assertIn(pr.P_CONTRADICTION_SUPPRESSED, self.broken(drop_viewer_scene))
 
     def test_unsupported_claims_presented_as_verified(self):
         def proven(p):
