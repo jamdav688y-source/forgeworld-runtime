@@ -61,7 +61,7 @@ class TestEngagementBinding(EngagementTestCase):
                          (REAL_ENG, out["spec"]["consent_record_id"]))
 
     def test_real_spec_without_engagement_or_consent_is_refused(self):
-        brief = self.make_brief(value_hypothesis_ids=[])
+        brief = self.real_brief()
         consent = self.consent()
         for overrides, expected in ((dict(), "must record its engagement_ref"),
                                     (dict(engagement_ref=REAL_ENG), "recorded together"),
@@ -71,7 +71,7 @@ class TestEngagementBinding(EngagementTestCase):
                              expected, ds.DestinationRefused)
 
     def test_consent_must_be_a_live_consent_record_of_that_engagement(self):
-        brief = self.make_brief(value_hypothesis_ids=[])
+        brief = self.real_brief()
         demo = self.accept(signal(cm.DEMONSTRATION_GIVEN, engagement=REAL_ENG, account=REAL_ACCT,
                                   summary="Showed a sample report"))
         other = self.consent(engagement="eng-other-company", account="acct-other-company", entry="other")
@@ -105,14 +105,15 @@ class TestEngagementBinding(EngagementTestCase):
         real_consent, synthetic_consent = self.consent(), self.synthetic_consent()
         self.refused(lambda: self.propose(engagement_ref=REAL_ENG, consent_record_id=real_consent),
                      "eng-synthetic-*", ds.DestinationRefused)
-        brief = self.make_brief(value_hypothesis_ids=[])
+        brief = self.real_brief()
         self.refused(lambda: self.propose(brief, **REAL, disclosures=["Unmeasured delays."], engagement_ref=ENG,
                                           consent_record_id=synthetic_consent),
                      "eng-synthetic-*", ds.DestinationRefused)
 
     def test_an_engagement_serves_one_customer(self):
         self.bound_spec()
-        self.refused(lambda: self.bound_spec(customer_ref="customer-synthetic-other-shop"),
+        other = self.customer_brief("customer-synthetic-other-shop")
+        self.refused(lambda: self.bound_spec(brief=other, customer_ref="customer-synthetic-other-shop"),
                      "exactly one customer_ref", ds.DestinationRefused)
         self.bound_spec(project_ref="project-synthetic-second-project")  # same customer, other project: allowed
 

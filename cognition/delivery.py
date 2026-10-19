@@ -37,6 +37,8 @@ exchange refuses any difference, and refuses a real-customer package with no
 spec. Synthetic and internal packages keep the optional-spec behaviour.
 ENGAGE-1: a package cannot bind a spec whose engagement consent has been
 withdrawn or voided.
+IMPORT-1: a package cannot cite a record whose root sources are another
+customer's (customer:<ref>/... locators, as imported conversations use).
 
 Synthetic and real work never mix: synthetic=True requires
 project-synthetic-* / customer-synthetic-* refs, the SYNTHETIC_FIXTURE
@@ -129,6 +131,13 @@ class DeliveryRefused(Exception):
     def __init__(self, reasons):
         super().__init__(", ".join(reasons))
         self.reasons = list(reasons)
+
+
+def customer_refs_of(meta: dict) -> set:
+    """Customer refs named by a record's root-source locators (customer:<ref>/...);
+    the convention imported conversations and customer evidence use."""
+    return {s["locator"].split("/", 1)[0][len("customer:"):] for s in meta.get("root_sources", ())
+            if s["locator"].startswith("customer:")}
 
 
 def media_type(name: str) -> str:
@@ -310,6 +319,8 @@ def check_package_transition(payload: dict, lookup, records: dict) -> None:
                 _refuse(f"the outcome spec's consent no longer stands: {problems[0]}")
     elif not payload["synthetic"]:
         _refuse("a real customer package requires an outcome specification")
+    if any(customer_refs_of(lookup(rid)) - {payload["customer_ref"]} for rid in payload["source_artifact_ids"]):
+        _refuse("a package cannot cite another customer's evidence")
     previous = payload["predecessor_record_id"]
     if previous is None:
         return

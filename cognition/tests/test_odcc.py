@@ -133,12 +133,29 @@ class ODCCTestCase(unittest.TestCase):
         return self.accept(signal(cm.INTEREST_CONFIRMED, engagement=engagement, account=account, entry=entry,
                                   summary="Agreed to discuss the workflow problem", consent_ref=f"consent-{engagement}"))
 
+    def customer_brief(self, customer, **kw):
+        """A brief built from `customer`'s own observations: a spec may not start from another
+        customer's evidence (IMPORT-1)."""
+        cycles = self.__dict__.setdefault("_customer_cycles", {})
+        if customer not in cycles:
+            obs = [ev.observation(statement=text, sources=[ev.source(f"customer:{customer}/{loc}", independence_key=key)])
+                   for text, loc, key in (
+                       ("Customer on the intake call: 'phone requests are sometimes never assigned to anyone.'",
+                        "intake/call-001", None),
+                       ("Ticket export: 14 of 120 web-form requests have no assignee after 48 hours.",
+                        "export/tickets-2026-09", f"{customer}-ticketing-system"))]
+            cycles[customer] = self.runner.run(obs, TOPIC, T[0])
+        return self.make_brief(cycles[customer]["artifact_id"], **kw)
+
+    def real_brief(self):
+        # the synthetic engagement's estimate must not travel into a real engagement's spec
+        return self.customer_brief(REAL["customer_ref"], value_hypothesis_ids=[])
+
     def real_spec(self, **overrides):
         kw = dict(REAL, disclosures=["Delay durations are unmeasured."], engagement_ref=REAL_ENG,
                   consent_record_id=self.consent())
         kw.update(overrides)
-        # the synthetic engagement's estimate must not travel into a real engagement's spec
-        return self.propose(self.make_brief(value_hypothesis_ids=[]), **kw)
+        return self.propose(self.real_brief(), **kw)
 
     def package_event(self, spec, package, **changes):
         """A raw DELIVERY_PACKAGE event cloned from a desk-built one, for ingest-level refusal tests."""
@@ -359,7 +376,8 @@ class TestOutcomeSpec(ODCCTestCase):
                 self.assertIn(f"{field} differs", receipt.detail)
         unbound = self.x.ingest(self.package_event(spec, good, outcome_spec_id=None))
         self.assertIn("not bound to", unbound.detail)
-        other = self.propose(customer_ref="customer-synthetic-other-shop")
+        other = self.propose(self.customer_brief("customer-synthetic-other-shop"),
+                             customer_ref="customer-synthetic-other-shop")
         swapped = self.package_event(spec, good, outcome_spec_id=other["spec_id"])
         self.assertEqual(self.x.ingest(swapped).error_code, cxp.E_TRANSITION_REFUSED)
 

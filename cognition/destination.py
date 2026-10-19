@@ -201,6 +201,9 @@ def check_spec_transition(payload: dict, lookup, records: dict = None) -> None:
         if meta is None or meta["erased"] or meta["kind"] not in origin.INITIATING_KINDS:
             raise cxp.CXPError(cxp.E_TRANSITION_REFUSED, "an initiating record must be an OBSERVATION or "
                                                          "AUDIENCE_QUESTION -- an inference cannot start an outcome")
+        if dv.customer_refs_of(meta) - {payload["customer_ref"]}:
+            raise cxp.CXPError(cxp.E_TRANSITION_REFUSED, "an outcome spec cannot start from another customer's "
+                                                         "evidence")
     for rid in payload["value_hypothesis_ids"]:
         meta = lookup(rid)
         if (meta is None or meta["erased"] or meta["kind"] != cxp.KIND_COMMERCIAL_SIGNAL
