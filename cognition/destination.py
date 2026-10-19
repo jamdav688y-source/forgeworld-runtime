@@ -15,14 +15,29 @@ synthetic flag and criteria hash; the exchange refuses anything else, and
 refuses a real-customer package with no spec at all. A failed criterion is
 never rewritten: revision_candidate() names it and keeps the hash.
 
+ENGAGE-1: a spec may record the commercial engagement it serves
+(engagement_ref) and the consent behind it (consent_record_id: an active
+INTEREST_CONFIRMED / PROBLEM_QUALIFIED signal carrying a consent_ref, of that
+engagement). A real-customer spec must record both; an engagement serves
+exactly one customer_ref; value hypotheses must belong to the same
+engagement; synthetic specs may only name eng-synthetic-* engagements and
+real specs never. Withdrawing the consent (REVERSAL or CORRECTION of the
+consent record) stops new packages binding to the spec. report() reads money
+only through the recorded engagement; a caller cannot substitute another.
+ODCC-1-shaped specs (without the two fields) still parse for replay.
+
 OutcomeDesk.report() derives each stage from existing records only and
 never collapses them:
     TECHNICAL_COMPLETION   machine checks passed on the intact anchored bundle
     HANDOFF_APPROVED       approving review + signed handoff (R2a events)
     DELIVERED              R2a DELIVERED event (operator-asserted)
     CUSTOMER_ACCEPTED      CUSTOMER_ACCEPTED event backed by customer evidence
-    PAYMENT_CONFIRMED      commerce revenue VERIFIED_NET_RETAINED, only for an
-                           engagement the caller names (no stored link exists)
+                           (acceptance of this delivery version)
+    COMMERCIAL_ACCEPTANCE  an active commerce CUSTOMER_ACCEPTANCE milestone for
+                           the engagement (acceptance of the engagement) --
+                           never inferred from the delivery-level acceptance
+    PAYMENT_CONFIRMED      commerce revenue VERIFIED_NET_RETAINED for the
+                           engagement the spec records
     VALUE_MEASURED         an active VALUE_MEASURED commercial record
     REPEATABILITY_CANDIDATE  commerce.repeatability() for the spec's offer
     CAPABILITY_PROMOTED    always False: the promotion gate is not on this branch
@@ -43,20 +58,24 @@ TECHNICAL_COMPLETION = "TECHNICAL_COMPLETION"
 HANDOFF_APPROVED = "HANDOFF_APPROVED"
 DELIVERED = "DELIVERED"
 CUSTOMER_ACCEPTED = "CUSTOMER_ACCEPTED"
+COMMERCIAL_ACCEPTANCE = "COMMERCIAL_ACCEPTANCE"
 PAYMENT_CONFIRMED = "PAYMENT_CONFIRMED"
 VALUE_MEASURED = "VALUE_MEASURED"
 REPEATABILITY_CANDIDATE = "REPEATABILITY_CANDIDATE"
 CAPABILITY_PROMOTED = "CAPABILITY_PROMOTED"
-STAGES = (TECHNICAL_COMPLETION, HANDOFF_APPROVED, DELIVERED, CUSTOMER_ACCEPTED, PAYMENT_CONFIRMED, VALUE_MEASURED,
-          REPEATABILITY_CANDIDATE, CAPABILITY_PROMOTED)
+STAGES = (TECHNICAL_COMPLETION, HANDOFF_APPROVED, DELIVERED, CUSTOMER_ACCEPTED, COMMERCIAL_ACCEPTANCE,
+          PAYMENT_CONFIRMED, VALUE_MEASURED, REPEATABILITY_CANDIDATE, CAPABILITY_PROMOTED)
 PROMOTION_UNAVAILABLE = ("UNAVAILABLE: CapabilityPromotionGate exists only on unmerged Phase 1B (decision D1); "
                          "promotion is not simulated")
 
 MAX_DELIVERABLES = 32
-_KEYS = frozenset({"spec_id", "origin_cycle_id", "origin_cycle_artifact_id", "project_ref", "customer_ref",
-                   "synthetic", "intended_outcome", "acceptance_criteria", "criteria_sha256",
-                   "required_deliverables", "disclosures", "initiating_record_ids", "value_hypothesis_ids",
-                   "author_id"})
+_KEYS_ODCC1 = frozenset({"spec_id", "origin_cycle_id", "origin_cycle_artifact_id", "project_ref", "customer_ref",
+                         "synthetic", "intended_outcome", "acceptance_criteria", "criteria_sha256",
+                         "required_deliverables", "disclosures", "initiating_record_ids", "value_hypothesis_ids",
+                         "author_id"})
+# ENGAGE-1 adds the engagement/consent binding; ODCC-1-shaped specs still parse (replay compatibility)
+_KEYS = _KEYS_ODCC1 | {"engagement_ref", "consent_record_id"}
+CONSENT_STAGES = (commerce.INTEREST_CONFIRMED, commerce.PROBLEM_QUALIFIED)
 _CYCLE_ID = re.compile(r"^cxp-cycle-[0-9a-f]{64}$")
 _ARTIFACT_ID = re.compile(r"^cxp-art-[0-9a-f]{64}$")
 _RECORD_ID = re.compile(r"^cxp-rec-[0-9a-f]{64}$")
@@ -85,11 +104,24 @@ def spec_id_of(payload: dict) -> str:
 def check_spec_payload(payload: dict) -> None:
     def bad(detail):
         raise cxp.CXPError(cxp.E_MALFORMED, detail)
-    if set(payload) != _KEYS:
+    if set(payload) not in (_KEYS, _KEYS_ODCC1):
         bad(f"OUTCOME_SPEC payload requires exactly {sorted(_KEYS)}")
     problems = dv.ref_problems(payload["project_ref"], payload["customer_ref"], payload["synthetic"])
     if problems:
         bad(problems[0])
+    engagement, consent = payload.get("engagement_ref"), payload.get("consent_record_id")
+    if (engagement is None) != (consent is None):
+        bad("engagement_ref and consent_record_id are recorded together or not at all")
+    if engagement is None and payload["synthetic"] is False:
+        bad("a real-customer spec must record its engagement_ref and consent_record_id")
+    if engagement is not None:
+        if not isinstance(engagement, str) or not commerce._ENGAGEMENT_REF.match(engagement):
+            bad("engagement_ref must look like eng-<lowercase-slug>")
+        if engagement.startswith("eng-synthetic-") != payload["synthetic"] or (
+                not payload["synthetic"] and "synthetic" in engagement):
+            bad("synthetic specs name only eng-synthetic-* engagements, and real specs never do")
+        if not isinstance(consent, str) or not _RECORD_ID.match(consent):
+            bad("consent_record_id must be a record id")
     if not isinstance(payload["origin_cycle_id"], str) or not _CYCLE_ID.match(payload["origin_cycle_id"]):
         bad("origin_cycle_id is malformed")
     if not isinstance(payload["origin_cycle_artifact_id"], str) or not _ARTIFACT_ID.match(payload["origin_cycle_artifact_id"]):
@@ -137,12 +169,33 @@ def check_spec_labels(payload, provenance, representation, evidence, verificatio
     if (provenance, representation, evidence, verification) != dv._HUMAN_LABELS:
         raise cxp.CXPError(cxp.E_KIND_RULE, "an OUTCOME_SPEC is a human commitment: HUMAN_ASSERTED, PARAPHRASE, NONE, "
                                             "UNVERIFIED -- declaring success criteria proves nothing")
-    if list(derived_from) != sorted(set(payload["initiating_record_ids"]) | set(payload["value_hypothesis_ids"])):
-        raise cxp.CXPError(cxp.E_KIND_RULE, "an OUTCOME_SPEC derives from exactly its initiating records and its "
-                                            "value hypotheses")
+    expected = set(payload["initiating_record_ids"]) | set(payload["value_hypothesis_ids"]) | (
+        {payload.get("consent_record_id")} - {None})
+    if list(derived_from) != sorted(expected):
+        raise cxp.CXPError(cxp.E_KIND_RULE, "an OUTCOME_SPEC derives from exactly its initiating records, its value "
+                                            "hypotheses and, when bound to an engagement, its consent record")
 
 
-def check_spec_transition(payload: dict, lookup) -> None:
+def consent_problems(consent_record_id: str, engagement_ref: str, lookup, records: dict) -> list:
+    """Why a consent record cannot (or can no longer) carry an engagement.
+    records: {record_id: metadata} of every accepted record."""
+    meta = lookup(consent_record_id)
+    if meta is None or meta["erased"] or meta["kind"] != cxp.KIND_COMMERCIAL_SIGNAL:
+        return ["CONSENT_RECORD_NOT_A_COMMERCIAL_SIGNAL"]
+    c = meta["commerce"]
+    if c["stage"] not in CONSENT_STAGES or not meta.get("consent_ref"):
+        return ["CONSENT_RECORD_CARRIES_NO_CONSENT"]
+    if c["engagement_ref"] != engagement_ref:
+        return ["CONSENT_BELONGS_TO_ANOTHER_ENGAGEMENT"]
+    engagement = {rid: m["commerce"] for rid, m in records.items()
+                  if m.get("commerce") and not m["erased"] and m["commerce"]["engagement_ref"] == engagement_ref}
+    active, _, _ = commerce._active(engagement)
+    if consent_record_id not in active:
+        return ["CONSENT_WITHDRAWN_OR_VOIDED"]
+    return []
+
+
+def check_spec_transition(payload: dict, lookup, records: dict = None) -> None:
     for rid in payload["initiating_record_ids"]:
         meta = lookup(rid)
         if meta is None or meta["erased"] or meta["kind"] not in origin.INITIATING_KINDS:
@@ -153,11 +206,25 @@ def check_spec_transition(payload: dict, lookup) -> None:
         if (meta is None or meta["erased"] or meta["kind"] != cxp.KIND_COMMERCIAL_SIGNAL
                 or meta["commerce"]["stage"] != commerce.ESTIMATE_RECORDED):
             raise cxp.CXPError(cxp.E_TRANSITION_REFUSED, "a value hypothesis must be an ESTIMATE_RECORDED signal")
+        if payload.get("engagement_ref") and meta["commerce"]["engagement_ref"] != payload["engagement_ref"]:
+            raise cxp.CXPError(cxp.E_TRANSITION_REFUSED, "a value hypothesis must belong to the spec's engagement")
+    engagement = payload.get("engagement_ref")
+    if engagement is not None:
+        records = records or {}
+        problems = consent_problems(payload["consent_record_id"], engagement, lookup, records)
+        if problems:
+            raise cxp.CXPError(cxp.E_TRANSITION_REFUSED, f"consent: {problems[0]}")
+        for meta in records.values():
+            other = meta.get("outcome_spec")
+            if (other and not meta["erased"] and other.get("engagement_ref") == engagement
+                    and other["customer_ref"] != payload["customer_ref"]):
+                raise cxp.CXPError(cxp.E_TRANSITION_REFUSED, "an engagement serves exactly one customer_ref")
 
 
 def spec_metadata(payload: dict) -> dict:
     return {**{k: payload[k] for k in ("spec_id", "project_ref", "customer_ref", "synthetic", "criteria_sha256",
                                        "origin_cycle_id", "origin_cycle_artifact_id", "author_id")},
+            "engagement_ref": payload.get("engagement_ref"), "consent_record_id": payload.get("consent_record_id"),
             "deliverables": [d["name"] for d in payload["required_deliverables"]]}
 
 
@@ -186,7 +253,8 @@ class OutcomeDesk:
         return {**self.exchange.get_record(meta["record_id"]).payload(), "record_id": meta["record_id"]}
 
     def propose(self, brief: dict, *, project_ref, customer_ref, synthetic, intended_outcome, acceptance_criteria,
-                required_deliverables, disclosures, author_id, observed_at: str) -> dict:
+                required_deliverables, disclosures, author_id, observed_at: str, engagement_ref=None,
+                consent_record_id=None) -> dict:
         """Record the outcome contract. The ORIGIN brief is re-derived from the
         ledger and the cycle artifact; the caller's copy is only compared."""
         if self.runner.governor._active_cycles:
@@ -209,12 +277,14 @@ class OutcomeDesk:
                    "required_deliverables": sorted(({"name": n, "media_type": dv.media_type(n)}
                                                     for n in set(required_deliverables)), key=lambda d: d["name"]),
                    "disclosures": list(disclosures), "initiating_record_ids": initiating,
-                   "value_hypothesis_ids": hypotheses, "author_id": author_id}
+                   "value_hypothesis_ids": hypotheses, "author_id": author_id,
+                   "engagement_ref": engagement_ref, "consent_record_id": consent_record_id}
         try:
             payload["spec_id"] = spec_id_of(payload)
         except cxp.CXPError as exc:
             raise DestinationRefused([f"{exc.code}: {exc.detail}"]) from None
-        receipt = self.deliveries._ingest(cxp.KIND_OUTCOME_SPEC, payload, sorted(set(initiating) | set(hypotheses)),
+        receipt = self.deliveries._ingest(cxp.KIND_OUTCOME_SPEC, payload,
+                                          sorted(set(initiating) | set(hypotheses) | ({consent_record_id} - {None})),
                                           author_id, observed_at)
         if receipt.status == "REJECTED":
             raise DestinationRefused([f"{receipt.error_code}: {receipt.detail}"])
@@ -236,6 +306,13 @@ class OutcomeDesk:
         spec, spec_problems = None, []
         if spec_id:
             spec = self.spec(spec_id)
+            recorded = spec.get("engagement_ref")
+            if recorded is not None and engagement_ref is not None and engagement_ref != recorded:
+                raise DestinationRefused(["ENGAGEMENT_MISMATCH: the spec records a different engagement"])
+            if recorded is not None:
+                engagement_ref, named_by = recorded, "recorded on the outcome spec"
+                metas = {m["record_id"]: m for m in self.exchange.all_record_metadata()}
+                spec_problems += consent_problems(spec["consent_record_id"], recorded, metas.get, metas)
             try:
                 origin.admitted_cycle(self.runner, spec["origin_cycle_artifact_id"])
             except origin.OriginRefused as exc:
@@ -259,6 +336,8 @@ class OutcomeDesk:
                                      [events.get(dv.CUSTOMER_ACCEPTED), outcome and outcome["evidence_record_id"]],
                                      "customer-originated, version-specific quoted evidence"),
         }
+        if spec is None or spec.get("engagement_ref") is None:
+            named_by = "named by the caller, not recorded"
         money = None
         if engagement_ref is not None:
             try:
@@ -268,14 +347,19 @@ class OutcomeDesk:
         if money is None:
             reason = ("NO_ENGAGEMENT_NAMED: no record links this package to a payment" if engagement_ref is None
                       else "NO_COMMERCIAL_RECORDS_FOR_ENGAGEMENT")
+            stages[COMMERCIAL_ACCEPTANCE] = stage(False, [], reason)
             stages[PAYMENT_CONFIRMED] = stage(False, [], reason)
             stages[VALUE_MEASURED] = stage(False, [], reason)
         else:
             revenue = money["revenue"]
+            accepted = money["milestones"].get(commerce.CUSTOMER_ACCEPTANCE, [])
+            stages[COMMERCIAL_ACCEPTANCE] = stage(bool(accepted), list(accepted),
+                                                  f"active commerce CUSTOMER_ACCEPTANCE for {engagement_ref} "
+                                                  f"({named_by}); independent of delivery acceptance")
             stages[PAYMENT_CONFIRMED] = stage(
                 revenue["status"] == commerce.REVENUE_VERIFIED, [],
-                f"commerce revenue status {revenue['status']} for {engagement_ref} (link named by the caller, not "
-                f"recorded); payment policy {money['policy_id']}")
+                f"commerce revenue status {revenue['status']} for {engagement_ref} ({named_by}); "
+                f"payment policy {money['policy_id']}")
             measured = money["milestones"].get(commerce.VALUE_MEASURED, [])
             stages[VALUE_MEASURED] = stage(bool(measured), list(measured), "active VALUE_MEASURED records")
         offers = sorted({h["offer_ref"] for h in self._hypotheses(spec) if h["offer_ref"]})
@@ -291,6 +375,8 @@ class OutcomeDesk:
             "synthetic": status["synthetic"],
             "outcome_spec": ({"spec_id": spec_id, "record_id": spec["record_id"],
                               "criteria_sha256": spec["criteria_sha256"], "package_criteria_sha256": meta["criteria_sha256"],
+                              "engagement_ref": spec.get("engagement_ref"),
+                              "consent_record_id": spec.get("consent_record_id"),
                               "bound": not spec_problems, "problems": spec_problems}
                              if spec else {"spec_id": None, "bound": False,
                                            "problems": ["UNBOUND: synthetic/internal package without an outcome spec"]}),

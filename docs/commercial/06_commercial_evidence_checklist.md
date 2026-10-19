@@ -12,7 +12,7 @@
 | 4 | **Value hypothesis** | The customer's estimate of cost; our price | `ESTIMATE_RECORDED` (`PRICE_HYPOTHESIS`, `ESTIMATED_SAVINGS`) | revenue, savings |
 | 5 | **Proposal** | The proposal document sent | `PROPOSAL_SENT` with `offer_ref`, amount and document digest | agreement |
 | 6 | **Agreement** | Signed agreement or written acceptance of the proposal | `CONTRACT_SIGNED` with document digest | delivery, payment |
-| 7 | **Success criteria fixed** | Outcome specification confirmed by both sides before work | `OUTCOME_SPEC` (`synthetic=false`, human author) | that the work will meet them |
+| 7 | **Success criteria fixed** | Outcome specification confirmed by both sides before work | `OUTCOME_SPEC` (`synthetic=false`, human author) recording `engagement_ref` and `consent_record_id` (the row-2 record); refused without them, or once that consent is withdrawn | that the work will meet them |
 | 8 | **Delivery** | The exact package version handed over | Delivery package: review → signed handoff → `DELIVERED`; commerce `DELIVERY_MILESTONE` | receipt, acceptance |
 | 9 | **Acceptance** | The customer's own written acceptance naming the exact version | Quoted `OBSERVATION` citing `customer:<ref>/<package>/…` → `CUSTOMER_ACCEPTED`; commerce `CUSTOMER_ACCEPTANCE` with document digest | payment |
 | 10 | **Payment** | Funds received and reconciled against a payment reference | `PAYMENT_CONFIRMED` (payment-reference digest) **plus** a `VERIFICATION_RESULT` admitted by a human-approved payment policy | value to the customer |

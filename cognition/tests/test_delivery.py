@@ -9,6 +9,7 @@ from pathlib import Path
 from cognition import bundle, commerce, coordinator as co, cxp, delivery as dv, episode as ep, exchange
 from cognition import governor as gv, handoff as hf, package_revision as rv, production as pr
 from cognition.tests import _events as ev
+from cognition.tests._commerce_events import signal
 from cognition.tests.test_exchange import snapshot
 from cognition.tests.test_handoff import SIGNER, HandoffTestCase
 
@@ -427,7 +428,10 @@ class TestCustomerEvidence(DeliveryTestCase):
         spec = destination.OutcomeDesk(self.x, self.runner, self.desk).propose(
             brief, intended_outcome="Show where requests are lost.", acceptance_criteria=copy.deepcopy(CRITERIA),
             required_deliverables=["findings.csv", "report.md"], disclosures=[], author_id="operator-account-lead",
-            observed_at=T0, **real)
+            observed_at=T0, engagement_ref="eng-northwind-repairs",  # ENGAGE-1: real specs bind consent
+            consent_record_id=self.accept(signal(commerce.INTEREST_CONFIRMED, engagement="eng-northwind-repairs",
+                                                 account="acct-northwind-repairs", summary="Agreed to talk",
+                                                 consent_ref="consent-eng-northwind-repairs")), **real)
         pid = self.generic(**real, outcome_spec_id=spec["spec_id"])["package_id"]  # real-shaped; no real customer
         self.approve_delivery(pid)
         self.desk.sign_handoff(pid, SIGNER_D, T2)

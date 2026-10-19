@@ -249,7 +249,8 @@ class CognitiveExchange:
                         check(record.payload(), state.lookup, {rid: state.lookup(rid) for rid in state.records})
                     elif record.kind == cxp.KIND_OUTCOME_SPEC:
                         from cognition import destination
-                        destination.check_spec_transition(record.payload(), state.lookup)
+                        destination.check_spec_transition(record.payload(), state.lookup,
+                                                       {rid: state.lookup(rid) for rid in state.records})
                     elif record.kind in (cxp.KIND_EPISODE_CANDIDATE, cxp.KIND_EPISODE_REVIEW):
                         from cognition import episode
                         episode.check_transition(record.kind, record.payload(),

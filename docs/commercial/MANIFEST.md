@@ -18,8 +18,8 @@
 | `03_discovery_checklist.md` | Questions for the free discovery conversation | Operator | Draft | Confirm the questions and red flags | `a1fb580fd6c164bc794f7a5f86b92358525cbb118c4eb16bf1ccdec62e37ac9c` |
 | `04_outcome_specification_template.md` | Deliverables and acceptance criteria fixed before work | Shared with the customer | Draft template | Confirm AC-1 to AC-8 as the default criteria | `98041ee2b9ce6fe5a02622ecdbd70c93d0b8e67bc2019514c81f65009792127b` |
 | `05_sample_deliverable_structure.md` | Outline of the report a customer would receive (no findings) | Customer-facing | Draft | Confirm report structure | `45cdc30d7fecf2b39909e45d9f037c2fc4e8b35f8cc1ba5aea5aeddf78b7560a` |
-| `06_commercial_evidence_checklist.md` | Evidence required for each commercial claim, mapped to existing records | Internal | Draft | Approve a payment-reconciliation policy before any payment is counted | `7999ac1c1ae27b0eee53a9f540a631dabe1d491536168ef31c10c3271b393591` |
-| `07_operator_execution_checklist.md` | Twelve auditable steps from first contact to the promotion decision | Internal | Draft | Choose the first prospect; authorize contact | `19a56f6fd8daff8d2e1d95296082bafb6981637503cafc744a93fe591bf3d110` |
+| `06_commercial_evidence_checklist.md` | Evidence required for each commercial claim, mapped to existing records | Internal | Draft | Approve a payment-reconciliation policy before any payment is counted | `bea84918677db1164de2cec7ea542342f2660f7170e92b70bf19b82d53934ac1` |
+| `07_operator_execution_checklist.md` | Twelve auditable steps from first contact to the promotion decision | Internal | Draft | Choose the first prospect; authorize contact | `b77e5a0481dcaa4d428a3cbfa84027bbb8a15a1f6d5798326af02006109fe2d3` |
 
 ## Outstanding decisions (operator)
 1. Approve or edit the offer, scope and the three indicative prices.

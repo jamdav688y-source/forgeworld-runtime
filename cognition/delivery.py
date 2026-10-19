@@ -35,6 +35,8 @@ before the work. A bound package cites the spec in its lineage and carries
 its project, customer, synthetic flag and acceptance-criteria hash; the
 exchange refuses any difference, and refuses a real-customer package with no
 spec. Synthetic and internal packages keep the optional-spec behaviour.
+ENGAGE-1: a package cannot bind a spec whose engagement consent has been
+withdrawn or voided.
 
 Synthetic and real work never mix: synthetic=True requires
 project-synthetic-* / customer-synthetic-* refs, the SYNTHETIC_FIXTURE
@@ -301,6 +303,11 @@ def check_package_transition(payload: dict, lookup, records: dict) -> None:
                 _refuse(f"the package's {field} differs from its outcome spec")
         if bound["criteria_sha256"] != payload["criteria_sha256"]:
             _refuse("the package's acceptance criteria differ from its outcome spec")
+        if bound.get("consent_record_id"):
+            from cognition import destination  # deferred: destination builds on this module
+            problems = destination.consent_problems(bound["consent_record_id"], bound["engagement_ref"], lookup, records)
+            if problems:
+                _refuse(f"the outcome spec's consent no longer stands: {problems[0]}")
     elif not payload["synthetic"]:
         _refuse("a real customer package requires an outcome specification")
     previous = payload["predecessor_record_id"]
@@ -586,6 +593,10 @@ class DeliveryDesk:
         for disclosure in spec["disclosures"]:
             if disclosure not in (limitations or ()):
                 problems.append("MISSING_REQUIRED_DISCLOSURE")
+        if spec.get("consent_record_id"):
+            from cognition import destination
+            metas = {m["record_id"]: m for m in self.exchange.all_record_metadata()}
+            problems += destination.consent_problems(spec["consent_record_id"], spec["engagement_ref"], metas.get, metas)
         return meta["record_id"], problems
 
     def _ingest(self, kind, payload, derived_from, emitter, observed_at):

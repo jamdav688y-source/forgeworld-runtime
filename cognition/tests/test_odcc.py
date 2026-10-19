@@ -39,6 +39,9 @@ CRITERIA = [
 ]
 DISCLOSURES = ["Synthetic engagement: no real customer data.", "Delay durations are unmeasured."]
 DELIVERABLES = ["findings.csv", "report.md", "workflow_map.md"]
+# real-shaped references for rule tests only: invented names, no real customer
+REAL = dict(project_ref="project-intake-diagnostic", customer_ref="customer-northwind-repairs", synthetic=False)
+REAL_ENG, REAL_ACCT = "eng-northwind-repairs", "acct-northwind-repairs"
 
 
 def observation(text, locator, key=None):
@@ -124,6 +127,18 @@ class ODCCTestCase(unittest.TestCase):
                                               sources=[ev.source(f"customer:{CUSTOMER}/{package_id}/reply-001")]))
         self.desk.record_customer_outcome(package_id, COURIER, event, evidence, "sha256:" + bundle.sha256_hex(words.encode()), T[6])
         return evidence
+
+    def consent(self, engagement=REAL_ENG, account=REAL_ACCT, entry="consent"):
+        """A consent-bearing INTEREST_CONFIRMED record (ENGAGE-1 prerequisite for a real spec)."""
+        return self.accept(signal(cm.INTEREST_CONFIRMED, engagement=engagement, account=account, entry=entry,
+                                  summary="Agreed to discuss the workflow problem", consent_ref=f"consent-{engagement}"))
+
+    def real_spec(self, **overrides):
+        kw = dict(REAL, disclosures=["Delay durations are unmeasured."], engagement_ref=REAL_ENG,
+                  consent_record_id=self.consent())
+        kw.update(overrides)
+        # the synthetic engagement's estimate must not travel into a real engagement's spec
+        return self.propose(self.make_brief(value_hypothesis_ids=[]), **kw)
 
     def package_event(self, spec, package, **changes):
         """A raw DELIVERY_PACKAGE event cloned from a desk-built one, for ingest-level refusal tests."""
@@ -349,8 +364,8 @@ class TestOutcomeSpec(ODCCTestCase):
         self.assertEqual(self.x.ingest(swapped).error_code, cxp.E_TRANSITION_REFUSED)
 
     def test_11_synthetic_real_mismatch_is_refused(self):
-        real = dict(project_ref="project-intake-diagnostic", customer_ref="customer-northwind-repairs", synthetic=False)
-        real_spec = self.propose(**real, disclosures=["Delay durations are unmeasured."])
+        real = REAL
+        real_spec = self.real_spec()
         self.refused(lambda: self.assemble(real_spec["spec_id"]), "OUTCOME_SPEC_MISMATCH", dv.DeliveryRefused)
         synthetic_spec = self.propose()
         self.refused(lambda: self.assemble(synthetic_spec["spec_id"], **real), "OUTCOME_SPEC_MISMATCH:synthetic",
@@ -422,7 +437,7 @@ class TestDestination(ODCCTestCase):
             with self.subTest(engagement=engagement):
                 stages = self.outcomes.report(pkg["package_id"], engagement_ref=engagement)["stages"]
                 self.assertEqual([stages[s]["established"] for s in ds.STAGES],
-                                 [True, True, True, True, False, False, False, False])
+                                 [True, True, True, True, False, False, False, False, False])
         # a recorded-but-unverified payment is still not confirmed revenue
         for stage, extra in ((cm.PROPOSAL_SENT, dict(offer_ref=OFFER, document_digest="sha256:" + "a" * 64)),
                              (cm.CONTRACT_SIGNED, dict(offer_ref=OFFER, document_digest="sha256:" + "b" * 64)),
