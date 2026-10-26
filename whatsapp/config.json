@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0",
+  "mode": {
+    "inbound": "ENABLED_AFTER_VERIFICATION",
+    "outbound": "DRAFT_ONLY",
+    "campaign": "DISABLED",
+    "autonomous_commitments": "PROHIBITED"
+  },
+  "authority": {
+    "grants": []
+  }
+}

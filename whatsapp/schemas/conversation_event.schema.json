@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "forgeworld:whatsapp:conversation_event:1.0",
+  "title": "ForgeWorld WhatsApp Conversation Event",
+  "type": "object",
+  "required": [
+    "event_id", "schema_version", "channel", "direction", "occurred_at", "received_at",
+    "contact_id", "conversation_id", "message_type", "content_hash", "consent_state",
+    "retention_class", "evidence_class", "authority_state", "processing_trace_id", "provenance"
+  ],
+  "properties": {
+    "event_id": {"type": "string"},
+    "schema_version": {"type": "string", "const": "1.0"},
+    "channel": {"type": "string", "const": "whatsapp"},
+    "direction": {"type": "string", "enum": ["inbound", "outbound"]},
+    "occurred_at": {"type": "string", "format": "date-time"},
+    "received_at": {"type": "string", "format": "date-time"},
+    "contact_id": {"type": "string", "description": "pseudonymous, salted hash of the WhatsApp sender id"},
+    "conversation_id": {"type": "string"},
+    "platform_message_id": {"type": ["string", "null"]},
+    "reply_to_message_id": {"type": ["string", "null"]},
+    "message_type": {
+      "type": "string",
+      "enum": ["text", "audio", "image", "video", "document", "interactive", "location", "status", "unknown"]
+    },
+    "content_reference": {"type": ["string", "null"]},
+    "content_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "consent_state": {"type": "string", "enum": ["verified", "unknown", "revoked", "not-required"]},
+    "retention_class": {"type": "string", "enum": ["ephemeral", "operational", "contractual", "evidence"]},
+    "intent": {"type": "array", "items": {"type": "string"}},
+    "signals": {"type": "array", "items": {"type": "string"}},
+    "risk_flags": {"type": "array", "items": {"type": "string"}},
+    "evidence_class": {
+      "type": "string",
+      "enum": ["unverified-claim", "customer-statement", "platform-event", "validated-outcome"]
+    },
+    "authority_state": {
+      "type": "string",
+      "enum": ["observe", "draft", "approved", "sent", "blocked"]
+    },
+    "processing_trace_id": {"type": "string"},
+    "provenance": {
+      "type": "object",
+      "required": ["source", "webhook_verified", "raw_payload_hash"],
+      "properties": {
+        "source": {"type": "string", "const": "whatsapp-cloud-api"},
+        "webhook_verified": {"type": "boolean"},
+        "raw_payload_hash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,13 @@
+{
+  "WhatsApp": [
+    {"url": "https://en.wikipedia.org/wiki/WhatsApp", "title": "WhatsApp - Wikipedia", "snippet": "WhatsApp is a messaging platform.", "confidence": 0.85},
+    {"url": "https://www.whatsapp.com/", "title": "WhatsApp.com", "snippet": "Official WhatsApp site.", "confidence": 0.9}
+  ],
+  "GitHub": [
+    {"url": "https://github.com/about", "title": "GitHub: Let's build from here", "snippet": "GitHub is a development platform.", "confidence": 0.85},
+    {"url": "https://status.example.com/github-outage", "title": "GitHub outage report", "snippet": "Some claims are disputed and debunked by the vendor.", "confidence": 0.4}
+  ],
+  "Pocket Cortex": [
+    {"url": "https://forgeworld.example/pocket-cortex", "title": "Pocket Cortex", "snippet": "Internal ForgeWorld project page.", "confidence": 0.5}
+  ]
+}

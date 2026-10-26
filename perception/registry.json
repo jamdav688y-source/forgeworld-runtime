@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "capabilities": [
+    {
+      "id": "fixture_retrieval",
+      "kind": "retrieval_provider",
+      "provider": "local",
+      "check": {"type": "self"},
+      "tags": ["offline", "deterministic", "mock", "candidate_retrieval"],
+      "cost": {"dollar": 0.0, "latency": 0.0, "tokens": 0.0, "attention": 0.1, "complexity": 0.1}
+    },
+    {
+      "id": "web_search_unwired",
+      "kind": "retrieval_provider",
+      "provider": "unwired",
+      "check": {"type": "env", "value": "PERCEPTION_WEB_SEARCH_API_KEY"},
+      "tags": ["online", "candidate_retrieval", "documented_extension_point"],
+      "cost": {"dollar": 0.2, "latency": 0.4, "tokens": 0.1, "attention": 0.2, "complexity": 0.3}
+    }
+  ]
+}

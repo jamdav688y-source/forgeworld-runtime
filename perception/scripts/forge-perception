@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Portable entrypoint for the Perception Gateway CLI (works on phone/Termux
+# and desktop) -- identical shape to whatsapp/scripts/forge-whatsapp.
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+cd "$REPO_ROOT"
+exec python3 -m perception.src.cli "$@"
