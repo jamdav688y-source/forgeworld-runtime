@@ -1,0 +1,11 @@
+config_version=5
+
+[application]
+
+config/name="The Silent Wake"
+run/main_scene="res://scenes/title/Title.tscn"
+config/features=PackedStringArray("4.3", "Forward Plus")
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
