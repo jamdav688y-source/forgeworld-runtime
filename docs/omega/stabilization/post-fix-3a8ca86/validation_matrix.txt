@@ -1,0 +1,13 @@
+isolated x30: pass=30 fail=0
+seed=1 exit=0 97 passed, 1 skipped in 20.43s
+seed=2 exit=0 97 passed, 1 skipped in 21.15s
+seed=3 exit=0 97 passed, 1 skipped in 20.37s
+seed=4 exit=0 97 passed, 1 skipped in 20.62s
+seed=5 exit=0 97 passed, 1 skipped in 20.10s
+seed=6 exit=0 97 passed, 1 skipped in 20.42s
+seed=7 exit=0 97 passed, 1 skipped in 20.55s
+seed=8 exit=0 97 passed, 1 skipped in 20.18s
+fixed-order exit=0 97 passed, 1 skipped in 20.34s
+bench-pins exit=0 3 passed, 1 skipped in 0.38s
+cognition exit=0 Ran 388 tests in 37.649s OK
+legacy exit=0 117 passed, 2 skipped in 5.20s

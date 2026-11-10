@@ -133,3 +133,23 @@ success condition.
 * `omega/experiment.py` records the 14-step physical experiment as signed evidence. It passes over
   loopback (`test_experiment.py`), and its verdict is designed to stay `all_ok=false` unless the
   records come from Android **and** Windows.
+
+---
+
+# Stabilization: first physical device result
+
+## Iteration 12 — the phone found a real defect
+
+* **Observation (owner's device, `c9a53c0`).** Moto G Power (2026), Android 16, Termux: 94 passed,
+  1 failed, 1 skipped; the isolated test passed once.
+* **Reproduction.** In the container: isolated 12/30 failures; full suite failed in 5 of 8 random
+  orders with the identical signature. **Random per run, not order-dependent.**
+* **Root cause.** Messages with equal `sent_at` were ordered by a random hash, so a same-second
+  reply sorted before its question about half the time (confirmed 26/26 vs 34/34 over 60 trials).
+* **Fix.** Tie-break by causal rank from the event DAG (`3a8ca86`). The regression test fails 3/3
+  on the old code and passes now; isolated 30/30; full suite 8/8 orders; legacy unchanged.
+* **Also.** `omega/gate.py` (one PASS/FAIL/BLOCKED verdict). Its own unit test caught a crash in
+  its failure-message path before release.
+* **Lesson.** The earlier "95 passed" container results were sampled from a coin-flip test. A
+  single passing run is not evidence. Flaky-test detection (random order, repeats) is now part of
+  the regression procedure.

@@ -33,6 +33,7 @@ cloud container. Nothing has been run yet on a real Android phone or Windows PC.
 | Benchmarks (memory, routing; real Ollama) | [BENCHMARK_REPORT.md](BENCHMARK_REPORT.md) · `omega/bench/` · [benchmarks/](benchmarks/) |
 | Signed proof files | [proofs/](proofs/) |
 | **Directive 3: deployment + first physical experiment** | [DEPLOYMENT_AND_EXPERIMENT.md](DEPLOYMENT_AND_EXPERIMENT.md) · `scripts/android-verify.sh` · `scripts/windows-verify.ps1` · `omega/experiment.py` |
+| **Stabilization (Android failure root cause, release gate)** | [stabilization/](stabilization/): ROOT_CAUSE · REGRESSION · ANDROID/WINDOWS_READINESS · CROSS_DEVICE_RELEASE_GATE · OWNER_NEXT_ACTION · `python -m omega.gate` |
 | Demonstration script, video, case study | `python -m omega.showcase` · [YOUTUBE_PACKAGE.md](YOUTUBE_PACKAGE.md) · [CASE_STUDY.md](CASE_STUDY.md) |
 
 ## Module map

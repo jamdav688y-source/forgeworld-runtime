@@ -30,7 +30,7 @@ bash ~/android-verify.sh <COMMIT>          # <COMMIT> = the commit named in the 
 * `android_release`, `device_model`, `termux: yes`;
 * `git`, `python`, `cryptography <version>`, `sqlite … fts5 yes` (or the stated `LIKE` fallback);
 * `installed commit: <COMMIT…>`;
-* the test summary `95 passed, 1 skipped` (the skip is the real-Ollama test, which needs a model server);
+* `VERDICT: PASS` with `TESTS: 100 passed, 1 skipped` (from commit `3a8ca86`; the skip is the optional real-Ollama test). The phone run at `c9a53c0` showed 1 failure; that defect is fixed in `3a8ca86` (stabilization/ROOT_CAUSE_REPORT.md);
 * a proof JSON with `"all_ok": true`, then `verify` printing `"untampered": true`;
 * `proof file: /data/data/com.termux/files/home/omega-verify/evidence/android-….proof.json`.
 
