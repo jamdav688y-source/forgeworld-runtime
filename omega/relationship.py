@@ -274,8 +274,19 @@ class RelationshipMemory:
                 written.append(ev)
         return written
 
+    def _chronological(self, msgs: list) -> list:
+        """Conversation order: by sent_at, ties broken by CAUSAL order (record_message
+        makes each message a child of the previous one), then by id. The causal rank
+        comes from the event DAG, so every device computes the same order. Before
+        this, ties were broken by event_id alone, a random hash: a reply recorded in
+        the same second as its question sorted first about half the time
+        (ROOT_CAUSE_REPORT.md)."""
+        ids = {event_id_for(e.header) for e in msgs}
+        rank = {i: len(self.node.ancestors(i) & ids) for i in ids}
+        return sorted(msgs, key=lambda e: (e.payload["sent_at"], rank[event_id_for(e.header)], event_id_for(e.header)))
+
     def _last_outgoing_before(self, cid, msg_ev):
-        msgs = sorted(self._message_events(cid), key=lambda e: (e.payload["sent_at"], event_id_for(e.header)))
+        msgs = self._chronological(self._message_events(cid))
         prev = None
         for e in msgs:
             if event_id_for(e.header) == event_id_for(msg_ev.header):
@@ -325,8 +336,7 @@ class RelationshipMemory:
         for key, r in sorted(reconcile.assertions_by_key(self.node, f"fact|{ent}|").items()):
             res = reconcile.resolve(self.node, key, r)
             facts[key.split("|", 2)[2]] = {k: res[k] for k in ("value", "status", "heads", "evidence")}
-        msgs = sorted((e for e in evs if e.header["event_type"] == "MESSAGE_RECORDED"),
-                      key=lambda e: (e.payload["sent_at"], event_id_for(e.header)))
+        msgs = self._chronological([e for e in evs if e.header["event_type"] == "MESSAGE_RECORDED"])
         timeline = [{"event_id": event_id_for(e.header), "direction": e.payload["direction"],
                      "sent_at": e.payload["sent_at"], "conversation_id": e.payload["conversation_id"],
                      "text": e.payload["text"], "source": e.header["provenance"][0]["ref"]} for e in msgs]

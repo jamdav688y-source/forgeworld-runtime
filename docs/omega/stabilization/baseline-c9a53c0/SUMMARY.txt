@@ -1,0 +1,4 @@
+commit c9a53c0bad3dc0671f285a7396d64960a5a87699 (unmodified)
+isolated test_full_experiment_over_loopback x30: 18 passed, 12 failed (all at test_experiment.py:45, cmd_capture returned False)
+mechanism check, 60 trials: answer id sorts first -> no fact 26/26; otherwise fact extracted 34/34
+environment: Linux cloud container, Python 3.13.18, pytest-randomly for ordering

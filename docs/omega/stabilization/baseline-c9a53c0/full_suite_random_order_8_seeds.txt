@@ -1,0 +1,10 @@
+seed=1 exit=0 95 passed, 1 skipped in 16.80s FAILED: 
+seed=2 exit=1 1 failed, 94 passed, 1 skipped in 14.65s FAILED: FAILED omega/tests/test_experiment.py::test_full_experiment_over_loopback 
+seed=3 exit=1 1 failed, 94 passed, 1 skipped in 15.53s FAILED: FAILED omega/tests/test_experiment.py::test_full_experiment_over_loopback 
+seed=4 exit=0 95 passed, 1 skipped in 17.93s FAILED: 
+seed=5 exit=1 1 failed, 94 passed, 1 skipped in 15.70s FAILED: FAILED omega/tests/test_experiment.py::test_full_experiment_over_loopback 
+seed=6 exit=1 1 failed, 94 passed, 1 skipped in 15.93s FAILED: FAILED omega/tests/test_experiment.py::test_full_experiment_over_loopback 
+seed=7 exit=1 1 failed, 94 passed, 1 skipped in 15.56s FAILED: FAILED omega/tests/test_experiment.py::test_full_experiment_over_loopback 
+seed=8 exit=0 95 passed, 1 skipped in 17.76s FAILED: 
+
+[exited with code 0]

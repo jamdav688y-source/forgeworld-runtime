@@ -40,6 +40,10 @@ if (Test-Path (Join-Path $repo ".git")) {
 } else {
   git clone -q --branch $Branch $Url $repo; if ($LASTEXITCODE -ne 0) { Write-Host "clone failed"; exit 4 }
 }
+if ($ExpectedCommit) {
+  git -C $repo checkout -q --detach $ExpectedCommit 2>$null
+  if ($LASTEXITCODE -ne 0) { Write-Host "COMMIT NOT FOUND: $ExpectedCommit"; exit 5 }
+}
 $head = (git -C $repo rev-parse HEAD).Trim()
 Write-Host "installed commit: $head"
 if ($ExpectedCommit -and -not $head.StartsWith($ExpectedCommit)) { Write-Host "COMMIT MISMATCH: expected $ExpectedCommit"; exit 5 }
@@ -53,18 +57,13 @@ if ($LASTEXITCODE -ne 0) { Write-Host "pip install failed"; exit 6 }
 
 Push-Location $repo
 try {
-  Say "5. Test suite (native Windows)"
-  & $vpy -m pytest -q -p no:cacheprovider omega/tests 2>&1 | Select-Object -Last 3
-
-  Say "6. Signed proof"
+  Say "5. Verification gate (native Windows; signed report)"
   $ev = Join-Path $Base "evidence"; New-Item -ItemType Directory -Force -Path $ev | Out-Null
-  $out = Join-Path $ev ("windows-" + (Get-Date -Format yyyyMMdd-HHmm) + ".proof.json")
   $cs = Get-CimInstance Win32_ComputerSystem
-  $args2 = @("-m", "omega.proof", "run", "--device", "$($cs.Manufacturer) $($cs.Model), $([math]::Round($cs.TotalPhysicalMemory/1GB)) GB (owner's PC)", "--out", $out)
+  $args2 = @("-m", "omega.gate", "--device", "$($cs.Manufacturer) $($cs.Model), $([math]::Round($cs.TotalPhysicalMemory/1GB)) GB (owner's PC)", "--evidence", $ev)
   if ($ollama) { foreach ($m in $Model) { $args2 += @("--ollama-model", $m) } }
   & $vpy @args2
   $rc = $LASTEXITCODE
-  & $vpy -m omega.proof verify $out
-  Write-Host "`nproof file: $out   (exit $rc; nothing was uploaded)"
+  Write-Host "(exit $rc : 0 = PASS, 1 = FAIL, 2 = BLOCKED; nothing was uploaded)"
   exit $rc
 } finally { Pop-Location }

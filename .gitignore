@@ -5,3 +5,4 @@ __pycache__/
 # omega: sealed sync bundles and local node homes hold private records
 *.fwbundle
 .forgeworld-omega/
+omega-evidence/

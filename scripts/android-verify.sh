@@ -47,26 +47,23 @@ else
   git clone -q --branch "$BRANCH" "$REPO_URL" "$BASE/forgeworld-runtime" || { echo "clone failed (network?)"; exit 4; }
   cd "$BASE/forgeworld-runtime" || exit 3
 fi
+# Pin: run exactly the expected revision (it must exist in the fetched history).
+if [ -n "$EXPECTED" ]; then
+  git checkout -q --detach "$EXPECTED" 2>/dev/null || { echo "COMMIT NOT FOUND: $EXPECTED"; exit 5; }
+fi
 HEAD=$(git rev-parse HEAD); echo "installed commit: $HEAD"
 if [ -n "$EXPECTED" ] && [ "${HEAD#$EXPECTED}" = "$HEAD" ]; then echo "COMMIT MISMATCH: expected $EXPECTED"; exit 5; fi
 
 say "4. Private venv for pytest (uses the system cryptography)"
 [ -d "$BASE/venv" ] || python -m venv --system-site-packages "$BASE/venv"
-"$BASE/venv/bin/python" -m pip install -q pytest || echo "pytest install failed: tests skipped, proof still runs"
+"$BASE/venv/bin/python" -m pip install -q pytest || echo "pytest install failed (no network to PyPI?): the gate will report BLOCKED"
 
-say "5. Test suite"
-"$BASE/venv/bin/python" -m pytest -q -p no:cacheprovider omega/tests 2>&1 | tail -3
-
-say "6. Signed proof (key bytes, restart persistence, end-to-end, tests)"
-mkdir -p "$BASE/evidence"
-OUT="$BASE/evidence/android-$(date +%Y%m%d-%H%M).proof.json"
+say "5. Verification gate (tests, key bytes, restart persistence, end-to-end; signed report)"
 case "${PREFIX:-}" in
   *com.termux*) DEVICE="Android $(getprop ro.build.version.release 2>/dev/null) $(getprop ro.product.model 2>/dev/null) / Termux ${TERMUX_VERSION:-?} (owner's phone)";;
   *)            DEVICE="NOT Termux: $(uname -sm) -- android-verify.sh dry run, not a phone result";;
 esac
-"$BASE/venv/bin/python" -m omega.proof run --device "$DEVICE" --out "$OUT"
+"$BASE/venv/bin/python" -m omega.gate --device "$DEVICE" --evidence "$BASE/evidence"
 RC=$?
-"$BASE/venv/bin/python" -m omega.proof verify "$OUT"
-echo
-echo "proof file: $OUT   (exit $RC; nothing was uploaded)"
+echo "(exit $RC: 0 = PASS, 1 = FAIL, 2 = BLOCKED; nothing was uploaded)"
 exit $RC

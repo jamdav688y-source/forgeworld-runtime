@@ -170,7 +170,10 @@ def check_ollama(models: list, url: str) -> dict:
         evs = forge.run_benchmark(n, client, models, hw=hw)
         with tempfile.TemporaryDirectory() as d2:
             out = Path(d2) / "mb.json"
-            memory_bench.main(["--out", str(out), "--ollama", url] + sum((["--model", m] for m in models), []))
+            import contextlib
+            import io
+            with contextlib.redirect_stdout(io.StringIO()):   # keep operator output readable
+                memory_bench.main(["--out", str(out), "--ollama", url] + sum((["--model", m] for m in models), []))
             mb = json.loads(out.read_text())
         evs += memory_bench.record_as_benchmark(n, mb, hw)
         bench = [{k: e.payload[k] for k in ("model", "task_class", "score_permille", "latency_ms", "cases")} for e in evs]
