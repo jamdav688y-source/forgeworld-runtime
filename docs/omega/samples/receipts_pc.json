@@ -1,0 +1,167 @@
+[
+  {
+    "detail": {
+      "event_type": "PEER_PAIRED",
+      "seq": 1
+    },
+    "device_id": "dev_f1a8d94ea22403752a1ff9b02714da85",
+    "index": 0,
+    "prev": null,
+    "receipt_id": "rc_57f2cf1db98ae1c83dc6748ac5e627728af92d716c3eabec80bdd399d95f2df0",
+    "schema": "fw.omega.receipt/1",
+    "signature": "a_Md8vxCkja0S0lvHWPTODaI3HEmy0_C3hH6gqeqr5HqV-Yulw9XGgDVMXCnjmKPYOb1cMpIPcN3_ooYjUjEAg",
+    "state_after": "st_6d496fca4b7c5827961f651e42865eee64ae2c491254317728ed02404e59135e",
+    "state_before": "st_a8d0662c761af18f79a5f3bf6aa12751091056e35f54a4c0c15489e716cc4951",
+    "subjects": [
+      "ev_5d714511561b80e1140011c761723ca8a6cc19cd5415a9f248b25e87374a4d24"
+    ],
+    "type": "EVENT_APPENDED"
+  },
+  {
+    "detail": {
+      "backfilled": 0,
+      "complete": true,
+      "conflicts": [],
+      "duplicates": 0,
+      "imported": 10,
+      "peer": "dev_e550fd507b118521cc9ec3798ff90c4d",
+      "problem_codes": [],
+      "role": "responder",
+      "sent": 1
+    },
+    "device_id": "dev_f1a8d94ea22403752a1ff9b02714da85",
+    "index": 1,
+    "prev": "rc_57f2cf1db98ae1c83dc6748ac5e627728af92d716c3eabec80bdd399d95f2df0",
+    "receipt_id": "rc_de6adf5e6dc51eeeb4a63aebe3edcffefababf55862f3832dc9084b996a5cc72",
+    "schema": "fw.omega.receipt/1",
+    "signature": "TWy1oKK53qIQwn9aarQcmLZ7Io6nvWYz9fyCk36xsTP39Qqxs8SmcxDAz5Evi8150a2B2_fjj2Mvo4VXkoe7BQ",
+    "state_after": "st_ae41384e95441576a4b7992a23cf9a11cc3b87bf6ca6d94a2a5da5f0f7d34559",
+    "state_before": "st_6d496fca4b7c5827961f651e42865eee64ae2c491254317728ed02404e59135e",
+    "subjects": [
+      "ev_599490301194275eac479d152ab5792f06595cdef0f701d9552e1ccf3280ffc8",
+      "ev_7aac13090114ecd88852a904091ad3685a62a146680fe4992eedf641f5cbadfb",
+      "ev_888771337559c7a8724475b3164db0a764ded7b42c8e08531ef76a7282d0bce4",
+      "ev_b9e071599e2076a18fe94ce631f6f5aa0b5ba0acce3a44320c02affea45cce24",
+      "ev_c702a531430ab5cee53c4e1a50bd5d54ebc8cfd29fa10f19b2591f356aec8130",
+      "ev_cada7791e486f046d272e2ddc0397e86b32794af4eb6b91dd0745dd606e4920a",
+      "ev_df0b477d362a3cabf7c553bcee692942cc2ff362faf045285927c8b134afb021",
+      "ev_e38b5ed1ddd875cf37308a7ebc61fd61c625ee956eb3b5b2c8b04660b79fb6e2",
+      "ev_f21bfed4187467ec616b5252fbf6e9ed303579facb6da8c6967848c26d3cc097",
+      "ev_fe96efd71605675faa0ea274ea170be856dab5dba0bff7fd7d48badcccf42619"
+    ],
+    "type": "SYNC_SESSION"
+  },
+  {
+    "detail": {
+      "event_type": "TASK_QUEUED",
+      "seq": 2
+    },
+    "device_id": "dev_f1a8d94ea22403752a1ff9b02714da85",
+    "index": 2,
+    "prev": "rc_de6adf5e6dc51eeeb4a63aebe3edcffefababf55862f3832dc9084b996a5cc72",
+    "receipt_id": "rc_d9edd97a9e0e7b58ad9967a39095de6cd35257acbc6ed06d65ac2d6f509e5281",
+    "schema": "fw.omega.receipt/1",
+    "signature": "ykKaLELO_gtDYQC2hcaqH1LMBkyvWQk-3f1N70i9d_wGt31v6PS1RXS2UBQXXB67sAH3GrbqTNqIivyxVYeWDg",
+    "state_after": "st_ca7d029705aa0c7f2a566befdd2dc4302b555828c380643160118b585cc0dbdb",
+    "state_before": "st_ae41384e95441576a4b7992a23cf9a11cc3b87bf6ca6d94a2a5da5f0f7d34559",
+    "subjects": [
+      "ev_d82f9b029bf19b4c82009b26d0b9c6d1cb0504a51403e45fc72752853fa30ce6"
+    ],
+    "type": "EVENT_APPENDED"
+  },
+  {
+    "detail": {
+      "action": "send_reply",
+      "task_id": "tk_3ecea0d8f463e40aa2b1811c"
+    },
+    "device_id": "dev_f1a8d94ea22403752a1ff9b02714da85",
+    "index": 3,
+    "prev": "rc_d9edd97a9e0e7b58ad9967a39095de6cd35257acbc6ed06d65ac2d6f509e5281",
+    "receipt_id": "rc_14fb01f46d0b90675384485e95cfba0e80bb07f3b998cd09803f79541ccbbb55",
+    "schema": "fw.omega.receipt/1",
+    "signature": "zBKwrX1-8-dfJikESDsA921OJjh_A15B8UTviu5d3AOyZ8_ATwgHLnJ8q23z-lZNi1SBMxaGZ2q4bJv0U2tcCA",
+    "state_after": "st_ca7d029705aa0c7f2a566befdd2dc4302b555828c380643160118b585cc0dbdb",
+    "state_before": "st_ca7d029705aa0c7f2a566befdd2dc4302b555828c380643160118b585cc0dbdb",
+    "subjects": [
+      "ev_d82f9b029bf19b4c82009b26d0b9c6d1cb0504a51403e45fc72752853fa30ce6"
+    ],
+    "type": "TASK_HELD_FOR_AUTHORIZATION"
+  },
+  {
+    "detail": {
+      "event_type": "TASK_AUTHORIZED",
+      "seq": 3
+    },
+    "device_id": "dev_f1a8d94ea22403752a1ff9b02714da85",
+    "index": 4,
+    "prev": "rc_14fb01f46d0b90675384485e95cfba0e80bb07f3b998cd09803f79541ccbbb55",
+    "receipt_id": "rc_e19fd556a3f31c643ddeaa2bf7f208816b7d88f5b987522d6f3c0ff17179ea1b",
+    "schema": "fw.omega.receipt/1",
+    "signature": "C3uBDUNn1Yy0vwUMGPKZxpmxXLUJk71qjlMIiBwPPMvkIs_7SfTkbpWPvVvzu5urWdGUYFsrahKaBBdnjJVzCw",
+    "state_after": "st_ccf830897fa47658b09dd779d36a558447981e6f5eeb3983791644422bf1a7b1",
+    "state_before": "st_ca7d029705aa0c7f2a566befdd2dc4302b555828c380643160118b585cc0dbdb",
+    "subjects": [
+      "ev_44418aa08df65f0188c8b253265f6d371cc45fa7a2c74f1969950e01774eefec"
+    ],
+    "type": "EVENT_APPENDED"
+  },
+  {
+    "detail": {
+      "event_type": "DRAFT_PRODUCED",
+      "seq": 4
+    },
+    "device_id": "dev_f1a8d94ea22403752a1ff9b02714da85",
+    "index": 5,
+    "prev": "rc_e19fd556a3f31c643ddeaa2bf7f208816b7d88f5b987522d6f3c0ff17179ea1b",
+    "receipt_id": "rc_d7aec0f2d6079bbddcf94d2a28763322c742d168b6ca3f8f4060349a992ecd64",
+    "schema": "fw.omega.receipt/1",
+    "signature": "ADqAWDEWw5HoOUJVQ3D7BTT5dz-nU1DhtWRNFjDMkDaeOL0cJIYJjkMupsc3GiYghnzqudFl6EdllWlFh9GVAQ",
+    "state_after": "st_4cbf3c598c4fb0e5408e7efb763b2809bf0d9ecebec49b3c83dae5fe49a3a8e9",
+    "state_before": "st_ccf830897fa47658b09dd779d36a558447981e6f5eeb3983791644422bf1a7b1",
+    "subjects": [
+      "ev_7fe4646b307b63ac628f88219ecca973609f633eb945a1d3c05852c780b36a16"
+    ],
+    "type": "EVENT_APPENDED"
+  },
+  {
+    "detail": {
+      "event_type": "TASK_RESULT",
+      "seq": 5
+    },
+    "device_id": "dev_f1a8d94ea22403752a1ff9b02714da85",
+    "index": 6,
+    "prev": "rc_d7aec0f2d6079bbddcf94d2a28763322c742d168b6ca3f8f4060349a992ecd64",
+    "receipt_id": "rc_5c88a875810ca8bd9596a4ad1d3023827f6fecf739ecbd0d82c8eb2894eeb4e2",
+    "schema": "fw.omega.receipt/1",
+    "signature": "Z6o2kKEWMxepVfom3KdfAGW1E9JI8aG-7w4BMEnWkLeLwtxGUSSOrsqPmgo7FNFsJTguP_tDQ1PwRb2omxpLCg",
+    "state_after": "st_08d05b4f44db47bb6a7940903645e7e0563d58df5579d5f08911f254e1aa437d",
+    "state_before": "st_4cbf3c598c4fb0e5408e7efb763b2809bf0d9ecebec49b3c83dae5fe49a3a8e9",
+    "subjects": [
+      "ev_93c9ff49d14b17082794cf1e88555b0f503ff7096001edbfb57176526059fe36"
+    ],
+    "type": "EVENT_APPENDED"
+  },
+  {
+    "detail": {
+      "backfilled": 0,
+      "complete": true,
+      "conflicts": [],
+      "duplicates": 0,
+      "imported": 0,
+      "peer": "dev_e550fd507b118521cc9ec3798ff90c4d",
+      "problem_codes": [],
+      "role": "initiator",
+      "sent": 4
+    },
+    "device_id": "dev_f1a8d94ea22403752a1ff9b02714da85",
+    "index": 7,
+    "prev": "rc_5c88a875810ca8bd9596a4ad1d3023827f6fecf739ecbd0d82c8eb2894eeb4e2",
+    "receipt_id": "rc_6732e33febf64a0576eb33919c9ff59655d5723313cbf2037174fcc299c5fa64",
+    "schema": "fw.omega.receipt/1",
+    "signature": "NVw-5aRnh-x3bzfeBaj3o7gDLj8x8tHlG_XtqRNB5vgUyoQWDxCsPkntIso_hNTUyh4gttfNL2oMI6cy6H1rCw",
+    "state_after": "st_08d05b4f44db47bb6a7940903645e7e0563d58df5579d5f08911f254e1aa437d",
+    "state_before": "st_08d05b4f44db47bb6a7940903645e7e0563d58df5579d5f08911f254e1aa437d",
+    "subjects": [],
+    "type": "SYNC_SESSION"
+  }
+]

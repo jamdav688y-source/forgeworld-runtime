@@ -1,0 +1,440 @@
+{
+ "schema": "fw.omega.capability-inventory/1",
+ "inspected_commit": "26d2ec2c936e32bb7f789e3ff072aaf1ec4d8e4c",
+ "environment": {
+  "where": "linux cloud container",
+  "python": "3.13.18",
+  "sqlite": "3.53.1 (FTS5)",
+  "cryptography": "50.0.1",
+  "ollama": "0.40.16 installed in the cloud container (directive 2); not on owner hardware",
+  "android_termux": "not available",
+  "windows": "not available"
+ },
+ "statuses": [
+  "VERIFIED",
+  "PRESENT_BUT_UNTESTED",
+  "PARTIAL",
+  "MISSING",
+  "BLOCKED"
+ ],
+ "components": [
+  {
+   "id": "capability_graph",
+   "name": "CapabilityGraph",
+   "status": "MISSING",
+   "paths": [],
+   "evidence": [],
+   "note": "named in the directive; no code on this branch"
+  },
+  {
+   "id": "workflow_compiler",
+   "name": "WorkflowCompiler",
+   "status": "MISSING",
+   "paths": [],
+   "evidence": [],
+   "note": "named in the directive; no code on this branch"
+  },
+  {
+   "id": "substrate_promotion_gate",
+   "name": "CapabilityPromotionGate (substrate/)",
+   "status": "MISSING",
+   "paths": [],
+   "evidence": [
+    "cognition/cycle.py"
+   ],
+   "note": "cycle.py records it is not on this branch"
+  },
+  {
+   "id": "cxp_kernel",
+   "name": "CXP v1 cognitive exchange",
+   "status": "VERIFIED",
+   "paths": [
+    "cognition/cxp.py",
+    "cognition/exchange.py"
+   ],
+   "evidence": [
+    "cognition/tests/test_cxp.py",
+    "cognition/tests/test_exchange.py"
+   ]
+  },
+  {
+   "id": "recursion_governor",
+   "name": "Recursion governor",
+   "status": "VERIFIED",
+   "paths": [
+    "cognition/governor.py"
+   ],
+   "evidence": [
+    "cognition/tests/test_governor.py"
+   ]
+  },
+  {
+   "id": "cxp_commerce",
+   "name": "Commercial engagement state (CXP)",
+   "status": "VERIFIED",
+   "paths": [
+    "cognition/commerce.py"
+   ],
+   "evidence": [
+    "cognition/tests/test_commerce.py"
+   ]
+  },
+  {
+   "id": "evidence_envelope",
+   "name": "Mission evidence envelope + promotion-authority attestations",
+   "status": "VERIFIED",
+   "paths": [
+    "evidence_envelope/envelope.py",
+    "evidence_envelope/trajectory.py"
+   ],
+   "evidence": [
+    "evidence_envelope/tests/test_envelope.py",
+    "evidence_envelope/tests/test_trajectory.py"
+   ]
+  },
+  {
+   "id": "capability_discovery",
+   "name": "Capability discovery probes",
+   "status": "VERIFIED",
+   "paths": [
+    "capabilities/discover.py"
+   ],
+   "evidence": [
+    "capabilities/tests/test_discover.py"
+   ]
+  },
+  {
+   "id": "mission_router",
+   "name": "Deterministic mission router",
+   "status": "PRESENT_BUT_UNTESTED",
+   "paths": [
+    "router/mission_router.py"
+   ],
+   "evidence": [
+    "cognition/tests/test_odcc.py"
+   ],
+   "note": "no dedicated tests; exercised indirectly"
+  },
+  {
+   "id": "mobile_research_db",
+   "name": "Mobile research SQLite + FTS5",
+   "status": "VERIFIED",
+   "paths": [
+    "forgeworld-mobile-research/database.py"
+   ],
+   "evidence": [
+    "forgeworld-mobile-research/tests/test_database.py"
+   ]
+  },
+  {
+   "id": "legacy_sync_pack",
+   "name": "Phone sync tarball script",
+   "status": "PARTIAL",
+   "paths": [
+    "scripts/forge-sync-pack.sh"
+   ],
+   "evidence": [],
+   "note": "packaging only; no authentication, encryption or import"
+  },
+  {
+   "id": "narrative_logs",
+   "name": "Narrative text logs",
+   "status": "PRESENT_BUT_UNTESTED",
+   "paths": [
+    "events/",
+    "memory/",
+    "world/",
+    "npc/"
+   ],
+   "evidence": [],
+   "note": "no code reads or writes them"
+  },
+  {
+   "id": "omega_event_kernel",
+   "name": "Canonical signed event model + append-only store",
+   "status": "VERIFIED",
+   "paths": [
+    "omega/events.py",
+    "omega/store.py",
+    "omega/canonical.py",
+    "omega/policy.py"
+   ],
+   "evidence": [
+    "omega/tests/test_kernel.py"
+   ]
+  },
+  {
+   "id": "omega_receipts",
+   "name": "Deterministic hash-chained receipts",
+   "status": "VERIFIED",
+   "paths": [
+    "omega/receipts.py"
+   ],
+   "evidence": [
+    "omega/tests/test_receipts.py"
+   ]
+  },
+  {
+   "id": "omega_identity_pairing",
+   "name": "Device identity + SAS pairing",
+   "status": "VERIFIED",
+   "paths": [
+    "omega/identity.py"
+   ],
+   "evidence": [
+    "omega/tests/test_sync.py",
+    "omega/tests/test_cli.py"
+   ]
+  },
+  {
+   "id": "omega_sync",
+   "name": "Authenticated encrypted store-and-forward sync",
+   "status": "VERIFIED",
+   "paths": [
+    "omega/sync.py",
+    "omega/reconcile.py"
+   ],
+   "evidence": [
+    "omega/tests/test_sync.py",
+    "omega/tests/test_e2e.py"
+   ]
+  },
+  {
+   "id": "omega_discovery",
+   "name": "Authenticated LAN discovery",
+   "status": "VERIFIED",
+   "paths": [
+    "omega/discovery.py"
+   ],
+   "evidence": [
+    "omega/tests/test_evolution_agents.py"
+   ],
+   "note": "verified on loopback only; LAN broadcast not exercised"
+  },
+  {
+   "id": "omega_relationship",
+   "name": "Relationship memory + draft checks",
+   "status": "VERIFIED",
+   "paths": [
+    "omega/relationship.py"
+   ],
+   "evidence": [
+    "omega/tests/test_relationship.py"
+   ]
+  },
+  {
+   "id": "omega_commercial",
+   "name": "Commercial continuity",
+   "status": "VERIFIED",
+   "paths": [
+    "omega/commercial.py"
+   ],
+   "evidence": [
+    "omega/tests/test_commercial.py"
+   ]
+  },
+  {
+   "id": "omega_tasks",
+   "name": "Durable task queue + local human authorization",
+   "status": "VERIFIED",
+   "paths": [
+    "omega/tasks.py"
+   ],
+   "evidence": [
+    "omega/tests/test_tasks_recovery.py"
+   ]
+  },
+  {
+   "id": "omega_evolution",
+   "name": "Experiment records + promotion gate",
+   "status": "VERIFIED",
+   "paths": [
+    "omega/evolution.py"
+   ],
+   "evidence": [
+    "omega/tests/test_evolution_agents.py"
+   ]
+  },
+  {
+   "id": "omega_agents",
+   "name": "Advisory specialist panel",
+   "status": "PARTIAL",
+   "paths": [
+    "omega/agents.py"
+   ],
+   "evidence": [
+    "omega/tests/test_evolution_agents.py"
+   ],
+   "note": "deterministic rule checks; no LLM reasoning was exercised against a real model"
+  },
+  {
+   "id": "omega_forge_ollama",
+   "name": "Ollama client + benchmark-driven model routing",
+   "status": "PARTIAL",
+   "paths": [
+    "omega/forge.py"
+   ],
+   "evidence": [
+    "omega/tests/test_offline_forge.py",
+    "omega/tests/test_bench.py"
+   ],
+   "note": "verified against real Ollama 0.40.16 with 3 models in the cloud container; never run on the owner's PC; built-in routing suite too small (BENCHMARK_REPORT.md)"
+  },
+  {
+   "id": "omega_repo_analysis",
+   "name": "Repository analysis",
+   "status": "PARTIAL",
+   "paths": [
+    "omega/forge.py"
+   ],
+   "evidence": [
+    "omega/tests/test_offline_forge.py"
+   ],
+   "note": "inventory-level facts only; no code generation"
+  },
+  {
+   "id": "omega_code_generation",
+   "name": "Code generation",
+   "status": "MISSING",
+   "paths": [],
+   "evidence": [],
+   "note": "not implemented; the gate evaluates candidates but nothing generates them"
+  },
+  {
+   "id": "omega_diagnostics",
+   "name": "Diagnostic / mission-control report",
+   "status": "VERIFIED",
+   "paths": [
+    "omega/diagnostics.py"
+   ],
+   "evidence": [
+    "omega/tests/test_offline_forge.py"
+   ]
+  },
+  {
+   "id": "omega_cli",
+   "name": "Operator CLI",
+   "status": "VERIFIED",
+   "paths": [
+    "omega/cli.py"
+   ],
+   "evidence": [
+    "omega/tests/test_cli.py"
+   ]
+  },
+  {
+   "id": "android_termux_runtime",
+   "name": "Pocket node on Android / Termux",
+   "status": "PARTIAL",
+   "paths": [
+    "scripts/omega-pocket.sh"
+   ],
+   "evidence": [
+    "omega/tests/test_offline_forge.py"
+   ],
+   "note": "pure Python + cryptography; offline behaviour verified on Linux, never executed on a phone"
+  },
+  {
+   "id": "windows_runtime",
+   "name": "Forge node on Windows",
+   "status": "PARTIAL",
+   "paths": [
+    "scripts/omega-forge.ps1"
+   ],
+   "evidence": [],
+   "note": "no POSIX-only imports; never executed on Windows"
+  },
+  {
+   "id": "speech_transcription",
+   "name": "Local speech transcription",
+   "status": "MISSING",
+   "paths": [],
+   "evidence": []
+  },
+  {
+   "id": "semantic_retrieval",
+   "name": "Semantic (embedding) retrieval",
+   "status": "MISSING",
+   "paths": [],
+   "evidence": [],
+   "note": "lexical FTS5 + deterministic similarity only"
+  },
+  {
+   "id": "omega_operator_attestation",
+   "name": "Passphrase-protected operator key + attestation of consequential events",
+   "status": "VERIFIED",
+   "paths": [
+    "omega/operator.py"
+   ],
+   "evidence": [
+    "omega/tests/test_security_fixes.py"
+   ]
+  },
+  {
+   "id": "omega_memory_benchmark",
+   "name": "Frozen repeated-question benchmark (baseline / rules / local models)",
+   "status": "VERIFIED",
+   "paths": [
+    "omega/bench/memory_bench.py",
+    "omega/bench/memory_cases.json"
+   ],
+   "evidence": [
+    "omega/tests/test_bench.py"
+   ],
+   "note": "author-written cases; not an independent test set"
+  },
+  {
+   "id": "omega_semantic_advisor",
+   "name": "Local-model repeat advisor (WARN only)",
+   "status": "PARTIAL",
+   "paths": [
+    "omega/relationship.py",
+    "omega/forge.py"
+   ],
+   "evidence": [
+    "omega/tests/test_bench.py"
+   ],
+   "note": "real model verified in the cloud container only; qwen2.5:1.5b F1 0.79-0.84 and 8-10 false alarms across two Ollama server sessions (not reproducible across restarts)"
+  },
+  {
+   "id": "omega_proof_harness",
+   "name": "Signed platform proof harness",
+   "status": "VERIFIED",
+   "paths": [
+    "omega/proof.py",
+    "scripts/omega-proof.sh",
+    "scripts/omega-proof.ps1"
+   ],
+   "evidence": [
+    "omega/tests/test_proof.py",
+    "docs/omega/proofs/cloud-container.proof.json"
+   ],
+   "note": "verified in the cloud container; the .ps1 wrapper never executed"
+  },
+  {
+   "id": "physical_device_proof",
+   "name": "Execution on the owner's Windows PC and Android phone",
+   "status": "BLOCKED",
+   "paths": [
+    "docs/omega/PHYSICAL_PROOF_PROTOCOL.md"
+   ],
+   "evidence": [],
+   "note": "no route from this session to the owner's devices; protocol ready"
+  },
+  {
+   "id": "omega_physical_experiment",
+   "name": "Recorded, signed phone<->PC experiment runner (14 steps)",
+   "status": "PARTIAL",
+   "paths": [
+    "omega/experiment.py",
+    "scripts/android-verify.sh",
+    "scripts/windows-verify.ps1",
+    "docs/omega/DEPLOYMENT_AND_EXPERIMENT.md"
+   ],
+   "evidence": [
+    "omega/tests/test_experiment.py"
+   ],
+   "note": "full flow verified over loopback on Linux; its verdict is all_ok=false by design until real Android + Windows records exist; windows-verify.ps1 never executed"
+  }
+ ]
+}

@@ -1,0 +1,95 @@
+.........................s.............................................. [ 75%]
+F.......................                                                 [100%]
+=================================== FAILURES ===================================
+______________________ test_full_experiment_over_loopback ______________________
+
+tmp_path = PosixPath('/tmp/pytest-of-root/pytest-140/test_full_experiment_over_loop0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7fb9d7937100>
+
+    def test_full_experiment_over_loopback(tmp_path, monkeypatch):
+        ph, pc = tmp_path / "phone", tmp_path / "pc"
+        init(ph, "phone", monkeypatch)
+        init(pc, "pc", monkeypatch)
+        # pairing (normally the CLI `omega pair`, with the SAS compared by eye)
+        a, b = Node.open(ex._home(ph)), Node.open(ex._home(pc))
+        oa, ob = parse_offer(a.pairing_offer()), parse_offer(b.pairing_offer())
+        sas = short_auth_string(oa, ob)
+        a.add_peer(ob, oa, sas, actor="human:owner", operator=a.unlock_operator(PASS))
+        b.add_peer(oa, ob, sas, actor="human:owner", operator=b.unlock_operator(PASS))
+        a.close(); b.close()
+    
+        monkeypatch.setattr(ex, "_network_reachable", lambda: False)   # stands in for airplane mode
+>       assert ex.cmd_capture(ns(dir=str(ph), operator="owner"))
+E       AssertionError: assert False
+E        +  where False = <function cmd_capture at 0x7fb9d7862f20>(Namespace(dir='/tmp/pytest-of-root/pytest-140/test_full_experiment_over_loop0/phone', operator='owner'))
+E        +    where <function cmd_capture at 0x7fb9d7862f20> = ex.cmd_capture
+E        +    and   Namespace(dir='/tmp/pytest-of-root/pytest-140/test_full_experiment_over_loop0/phone', operator='owner') = ns(dir='/tmp/pytest-of-root/pytest-140/test_full_experiment_over_loop0/phone', operator='owner')
+E        +      where '/tmp/pytest-of-root/pytest-140/test_full_experiment_over_loop0/phone' = str(PosixPath('/tmp/pytest-of-root/pytest-140/test_full_experiment_over_loop0/phone'))
+
+omega/tests/test_experiment.py:45: AssertionError
+----------------------------- Captured stdout call -----------------------------
+{
+  "device_id": "dev_86d8e6aa92decee126b878649734a6ce",
+  "home": "/tmp/pytest-of-root/pytest-140/test_full_experiment_over_loop0/phone/node",
+  "ok": true,
+  "operator_id": "op_46b0b021b2043152d750de14",
+  "platform_full": {
+    "android": false,
+    "cpus": 4,
+    "cryptography": "50.0.1",
+    "fts5": true,
+    "git_commit": "c9a53c0bad3dc0671f285a7396d64960a5a87699",
+    "machine": "x86_64",
+    "omega_dirty": false,
+    "platform": "Linux-6.18.44-fc-v338-x86_64-with-glibc2.39",
+    "python": "3.13.18",
+    "release": "6.18.44-fc-v338",
+    "sqlite": "3.53.1",
+    "system": "Linux",
+    "termux": false,
+    "windows": false
+  },
+  "step": "init"
+}
+{
+  "device_id": "dev_2ab763d3c03d241587ec98f7a2cb49cf",
+  "home": "/tmp/pytest-of-root/pytest-140/test_full_experiment_over_loop0/pc/node",
+  "ok": true,
+  "operator_id": "op_df122c09f06b40c7431c0714",
+  "platform_full": {
+    "android": false,
+    "cpus": 4,
+    "cryptography": "50.0.1",
+    "fts5": true,
+    "git_commit": "c9a53c0bad3dc0671f285a7396d64960a5a87699",
+    "machine": "x86_64",
+    "omega_dirty": false,
+    "platform": "Linux-6.18.44-fc-v338-x86_64-with-glibc2.39",
+    "python": "3.13.18",
+    "release": "6.18.44-fc-v338",
+    "sqlite": "3.53.1",
+    "system": "Linux",
+    "termux": false,
+    "windows": false
+  },
+  "step": "init"
+}
+{
+  "answer_artifact_sha256": "de2ceccd897caf7c930a6c291333e520cf9e3cb3bc38ee50092752ed260686fa",
+  "answer_event": "ev_5d9d78ab1ac41a14801b3f68fbb40ddd10780c024c853f059cb87d3740d6f47c",
+  "answer_payload_hash": "bc5ae34f4c975a0ea8ec7421fb80fa4693d3dc779a1f0eadf6304f3b2ba92278",
+  "answer_source": "experiment:sms/2",
+  "answer_ts": "2026-11-10T04:03:56Z",
+  "contact_id": "ct_c6c2836064f9c132b9c8cbe8",
+  "extracted": [],
+  "network_reachable_during_capture": false,
+  "ok": false,
+  "question_event": "ev_a2b4ce1aaaae44d4abf5e39e85138eda02acb5ff09cd5b35c85bff51c7abf443",
+  "step": "capture_offline",
+  "vector": {
+    "dev_86d8e6aa92decee126b878649734a6ce": 4
+  }
+}
+=========================== short test summary info ============================
+FAILED omega/tests/test_experiment.py::test_full_experiment_over_loopback - A...
+1 failed, 94 passed, 1 skipped in 14.65s

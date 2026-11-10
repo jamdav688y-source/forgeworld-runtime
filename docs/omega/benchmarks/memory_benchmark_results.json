@@ -1,0 +1,2464 @@
+{
+  "cases": 50,
+  "cases_sha256": "d9429aee1be4bf8aaeb185bf33b37affc6cef466ca46ebbac2581d820e63f1a0",
+  "host": {
+    "machine": "x86_64",
+    "platform": "Linux-6.18.44-fc-v338-x86_64-with-glibc2.39",
+    "python": "3.13.18"
+  },
+  "labels": {
+    "NEW": 19,
+    "REPEAT": 31
+  },
+  "ollama": {
+    "models": {
+      "llama3.2:1b": {
+        "digest": "baf6a787fdffd633537aa2eb51cfd54cb93ff08e28040095462bb63daf552878",
+        "size": 1321098329
+      },
+      "qwen2.5:0.5b": {
+        "digest": "a8b0c51577010a279d933d14c2a8ab4b268079d44c5c8830c0a93900f1827c67",
+        "size": 397821319
+      },
+      "qwen2.5:1.5b": {
+        "digest": "65ec06548149b04c096a120e4a6da9d4017ea809c91734ea5631e89f96ddc57b",
+        "size": 986061892
+      }
+    },
+    "version": "0.40.16"
+  },
+  "predictions": {
+    "baseline_exact": {
+      "a-exact": [
+        "REPEAT",
+        0
+      ],
+      "a-n1": [
+        "NEW",
+        0
+      ],
+      "a-p1": [
+        "NEW",
+        0
+      ],
+      "a-p2": [
+        "NEW",
+        0
+      ],
+      "b-exact": [
+        "REPEAT",
+        0
+      ],
+      "b-n1": [
+        "NEW",
+        0
+      ],
+      "b-n2": [
+        "NEW",
+        0
+      ],
+      "b-p1": [
+        "NEW",
+        0
+      ],
+      "b-p2": [
+        "NEW",
+        0
+      ],
+      "b-p3": [
+        "NEW",
+        0
+      ],
+      "c-exact": [
+        "REPEAT",
+        0
+      ],
+      "c-n1": [
+        "NEW",
+        0
+      ],
+      "c-p1": [
+        "NEW",
+        0
+      ],
+      "c-p2": [
+        "NEW",
+        0
+      ],
+      "d-exact": [
+        "REPEAT",
+        0
+      ],
+      "d-n1": [
+        "NEW",
+        0
+      ],
+      "d-p1": [
+        "NEW",
+        0
+      ],
+      "d-p2": [
+        "NEW",
+        0
+      ],
+      "e-exact": [
+        "REPEAT",
+        0
+      ],
+      "e-n1": [
+        "NEW",
+        0
+      ],
+      "e-p1": [
+        "NEW",
+        0
+      ],
+      "g-exact": [
+        "REPEAT",
+        0
+      ],
+      "g-n1": [
+        "NEW",
+        0
+      ],
+      "g-p1": [
+        "NEW",
+        0
+      ],
+      "g-p2": [
+        "NEW",
+        0
+      ],
+      "l-exact": [
+        "REPEAT",
+        0
+      ],
+      "l-n1": [
+        "NEW",
+        0
+      ],
+      "l-p1": [
+        "NEW",
+        0
+      ],
+      "l-p2": [
+        "NEW",
+        0
+      ],
+      "s-exact": [
+        "REPEAT",
+        0
+      ],
+      "s-n1": [
+        "NEW",
+        0
+      ],
+      "s-p1": [
+        "NEW",
+        0
+      ],
+      "s-p2": [
+        "NEW",
+        0
+      ],
+      "t-exact": [
+        "REPEAT",
+        0
+      ],
+      "t-n1": [
+        "NEW",
+        0
+      ],
+      "t-n2": [
+        "NEW",
+        0
+      ],
+      "t-p1": [
+        "NEW",
+        0
+      ],
+      "t-p2": [
+        "NEW",
+        0
+      ],
+      "t-p3": [
+        "NEW",
+        0
+      ],
+      "w-exact": [
+        "REPEAT",
+        0
+      ],
+      "w-n1": [
+        "NEW",
+        0
+      ],
+      "w-p1": [
+        "NEW",
+        0
+      ],
+      "w-p2": [
+        "NEW",
+        0
+      ],
+      "x-1": [
+        "NEW",
+        0
+      ],
+      "x-2": [
+        "NEW",
+        0
+      ],
+      "x-3": [
+        "NEW",
+        0
+      ],
+      "x-4": [
+        "NEW",
+        0
+      ],
+      "x-5": [
+        "NEW",
+        0
+      ],
+      "x-6": [
+        "NEW",
+        0
+      ],
+      "x-7": [
+        "NEW",
+        0
+      ]
+    },
+    "llm:llama3.2:1b": {
+      "a-exact": [
+        "NEW",
+        330,
+        "NO"
+      ],
+      "a-n1": [
+        "NEW",
+        316,
+        "NO"
+      ],
+      "a-p1": [
+        "NEW",
+        307,
+        "NO"
+      ],
+      "a-p2": [
+        "NEW",
+        324,
+        "NO"
+      ],
+      "b-exact": [
+        "NEW",
+        1281,
+        "NO"
+      ],
+      "b-n1": [
+        "REPEAT",
+        312,
+        "YES"
+      ],
+      "b-n2": [
+        "NEW",
+        322,
+        "NO"
+      ],
+      "b-p1": [
+        "NEW",
+        296,
+        "NO"
+      ],
+      "b-p2": [
+        "NEW",
+        295,
+        "NO"
+      ],
+      "b-p3": [
+        "NEW",
+        313,
+        "NO"
+      ],
+      "c-exact": [
+        "NEW",
+        313,
+        "NO"
+      ],
+      "c-n1": [
+        "NEW",
+        330,
+        "NO"
+      ],
+      "c-p1": [
+        "NEW",
+        297,
+        "NO"
+      ],
+      "c-p2": [
+        "NEW",
+        302,
+        "NO"
+      ],
+      "d-exact": [
+        "REPEAT",
+        311,
+        "YES"
+      ],
+      "d-n1": [
+        "NEW",
+        336,
+        "NO"
+      ],
+      "d-p1": [
+        "NEW",
+        300,
+        "NO"
+      ],
+      "d-p2": [
+        "NEW",
+        318,
+        "NO"
+      ],
+      "e-exact": [
+        "NEW",
+        315,
+        "NO"
+      ],
+      "e-n1": [
+        "NEW",
+        308,
+        "NO"
+      ],
+      "e-p1": [
+        "NEW",
+        310,
+        "NO"
+      ],
+      "g-exact": [
+        "NEW",
+        330,
+        "NO"
+      ],
+      "g-n1": [
+        "NEW",
+        308,
+        "NO"
+      ],
+      "g-p1": [
+        "NEW",
+        332,
+        "NO"
+      ],
+      "g-p2": [
+        "NEW",
+        319,
+        "NO"
+      ],
+      "l-exact": [
+        "REPEAT",
+        351,
+        "YES"
+      ],
+      "l-n1": [
+        "NEW",
+        311,
+        "NO"
+      ],
+      "l-p1": [
+        "NEW",
+        317,
+        "NO"
+      ],
+      "l-p2": [
+        "NEW",
+        319,
+        "NO"
+      ],
+      "s-exact": [
+        "NEW",
+        310,
+        "NO"
+      ],
+      "s-n1": [
+        "NEW",
+        307,
+        "NO"
+      ],
+      "s-p1": [
+        "NEW",
+        306,
+        "NO"
+      ],
+      "s-p2": [
+        "NEW",
+        313,
+        "NO"
+      ],
+      "t-exact": [
+        "REPEAT",
+        321,
+        "YES"
+      ],
+      "t-n1": [
+        "NEW",
+        331,
+        "NO"
+      ],
+      "t-n2": [
+        "NEW",
+        338,
+        "NO"
+      ],
+      "t-p1": [
+        "NEW",
+        321,
+        "NO"
+      ],
+      "t-p2": [
+        "NEW",
+        309,
+        "NO"
+      ],
+      "t-p3": [
+        "NEW",
+        310,
+        "NO"
+      ],
+      "w-exact": [
+        "NEW",
+        312,
+        "NO"
+      ],
+      "w-n1": [
+        "NEW",
+        324,
+        "NO"
+      ],
+      "w-p1": [
+        "NEW",
+        302,
+        "NO"
+      ],
+      "w-p2": [
+        "NEW",
+        310,
+        "NO"
+      ],
+      "x-1": [
+        "NEW",
+        311,
+        "NO"
+      ],
+      "x-2": [
+        "NEW",
+        312,
+        "NO"
+      ],
+      "x-3": [
+        "NEW",
+        315,
+        "NO"
+      ],
+      "x-4": [
+        "NEW",
+        302,
+        "NO"
+      ],
+      "x-5": [
+        "NEW",
+        297,
+        "NO"
+      ],
+      "x-6": [
+        "NEW",
+        302,
+        "NO"
+      ],
+      "x-7": [
+        "NEW",
+        316,
+        "NO"
+      ]
+    },
+    "llm:qwen2.5:0.5b": {
+      "a-exact": [
+        "REPEAT",
+        178,
+        "YES"
+      ],
+      "a-n1": [
+        "NEW",
+        201,
+        "NO"
+      ],
+      "a-p1": [
+        "REPEAT",
+        184,
+        "YES"
+      ],
+      "a-p2": [
+        "NEW",
+        187,
+        "NO"
+      ],
+      "b-exact": [
+        "REPEAT",
+        931,
+        "YES"
+      ],
+      "b-n1": [
+        "REPEAT",
+        186,
+        "YES"
+      ],
+      "b-n2": [
+        "NEW",
+        213,
+        "NO"
+      ],
+      "b-p1": [
+        "NEW",
+        193,
+        "NO"
+      ],
+      "b-p2": [
+        "NEW",
+        181,
+        "NO"
+      ],
+      "b-p3": [
+        "REPEAT",
+        186,
+        "YES"
+      ],
+      "c-exact": [
+        "REPEAT",
+        184,
+        "YES"
+      ],
+      "c-n1": [
+        "NEW",
+        203,
+        "NO"
+      ],
+      "c-p1": [
+        "NEW",
+        192,
+        "NO"
+      ],
+      "c-p2": [
+        "REPEAT",
+        175,
+        "YES"
+      ],
+      "d-exact": [
+        "NEW",
+        183,
+        "NO"
+      ],
+      "d-n1": [
+        "REPEAT",
+        189,
+        "YES"
+      ],
+      "d-p1": [
+        "NEW",
+        169,
+        "NO"
+      ],
+      "d-p2": [
+        "NEW",
+        178,
+        "NO"
+      ],
+      "e-exact": [
+        "REPEAT",
+        179,
+        "YES"
+      ],
+      "e-n1": [
+        "REPEAT",
+        180,
+        "YES"
+      ],
+      "e-p1": [
+        "REPEAT",
+        188,
+        "YES"
+      ],
+      "g-exact": [
+        "REPEAT",
+        200,
+        "YES"
+      ],
+      "g-n1": [
+        "REPEAT",
+        196,
+        "YES"
+      ],
+      "g-p1": [
+        "NEW",
+        186,
+        "NO"
+      ],
+      "g-p2": [
+        "NEW",
+        179,
+        "NO"
+      ],
+      "l-exact": [
+        "REPEAT",
+        181,
+        "YES"
+      ],
+      "l-n1": [
+        "NEW",
+        179,
+        "NO"
+      ],
+      "l-p1": [
+        "NEW",
+        208,
+        "NO"
+      ],
+      "l-p2": [
+        "NEW",
+        185,
+        "NO"
+      ],
+      "s-exact": [
+        "REPEAT",
+        185,
+        "YES"
+      ],
+      "s-n1": [
+        "REPEAT",
+        180,
+        "YES"
+      ],
+      "s-p1": [
+        "REPEAT",
+        203,
+        "YES"
+      ],
+      "s-p2": [
+        "REPEAT",
+        192,
+        "YES"
+      ],
+      "t-exact": [
+        "REPEAT",
+        187,
+        "YES"
+      ],
+      "t-n1": [
+        "REPEAT",
+        190,
+        "YES"
+      ],
+      "t-n2": [
+        "REPEAT",
+        203,
+        "YES"
+      ],
+      "t-p1": [
+        "REPEAT",
+        185,
+        "YES"
+      ],
+      "t-p2": [
+        "REPEAT",
+        207,
+        "YES"
+      ],
+      "t-p3": [
+        "REPEAT",
+        184,
+        "YES"
+      ],
+      "w-exact": [
+        "REPEAT",
+        175,
+        "YES"
+      ],
+      "w-n1": [
+        "NEW",
+        203,
+        "NO"
+      ],
+      "w-p1": [
+        "REPEAT",
+        185,
+        "YES"
+      ],
+      "w-p2": [
+        "REPEAT",
+        227,
+        "YES"
+      ],
+      "x-1": [
+        "NEW",
+        190,
+        "NO"
+      ],
+      "x-2": [
+        "REPEAT",
+        180,
+        "YES"
+      ],
+      "x-3": [
+        "NEW",
+        195,
+        "NO"
+      ],
+      "x-4": [
+        "NEW",
+        180,
+        "NO"
+      ],
+      "x-5": [
+        "REPEAT",
+        178,
+        "YES"
+      ],
+      "x-6": [
+        "REPEAT",
+        198,
+        "YES"
+      ],
+      "x-7": [
+        "NEW",
+        188,
+        "NO"
+      ]
+    },
+    "llm:qwen2.5:1.5b": {
+      "a-exact": [
+        "REPEAT",
+        326,
+        "YES"
+      ],
+      "a-n1": [
+        "NEW",
+        319,
+        "NO"
+      ],
+      "a-p1": [
+        "REPEAT",
+        325,
+        "YES"
+      ],
+      "a-p2": [
+        "REPEAT",
+        322,
+        "YES"
+      ],
+      "b-exact": [
+        "REPEAT",
+        327,
+        "YES"
+      ],
+      "b-n1": [
+        "REPEAT",
+        358,
+        "YES"
+      ],
+      "b-n2": [
+        "NEW",
+        321,
+        "NO"
+      ],
+      "b-p1": [
+        "REPEAT",
+        319,
+        "YES"
+      ],
+      "b-p2": [
+        "REPEAT",
+        318,
+        "YES"
+      ],
+      "b-p3": [
+        "REPEAT",
+        325,
+        "YES"
+      ],
+      "c-exact": [
+        "REPEAT",
+        314,
+        "YES"
+      ],
+      "c-n1": [
+        "NEW",
+        330,
+        "NO"
+      ],
+      "c-p1": [
+        "REPEAT",
+        352,
+        "YES"
+      ],
+      "c-p2": [
+        "REPEAT",
+        325,
+        "YES"
+      ],
+      "d-exact": [
+        "REPEAT",
+        325,
+        "YES"
+      ],
+      "d-n1": [
+        "NEW",
+        330,
+        "NO"
+      ],
+      "d-p1": [
+        "REPEAT",
+        361,
+        "YES"
+      ],
+      "d-p2": [
+        "REPEAT",
+        348,
+        "YES"
+      ],
+      "e-exact": [
+        "REPEAT",
+        365,
+        "YES"
+      ],
+      "e-n1": [
+        "REPEAT",
+        315,
+        "YES"
+      ],
+      "e-p1": [
+        "NEW",
+        333,
+        "NO"
+      ],
+      "g-exact": [
+        "REPEAT",
+        334,
+        "YES"
+      ],
+      "g-n1": [
+        "REPEAT",
+        337,
+        "YES"
+      ],
+      "g-p1": [
+        "REPEAT",
+        365,
+        "YES"
+      ],
+      "g-p2": [
+        "REPEAT",
+        330,
+        "YES"
+      ],
+      "l-exact": [
+        "REPEAT",
+        326,
+        "YES"
+      ],
+      "l-n1": [
+        "NEW",
+        316,
+        "NO"
+      ],
+      "l-p1": [
+        "NEW",
+        339,
+        "NO"
+      ],
+      "l-p2": [
+        "NEW",
+        335,
+        "NO"
+      ],
+      "s-exact": [
+        "REPEAT",
+        326,
+        "YES"
+      ],
+      "s-n1": [
+        "REPEAT",
+        352,
+        "YES"
+      ],
+      "s-p1": [
+        "REPEAT",
+        337,
+        "YES"
+      ],
+      "s-p2": [
+        "REPEAT",
+        338,
+        "YES"
+      ],
+      "t-exact": [
+        "REPEAT",
+        319,
+        "YES"
+      ],
+      "t-n1": [
+        "REPEAT",
+        331,
+        "YES"
+      ],
+      "t-n2": [
+        "REPEAT",
+        317,
+        "YES"
+      ],
+      "t-p1": [
+        "REPEAT",
+        316,
+        "YES"
+      ],
+      "t-p2": [
+        "REPEAT",
+        319,
+        "YES"
+      ],
+      "t-p3": [
+        "REPEAT",
+        313,
+        "YES"
+      ],
+      "w-exact": [
+        "REPEAT",
+        349,
+        "YES"
+      ],
+      "w-n1": [
+        "REPEAT",
+        323,
+        "YES"
+      ],
+      "w-p1": [
+        "REPEAT",
+        329,
+        "YES"
+      ],
+      "w-p2": [
+        "REPEAT",
+        343,
+        "YES"
+      ],
+      "x-1": [
+        "NEW",
+        322,
+        "NO"
+      ],
+      "x-2": [
+        "NEW",
+        326,
+        "NO"
+      ],
+      "x-3": [
+        "NEW",
+        366,
+        "NO"
+      ],
+      "x-4": [
+        "NEW",
+        324,
+        "NO"
+      ],
+      "x-5": [
+        "NEW",
+        319,
+        "NO"
+      ],
+      "x-6": [
+        "REPEAT",
+        341,
+        "YES"
+      ],
+      "x-7": [
+        "NEW",
+        348,
+        "NO"
+      ]
+    },
+    "omega_rules": {
+      "a-exact": [
+        "REPEAT",
+        1
+      ],
+      "a-n1": [
+        "NEW",
+        2
+      ],
+      "a-p1": [
+        "REPEAT",
+        2
+      ],
+      "a-p2": [
+        "NEW",
+        2
+      ],
+      "b-exact": [
+        "REPEAT",
+        2
+      ],
+      "b-n1": [
+        "REPEAT",
+        2
+      ],
+      "b-n2": [
+        "NEW",
+        2
+      ],
+      "b-p1": [
+        "NEW",
+        2
+      ],
+      "b-p2": [
+        "NEW",
+        2
+      ],
+      "b-p3": [
+        "REPEAT",
+        2
+      ],
+      "c-exact": [
+        "REPEAT",
+        2
+      ],
+      "c-n1": [
+        "REPEAT",
+        2
+      ],
+      "c-p1": [
+        "REPEAT",
+        2
+      ],
+      "c-p2": [
+        "NEW",
+        2
+      ],
+      "d-exact": [
+        "REPEAT",
+        2
+      ],
+      "d-n1": [
+        "NEW",
+        2
+      ],
+      "d-p1": [
+        "NEW",
+        2
+      ],
+      "d-p2": [
+        "NEW",
+        2
+      ],
+      "e-exact": [
+        "REPEAT",
+        1
+      ],
+      "e-n1": [
+        "NEW",
+        2
+      ],
+      "e-p1": [
+        "NEW",
+        2
+      ],
+      "g-exact": [
+        "REPEAT",
+        2
+      ],
+      "g-n1": [
+        "NEW",
+        2
+      ],
+      "g-p1": [
+        "NEW",
+        2
+      ],
+      "g-p2": [
+        "REPEAT",
+        2
+      ],
+      "l-exact": [
+        "REPEAT",
+        2
+      ],
+      "l-n1": [
+        "NEW",
+        2
+      ],
+      "l-p1": [
+        "REPEAT",
+        2
+      ],
+      "l-p2": [
+        "NEW",
+        2
+      ],
+      "s-exact": [
+        "REPEAT",
+        2
+      ],
+      "s-n1": [
+        "NEW",
+        2
+      ],
+      "s-p1": [
+        "NEW",
+        2
+      ],
+      "s-p2": [
+        "REPEAT",
+        2
+      ],
+      "t-exact": [
+        "REPEAT",
+        2
+      ],
+      "t-n1": [
+        "NEW",
+        2
+      ],
+      "t-n2": [
+        "NEW",
+        2
+      ],
+      "t-p1": [
+        "NEW",
+        2
+      ],
+      "t-p2": [
+        "NEW",
+        2
+      ],
+      "t-p3": [
+        "REPEAT",
+        2
+      ],
+      "w-exact": [
+        "REPEAT",
+        2
+      ],
+      "w-n1": [
+        "NEW",
+        2
+      ],
+      "w-p1": [
+        "NEW",
+        2
+      ],
+      "w-p2": [
+        "NEW",
+        2
+      ],
+      "x-1": [
+        "NEW",
+        2
+      ],
+      "x-2": [
+        "NEW",
+        2
+      ],
+      "x-3": [
+        "NEW",
+        2
+      ],
+      "x-4": [
+        "NEW",
+        2
+      ],
+      "x-5": [
+        "NEW",
+        2
+      ],
+      "x-6": [
+        "NEW",
+        2
+      ],
+      "x-7": [
+        "NEW",
+        2
+      ]
+    },
+    "rules_or_llm:llama3.2:1b": {
+      "a-exact": [
+        "REPEAT",
+        330
+      ],
+      "a-n1": [
+        "NEW",
+        316
+      ],
+      "a-p1": [
+        "REPEAT",
+        307
+      ],
+      "a-p2": [
+        "NEW",
+        324
+      ],
+      "b-exact": [
+        "REPEAT",
+        1281
+      ],
+      "b-n1": [
+        "REPEAT",
+        312
+      ],
+      "b-n2": [
+        "NEW",
+        322
+      ],
+      "b-p1": [
+        "NEW",
+        296
+      ],
+      "b-p2": [
+        "NEW",
+        295
+      ],
+      "b-p3": [
+        "REPEAT",
+        313
+      ],
+      "c-exact": [
+        "REPEAT",
+        313
+      ],
+      "c-n1": [
+        "REPEAT",
+        330
+      ],
+      "c-p1": [
+        "REPEAT",
+        297
+      ],
+      "c-p2": [
+        "NEW",
+        302
+      ],
+      "d-exact": [
+        "REPEAT",
+        311
+      ],
+      "d-n1": [
+        "NEW",
+        336
+      ],
+      "d-p1": [
+        "NEW",
+        300
+      ],
+      "d-p2": [
+        "NEW",
+        318
+      ],
+      "e-exact": [
+        "REPEAT",
+        315
+      ],
+      "e-n1": [
+        "NEW",
+        308
+      ],
+      "e-p1": [
+        "NEW",
+        310
+      ],
+      "g-exact": [
+        "REPEAT",
+        330
+      ],
+      "g-n1": [
+        "NEW",
+        308
+      ],
+      "g-p1": [
+        "NEW",
+        332
+      ],
+      "g-p2": [
+        "REPEAT",
+        319
+      ],
+      "l-exact": [
+        "REPEAT",
+        351
+      ],
+      "l-n1": [
+        "NEW",
+        311
+      ],
+      "l-p1": [
+        "REPEAT",
+        317
+      ],
+      "l-p2": [
+        "NEW",
+        319
+      ],
+      "s-exact": [
+        "REPEAT",
+        310
+      ],
+      "s-n1": [
+        "NEW",
+        307
+      ],
+      "s-p1": [
+        "NEW",
+        306
+      ],
+      "s-p2": [
+        "REPEAT",
+        313
+      ],
+      "t-exact": [
+        "REPEAT",
+        321
+      ],
+      "t-n1": [
+        "NEW",
+        331
+      ],
+      "t-n2": [
+        "NEW",
+        338
+      ],
+      "t-p1": [
+        "NEW",
+        321
+      ],
+      "t-p2": [
+        "NEW",
+        309
+      ],
+      "t-p3": [
+        "REPEAT",
+        310
+      ],
+      "w-exact": [
+        "REPEAT",
+        312
+      ],
+      "w-n1": [
+        "NEW",
+        324
+      ],
+      "w-p1": [
+        "NEW",
+        302
+      ],
+      "w-p2": [
+        "NEW",
+        310
+      ],
+      "x-1": [
+        "NEW",
+        311
+      ],
+      "x-2": [
+        "NEW",
+        312
+      ],
+      "x-3": [
+        "NEW",
+        315
+      ],
+      "x-4": [
+        "NEW",
+        302
+      ],
+      "x-5": [
+        "NEW",
+        297
+      ],
+      "x-6": [
+        "NEW",
+        302
+      ],
+      "x-7": [
+        "NEW",
+        316
+      ]
+    },
+    "rules_or_llm:qwen2.5:0.5b": {
+      "a-exact": [
+        "REPEAT",
+        178
+      ],
+      "a-n1": [
+        "NEW",
+        201
+      ],
+      "a-p1": [
+        "REPEAT",
+        184
+      ],
+      "a-p2": [
+        "NEW",
+        187
+      ],
+      "b-exact": [
+        "REPEAT",
+        931
+      ],
+      "b-n1": [
+        "REPEAT",
+        186
+      ],
+      "b-n2": [
+        "NEW",
+        213
+      ],
+      "b-p1": [
+        "NEW",
+        193
+      ],
+      "b-p2": [
+        "NEW",
+        181
+      ],
+      "b-p3": [
+        "REPEAT",
+        186
+      ],
+      "c-exact": [
+        "REPEAT",
+        184
+      ],
+      "c-n1": [
+        "REPEAT",
+        203
+      ],
+      "c-p1": [
+        "REPEAT",
+        192
+      ],
+      "c-p2": [
+        "REPEAT",
+        175
+      ],
+      "d-exact": [
+        "REPEAT",
+        183
+      ],
+      "d-n1": [
+        "REPEAT",
+        189
+      ],
+      "d-p1": [
+        "NEW",
+        169
+      ],
+      "d-p2": [
+        "NEW",
+        178
+      ],
+      "e-exact": [
+        "REPEAT",
+        179
+      ],
+      "e-n1": [
+        "REPEAT",
+        180
+      ],
+      "e-p1": [
+        "REPEAT",
+        188
+      ],
+      "g-exact": [
+        "REPEAT",
+        200
+      ],
+      "g-n1": [
+        "REPEAT",
+        196
+      ],
+      "g-p1": [
+        "NEW",
+        186
+      ],
+      "g-p2": [
+        "REPEAT",
+        179
+      ],
+      "l-exact": [
+        "REPEAT",
+        181
+      ],
+      "l-n1": [
+        "NEW",
+        179
+      ],
+      "l-p1": [
+        "REPEAT",
+        208
+      ],
+      "l-p2": [
+        "NEW",
+        185
+      ],
+      "s-exact": [
+        "REPEAT",
+        185
+      ],
+      "s-n1": [
+        "REPEAT",
+        180
+      ],
+      "s-p1": [
+        "REPEAT",
+        203
+      ],
+      "s-p2": [
+        "REPEAT",
+        192
+      ],
+      "t-exact": [
+        "REPEAT",
+        187
+      ],
+      "t-n1": [
+        "REPEAT",
+        190
+      ],
+      "t-n2": [
+        "REPEAT",
+        203
+      ],
+      "t-p1": [
+        "REPEAT",
+        185
+      ],
+      "t-p2": [
+        "REPEAT",
+        207
+      ],
+      "t-p3": [
+        "REPEAT",
+        184
+      ],
+      "w-exact": [
+        "REPEAT",
+        175
+      ],
+      "w-n1": [
+        "NEW",
+        203
+      ],
+      "w-p1": [
+        "REPEAT",
+        185
+      ],
+      "w-p2": [
+        "REPEAT",
+        227
+      ],
+      "x-1": [
+        "NEW",
+        190
+      ],
+      "x-2": [
+        "REPEAT",
+        180
+      ],
+      "x-3": [
+        "NEW",
+        195
+      ],
+      "x-4": [
+        "NEW",
+        180
+      ],
+      "x-5": [
+        "REPEAT",
+        178
+      ],
+      "x-6": [
+        "REPEAT",
+        198
+      ],
+      "x-7": [
+        "NEW",
+        188
+      ]
+    },
+    "rules_or_llm:qwen2.5:1.5b": {
+      "a-exact": [
+        "REPEAT",
+        326
+      ],
+      "a-n1": [
+        "NEW",
+        319
+      ],
+      "a-p1": [
+        "REPEAT",
+        325
+      ],
+      "a-p2": [
+        "REPEAT",
+        322
+      ],
+      "b-exact": [
+        "REPEAT",
+        327
+      ],
+      "b-n1": [
+        "REPEAT",
+        358
+      ],
+      "b-n2": [
+        "NEW",
+        321
+      ],
+      "b-p1": [
+        "REPEAT",
+        319
+      ],
+      "b-p2": [
+        "REPEAT",
+        318
+      ],
+      "b-p3": [
+        "REPEAT",
+        325
+      ],
+      "c-exact": [
+        "REPEAT",
+        314
+      ],
+      "c-n1": [
+        "REPEAT",
+        330
+      ],
+      "c-p1": [
+        "REPEAT",
+        352
+      ],
+      "c-p2": [
+        "REPEAT",
+        325
+      ],
+      "d-exact": [
+        "REPEAT",
+        325
+      ],
+      "d-n1": [
+        "NEW",
+        330
+      ],
+      "d-p1": [
+        "REPEAT",
+        361
+      ],
+      "d-p2": [
+        "REPEAT",
+        348
+      ],
+      "e-exact": [
+        "REPEAT",
+        365
+      ],
+      "e-n1": [
+        "REPEAT",
+        315
+      ],
+      "e-p1": [
+        "NEW",
+        333
+      ],
+      "g-exact": [
+        "REPEAT",
+        334
+      ],
+      "g-n1": [
+        "REPEAT",
+        337
+      ],
+      "g-p1": [
+        "REPEAT",
+        365
+      ],
+      "g-p2": [
+        "REPEAT",
+        330
+      ],
+      "l-exact": [
+        "REPEAT",
+        326
+      ],
+      "l-n1": [
+        "NEW",
+        316
+      ],
+      "l-p1": [
+        "REPEAT",
+        339
+      ],
+      "l-p2": [
+        "NEW",
+        335
+      ],
+      "s-exact": [
+        "REPEAT",
+        326
+      ],
+      "s-n1": [
+        "REPEAT",
+        352
+      ],
+      "s-p1": [
+        "REPEAT",
+        337
+      ],
+      "s-p2": [
+        "REPEAT",
+        338
+      ],
+      "t-exact": [
+        "REPEAT",
+        319
+      ],
+      "t-n1": [
+        "REPEAT",
+        331
+      ],
+      "t-n2": [
+        "REPEAT",
+        317
+      ],
+      "t-p1": [
+        "REPEAT",
+        316
+      ],
+      "t-p2": [
+        "REPEAT",
+        319
+      ],
+      "t-p3": [
+        "REPEAT",
+        313
+      ],
+      "w-exact": [
+        "REPEAT",
+        349
+      ],
+      "w-n1": [
+        "REPEAT",
+        323
+      ],
+      "w-p1": [
+        "REPEAT",
+        329
+      ],
+      "w-p2": [
+        "REPEAT",
+        343
+      ],
+      "x-1": [
+        "NEW",
+        322
+      ],
+      "x-2": [
+        "NEW",
+        326
+      ],
+      "x-3": [
+        "NEW",
+        366
+      ],
+      "x-4": [
+        "NEW",
+        324
+      ],
+      "x-5": [
+        "NEW",
+        319
+      ],
+      "x-6": [
+        "REPEAT",
+        341
+      ],
+      "x-7": [
+        "NEW",
+        348
+      ]
+    }
+  },
+  "schema": "fw.omega.memory-bench-result/1",
+  "systems": {
+    "baseline_exact": {
+      "by_kind": {
+        "exact": {
+          "accuracy": 1.0,
+          "f1": 1.0,
+          "fn": 0,
+          "fp": 0,
+          "n": 10,
+          "precision": 1.0,
+          "recall": 1.0,
+          "tn": 0,
+          "tp": 10
+        },
+        "near_miss": {
+          "accuracy": 1.0,
+          "f1": null,
+          "fn": 0,
+          "fp": 0,
+          "n": 10,
+          "precision": null,
+          "recall": null,
+          "tn": 10,
+          "tp": 0
+        },
+        "new": {
+          "accuracy": 1.0,
+          "f1": null,
+          "fn": 0,
+          "fp": 0,
+          "n": 9,
+          "precision": null,
+          "recall": null,
+          "tn": 9,
+          "tp": 0
+        },
+        "paraphrase": {
+          "accuracy": 0.0,
+          "f1": null,
+          "fn": 21,
+          "fp": 0,
+          "n": 21,
+          "precision": null,
+          "recall": 0.0,
+          "tn": 0,
+          "tp": 0
+        }
+      },
+      "errors": [
+        "a-p1",
+        "a-p2",
+        "b-p1",
+        "b-p2",
+        "b-p3",
+        "c-p1",
+        "c-p2",
+        "d-p1",
+        "d-p2",
+        "e-p1",
+        "g-p1",
+        "g-p2",
+        "l-p1",
+        "l-p2",
+        "s-p1",
+        "s-p2",
+        "t-p1",
+        "t-p2",
+        "t-p3",
+        "w-p1",
+        "w-p2"
+      ],
+      "latency_ms": {
+        "max": 0,
+        "median": 0
+      },
+      "overall": {
+        "accuracy": 0.58,
+        "f1": 0.488,
+        "fn": 21,
+        "fp": 0,
+        "n": 50,
+        "precision": 1.0,
+        "recall": 0.323,
+        "tn": 19,
+        "tp": 10
+      }
+    },
+    "llm:llama3.2:1b": {
+      "by_kind": {
+        "exact": {
+          "accuracy": 0.3,
+          "f1": 0.462,
+          "fn": 7,
+          "fp": 0,
+          "n": 10,
+          "precision": 1.0,
+          "recall": 0.3,
+          "tn": 0,
+          "tp": 3
+        },
+        "near_miss": {
+          "accuracy": 0.9,
+          "f1": null,
+          "fn": 0,
+          "fp": 1,
+          "n": 10,
+          "precision": 0.0,
+          "recall": null,
+          "tn": 9,
+          "tp": 0
+        },
+        "new": {
+          "accuracy": 1.0,
+          "f1": null,
+          "fn": 0,
+          "fp": 0,
+          "n": 9,
+          "precision": null,
+          "recall": null,
+          "tn": 9,
+          "tp": 0
+        },
+        "paraphrase": {
+          "accuracy": 0.0,
+          "f1": null,
+          "fn": 21,
+          "fp": 0,
+          "n": 21,
+          "precision": null,
+          "recall": 0.0,
+          "tn": 0,
+          "tp": 0
+        }
+      },
+      "errors": [
+        "a-exact",
+        "a-p1",
+        "a-p2",
+        "b-exact",
+        "b-n1",
+        "b-p1",
+        "b-p2",
+        "b-p3",
+        "c-exact",
+        "c-p1",
+        "c-p2",
+        "d-p1",
+        "d-p2",
+        "e-exact",
+        "e-p1",
+        "g-exact",
+        "g-p1",
+        "g-p2",
+        "l-p1",
+        "l-p2",
+        "s-exact",
+        "s-p1",
+        "s-p2",
+        "t-p1",
+        "t-p2",
+        "t-p3",
+        "w-exact",
+        "w-p1",
+        "w-p2"
+      ],
+      "latency_ms": {
+        "max": 1281,
+        "median": 312
+      },
+      "overall": {
+        "accuracy": 0.42,
+        "f1": 0.171,
+        "fn": 28,
+        "fp": 1,
+        "n": 50,
+        "precision": 0.75,
+        "recall": 0.097,
+        "tn": 18,
+        "tp": 3
+      }
+    },
+    "llm:qwen2.5:0.5b": {
+      "by_kind": {
+        "exact": {
+          "accuracy": 0.9,
+          "f1": 0.947,
+          "fn": 1,
+          "fp": 0,
+          "n": 10,
+          "precision": 1.0,
+          "recall": 0.9,
+          "tn": 0,
+          "tp": 9
+        },
+        "near_miss": {
+          "accuracy": 0.4,
+          "f1": null,
+          "fn": 0,
+          "fp": 6,
+          "n": 10,
+          "precision": 0.0,
+          "recall": null,
+          "tn": 4,
+          "tp": 0
+        },
+        "new": {
+          "accuracy": 0.556,
+          "f1": null,
+          "fn": 0,
+          "fp": 4,
+          "n": 9,
+          "precision": 0.0,
+          "recall": null,
+          "tn": 5,
+          "tp": 0
+        },
+        "paraphrase": {
+          "accuracy": 0.524,
+          "f1": 0.688,
+          "fn": 10,
+          "fp": 0,
+          "n": 21,
+          "precision": 1.0,
+          "recall": 0.524,
+          "tn": 0,
+          "tp": 11
+        }
+      },
+      "errors": [
+        "a-p2",
+        "b-n1",
+        "b-p1",
+        "b-p2",
+        "c-p1",
+        "d-exact",
+        "d-n1",
+        "d-p1",
+        "d-p2",
+        "e-n1",
+        "g-n1",
+        "g-p1",
+        "g-p2",
+        "l-p1",
+        "l-p2",
+        "s-n1",
+        "t-n1",
+        "t-n2",
+        "x-2",
+        "x-5",
+        "x-6"
+      ],
+      "latency_ms": {
+        "max": 931,
+        "median": 186
+      },
+      "overall": {
+        "accuracy": 0.58,
+        "f1": 0.656,
+        "fn": 11,
+        "fp": 10,
+        "n": 50,
+        "precision": 0.667,
+        "recall": 0.645,
+        "tn": 9,
+        "tp": 20
+      }
+    },
+    "llm:qwen2.5:1.5b": {
+      "by_kind": {
+        "exact": {
+          "accuracy": 1.0,
+          "f1": 1.0,
+          "fn": 0,
+          "fp": 0,
+          "n": 10,
+          "precision": 1.0,
+          "recall": 1.0,
+          "tn": 0,
+          "tp": 10
+        },
+        "near_miss": {
+          "accuracy": 0.4,
+          "f1": null,
+          "fn": 0,
+          "fp": 6,
+          "n": 10,
+          "precision": 0.0,
+          "recall": null,
+          "tn": 4,
+          "tp": 0
+        },
+        "new": {
+          "accuracy": 0.778,
+          "f1": null,
+          "fn": 0,
+          "fp": 2,
+          "n": 9,
+          "precision": 0.0,
+          "recall": null,
+          "tn": 7,
+          "tp": 0
+        },
+        "paraphrase": {
+          "accuracy": 0.857,
+          "f1": 0.923,
+          "fn": 3,
+          "fp": 0,
+          "n": 21,
+          "precision": 1.0,
+          "recall": 0.857,
+          "tn": 0,
+          "tp": 18
+        }
+      },
+      "errors": [
+        "b-n1",
+        "e-n1",
+        "e-p1",
+        "g-n1",
+        "l-p1",
+        "l-p2",
+        "s-n1",
+        "t-n1",
+        "t-n2",
+        "w-n1",
+        "x-6"
+      ],
+      "latency_ms": {
+        "max": 366,
+        "median": 326
+      },
+      "overall": {
+        "accuracy": 0.78,
+        "f1": 0.836,
+        "fn": 3,
+        "fp": 8,
+        "n": 50,
+        "precision": 0.778,
+        "recall": 0.903,
+        "tn": 11,
+        "tp": 28
+      }
+    },
+    "omega_rules": {
+      "by_kind": {
+        "exact": {
+          "accuracy": 1.0,
+          "f1": 1.0,
+          "fn": 0,
+          "fp": 0,
+          "n": 10,
+          "precision": 1.0,
+          "recall": 1.0,
+          "tn": 0,
+          "tp": 10
+        },
+        "near_miss": {
+          "accuracy": 0.8,
+          "f1": null,
+          "fn": 0,
+          "fp": 2,
+          "n": 10,
+          "precision": 0.0,
+          "recall": null,
+          "tn": 8,
+          "tp": 0
+        },
+        "new": {
+          "accuracy": 1.0,
+          "f1": null,
+          "fn": 0,
+          "fp": 0,
+          "n": 9,
+          "precision": null,
+          "recall": null,
+          "tn": 9,
+          "tp": 0
+        },
+        "paraphrase": {
+          "accuracy": 0.333,
+          "f1": 0.5,
+          "fn": 14,
+          "fp": 0,
+          "n": 21,
+          "precision": 1.0,
+          "recall": 0.333,
+          "tn": 0,
+          "tp": 7
+        }
+      },
+      "errors": [
+        "a-p2",
+        "b-n1",
+        "b-p1",
+        "b-p2",
+        "c-n1",
+        "c-p2",
+        "d-p1",
+        "d-p2",
+        "e-p1",
+        "g-p1",
+        "l-p2",
+        "s-p1",
+        "t-p1",
+        "t-p2",
+        "w-p1",
+        "w-p2"
+      ],
+      "latency_ms": {
+        "max": 2,
+        "median": 2
+      },
+      "overall": {
+        "accuracy": 0.68,
+        "f1": 0.68,
+        "fn": 14,
+        "fp": 2,
+        "n": 50,
+        "precision": 0.895,
+        "recall": 0.548,
+        "tn": 17,
+        "tp": 17
+      }
+    },
+    "rules_or_llm:llama3.2:1b": {
+      "by_kind": {
+        "exact": {
+          "accuracy": 1.0,
+          "f1": 1.0,
+          "fn": 0,
+          "fp": 0,
+          "n": 10,
+          "precision": 1.0,
+          "recall": 1.0,
+          "tn": 0,
+          "tp": 10
+        },
+        "near_miss": {
+          "accuracy": 0.8,
+          "f1": null,
+          "fn": 0,
+          "fp": 2,
+          "n": 10,
+          "precision": 0.0,
+          "recall": null,
+          "tn": 8,
+          "tp": 0
+        },
+        "new": {
+          "accuracy": 1.0,
+          "f1": null,
+          "fn": 0,
+          "fp": 0,
+          "n": 9,
+          "precision": null,
+          "recall": null,
+          "tn": 9,
+          "tp": 0
+        },
+        "paraphrase": {
+          "accuracy": 0.333,
+          "f1": 0.5,
+          "fn": 14,
+          "fp": 0,
+          "n": 21,
+          "precision": 1.0,
+          "recall": 0.333,
+          "tn": 0,
+          "tp": 7
+        }
+      },
+      "errors": [
+        "a-p2",
+        "b-n1",
+        "b-p1",
+        "b-p2",
+        "c-n1",
+        "c-p2",
+        "d-p1",
+        "d-p2",
+        "e-p1",
+        "g-p1",
+        "l-p2",
+        "s-p1",
+        "t-p1",
+        "t-p2",
+        "w-p1",
+        "w-p2"
+      ],
+      "latency_ms": {
+        "max": 1281,
+        "median": 312
+      },
+      "overall": {
+        "accuracy": 0.68,
+        "f1": 0.68,
+        "fn": 14,
+        "fp": 2,
+        "n": 50,
+        "precision": 0.895,
+        "recall": 0.548,
+        "tn": 17,
+        "tp": 17
+      }
+    },
+    "rules_or_llm:qwen2.5:0.5b": {
+      "by_kind": {
+        "exact": {
+          "accuracy": 1.0,
+          "f1": 1.0,
+          "fn": 0,
+          "fp": 0,
+          "n": 10,
+          "precision": 1.0,
+          "recall": 1.0,
+          "tn": 0,
+          "tp": 10
+        },
+        "near_miss": {
+          "accuracy": 0.3,
+          "f1": null,
+          "fn": 0,
+          "fp": 7,
+          "n": 10,
+          "precision": 0.0,
+          "recall": null,
+          "tn": 3,
+          "tp": 0
+        },
+        "new": {
+          "accuracy": 0.556,
+          "f1": null,
+          "fn": 0,
+          "fp": 4,
+          "n": 9,
+          "precision": 0.0,
+          "recall": null,
+          "tn": 5,
+          "tp": 0
+        },
+        "paraphrase": {
+          "accuracy": 0.667,
+          "f1": 0.8,
+          "fn": 7,
+          "fp": 0,
+          "n": 21,
+          "precision": 1.0,
+          "recall": 0.667,
+          "tn": 0,
+          "tp": 14
+        }
+      },
+      "errors": [
+        "a-p2",
+        "b-n1",
+        "b-p1",
+        "b-p2",
+        "c-n1",
+        "d-n1",
+        "d-p1",
+        "d-p2",
+        "e-n1",
+        "g-n1",
+        "g-p1",
+        "l-p2",
+        "s-n1",
+        "t-n1",
+        "t-n2",
+        "x-2",
+        "x-5",
+        "x-6"
+      ],
+      "latency_ms": {
+        "max": 931,
+        "median": 186
+      },
+      "overall": {
+        "accuracy": 0.64,
+        "f1": 0.727,
+        "fn": 7,
+        "fp": 11,
+        "n": 50,
+        "precision": 0.686,
+        "recall": 0.774,
+        "tn": 8,
+        "tp": 24
+      }
+    },
+    "rules_or_llm:qwen2.5:1.5b": {
+      "by_kind": {
+        "exact": {
+          "accuracy": 1.0,
+          "f1": 1.0,
+          "fn": 0,
+          "fp": 0,
+          "n": 10,
+          "precision": 1.0,
+          "recall": 1.0,
+          "tn": 0,
+          "tp": 10
+        },
+        "near_miss": {
+          "accuracy": 0.3,
+          "f1": null,
+          "fn": 0,
+          "fp": 7,
+          "n": 10,
+          "precision": 0.0,
+          "recall": null,
+          "tn": 3,
+          "tp": 0
+        },
+        "new": {
+          "accuracy": 0.778,
+          "f1": null,
+          "fn": 0,
+          "fp": 2,
+          "n": 9,
+          "precision": 0.0,
+          "recall": null,
+          "tn": 7,
+          "tp": 0
+        },
+        "paraphrase": {
+          "accuracy": 0.905,
+          "f1": 0.95,
+          "fn": 2,
+          "fp": 0,
+          "n": 21,
+          "precision": 1.0,
+          "recall": 0.905,
+          "tn": 0,
+          "tp": 19
+        }
+      },
+      "errors": [
+        "b-n1",
+        "c-n1",
+        "e-n1",
+        "e-p1",
+        "g-n1",
+        "l-p2",
+        "s-n1",
+        "t-n1",
+        "t-n2",
+        "w-n1",
+        "x-6"
+      ],
+      "latency_ms": {
+        "max": 366,
+        "median": 326
+      },
+      "overall": {
+        "accuracy": 0.78,
+        "f1": 0.841,
+        "fn": 2,
+        "fp": 9,
+        "n": 50,
+        "precision": 0.763,
+        "recall": 0.935,
+        "tn": 10,
+        "tp": 29
+      }
+    }
+  }
+}

@@ -15,3 +15,8 @@ The laptop builds.
 GitHub stores.
 ChatGPT governs.
 Codex assists.
+
+## ForgeWorld Ω substrate
+
+The offline-first phone ↔ PC evidence substrate lives in `omega/`.
+Start at `docs/omega/README.md` (install, pairing, sync, status, limitations).

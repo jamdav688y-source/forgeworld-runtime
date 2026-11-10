@@ -1,0 +1,6 @@
+
+VERDICT: PASS
+NEXT:    This machine passed every required check. Next: run the phone<->PC experiment (docs/omega/DEPLOYMENT_AND_EXPERIMENT.md section C).
+COMMIT:  3a8ca868ccb609dae4368e68db8d8e94941b05c6  (local edits: False)
+EVIDENCE: <scratchpad>/gate-final/20261110-041655  (report.json signed, proof_id pf_4c46b11c5771a...)
+TESTS:   101 passed in 21.00s

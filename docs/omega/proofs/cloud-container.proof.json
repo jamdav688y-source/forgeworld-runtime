@@ -1,0 +1,353 @@
+{
+  "all_ok": true,
+  "checks": {
+    "e2e": {
+      "after_authorization": "SUCCEEDED",
+      "before_authorization": "AWAITING_AUTHORIZATION",
+      "final_integrity": true,
+      "forged_authorization": "OPERATOR_ATTESTATION_REQUIRED",
+      "naive_draft_blocked": [
+        "BOUNDARY_CONFLICT",
+        "REPEATED_QUESTION"
+      ],
+      "ok": true,
+      "pc_integrity": true,
+      "same_context": true,
+      "sent_reply": "Hi Dana,\n\nThank you for getting back to me.\nNoted on your goal: Cutting our customer onboarding time in half.\nWhat timeline are you working towards?\n\nBest regards,\nJ.",
+      "state_digests_equal": true,
+      "sync_back_complete": true,
+      "sync_complete": true,
+      "vectors_equal": true
+    },
+    "key_bytes": {
+      "all_256_byte_values_round_trip": true,
+      "identities_created": 200,
+      "identities_whose_key_bytes_contain_0x0A": 40,
+      "ok": true,
+      "reload_failures": []
+    },
+    "ollama": {
+      "hardware": {
+        "cpus": 4,
+        "hardware_class": "linux-x86_64-ram<=16gb-4c",
+        "machine": "x86_64",
+        "ram_bytes": 16867737600,
+        "system": "linux"
+      },
+      "memory_benchmark": {
+        "cases_sha256": "d9429aee1be4bf8aaeb185bf33b37affc6cef466ca46ebbac2581d820e63f1a0",
+        "systems": {
+          "baseline_exact": {
+            "median_ms": 0,
+            "near_miss_fp": 0,
+            "new_fp": 0,
+            "overall": {
+              "accuracy": "0.580",
+              "f1": "0.488",
+              "fn": 21,
+              "fp": 0,
+              "n": 50,
+              "precision": "1.000",
+              "recall": "0.323",
+              "tn": 19,
+              "tp": 10
+            },
+            "paraphrase_recall": "0.000"
+          },
+          "llm:llama3.2:1b": {
+            "median_ms": 308,
+            "near_miss_fp": 1,
+            "new_fp": 0,
+            "overall": {
+              "accuracy": "0.420",
+              "f1": "0.171",
+              "fn": 28,
+              "fp": 1,
+              "n": 50,
+              "precision": "0.750",
+              "recall": "0.097",
+              "tn": 18,
+              "tp": 3
+            },
+            "paraphrase_recall": "0.000"
+          },
+          "llm:qwen2.5:0.5b": {
+            "median_ms": 185,
+            "near_miss_fp": 6,
+            "new_fp": 4,
+            "overall": {
+              "accuracy": "0.580",
+              "f1": "0.656",
+              "fn": 11,
+              "fp": 10,
+              "n": 50,
+              "precision": "0.667",
+              "recall": "0.645",
+              "tn": 9,
+              "tp": 20
+            },
+            "paraphrase_recall": "0.524"
+          },
+          "llm:qwen2.5:1.5b": {
+            "median_ms": 320,
+            "near_miss_fp": 6,
+            "new_fp": 2,
+            "overall": {
+              "accuracy": "0.780",
+              "f1": "0.836",
+              "fn": 3,
+              "fp": 8,
+              "n": 50,
+              "precision": "0.778",
+              "recall": "0.903",
+              "tn": 11,
+              "tp": 28
+            },
+            "paraphrase_recall": "0.857"
+          },
+          "omega_rules": {
+            "median_ms": 2,
+            "near_miss_fp": 2,
+            "new_fp": 0,
+            "overall": {
+              "accuracy": "0.680",
+              "f1": "0.680",
+              "fn": 14,
+              "fp": 2,
+              "n": 50,
+              "precision": "0.895",
+              "recall": "0.548",
+              "tn": 17,
+              "tp": 17
+            },
+            "paraphrase_recall": "0.333"
+          },
+          "rules_or_llm:llama3.2:1b": {
+            "median_ms": 308,
+            "near_miss_fp": 2,
+            "new_fp": 0,
+            "overall": {
+              "accuracy": "0.680",
+              "f1": "0.680",
+              "fn": 14,
+              "fp": 2,
+              "n": 50,
+              "precision": "0.895",
+              "recall": "0.548",
+              "tn": 17,
+              "tp": 17
+            },
+            "paraphrase_recall": "0.333"
+          },
+          "rules_or_llm:qwen2.5:0.5b": {
+            "median_ms": 185,
+            "near_miss_fp": 7,
+            "new_fp": 4,
+            "overall": {
+              "accuracy": "0.640",
+              "f1": "0.727",
+              "fn": 7,
+              "fp": 11,
+              "n": 50,
+              "precision": "0.686",
+              "recall": "0.774",
+              "tn": 8,
+              "tp": 24
+            },
+            "paraphrase_recall": "0.667"
+          },
+          "rules_or_llm:qwen2.5:1.5b": {
+            "median_ms": 320,
+            "near_miss_fp": 7,
+            "new_fp": 2,
+            "overall": {
+              "accuracy": "0.780",
+              "f1": "0.841",
+              "fn": 2,
+              "fp": 9,
+              "n": 50,
+              "precision": "0.763",
+              "recall": "0.935",
+              "tn": 10,
+              "tp": 29
+            },
+            "paraphrase_recall": "0.905"
+          }
+        }
+      },
+      "ok": true,
+      "routing": {
+        "drafting": {
+          "fallback": null,
+          "reason": "highest recorded benchmark score, then lowest latency",
+          "selected": "qwen2.5:0.5b"
+        },
+        "extraction": {
+          "fallback": null,
+          "reason": "highest recorded benchmark score, then lowest latency",
+          "selected": "llama3.2:1b"
+        },
+        "repeat_detection": {
+          "fallback": null,
+          "reason": "highest recorded benchmark score, then lowest latency",
+          "selected": "qwen2.5:1.5b"
+        }
+      },
+      "routing_benchmark": [
+        {
+          "cases": 1,
+          "latency_ms": 411,
+          "model": "qwen2.5:0.5b",
+          "score_permille": 1000,
+          "task_class": "drafting"
+        },
+        {
+          "cases": 2,
+          "latency_ms": 302,
+          "model": "qwen2.5:0.5b",
+          "score_permille": 500,
+          "task_class": "extraction"
+        },
+        {
+          "cases": 1,
+          "latency_ms": 1964,
+          "model": "llama3.2:1b",
+          "score_permille": 1000,
+          "task_class": "drafting"
+        },
+        {
+          "cases": 2,
+          "latency_ms": 357,
+          "model": "llama3.2:1b",
+          "score_permille": 1000,
+          "task_class": "extraction"
+        },
+        {
+          "cases": 1,
+          "latency_ms": 871,
+          "model": "qwen2.5:1.5b",
+          "score_permille": 1000,
+          "task_class": "drafting"
+        },
+        {
+          "cases": 2,
+          "latency_ms": 374,
+          "model": "qwen2.5:1.5b",
+          "score_permille": 1000,
+          "task_class": "extraction"
+        },
+        {
+          "cases": 50,
+          "latency_ms": 308,
+          "model": "llama3.2:1b",
+          "score_permille": 171,
+          "task_class": "repeat_detection"
+        },
+        {
+          "cases": 50,
+          "latency_ms": 185,
+          "model": "qwen2.5:0.5b",
+          "score_permille": 656,
+          "task_class": "repeat_detection"
+        },
+        {
+          "cases": 50,
+          "latency_ms": 320,
+          "model": "qwen2.5:1.5b",
+          "score_permille": 836,
+          "task_class": "repeat_detection"
+        }
+      ],
+      "status": "AVAILABLE",
+      "version": "0.40.16"
+    },
+    "restart": {
+      "events_after_clean_restart": 5,
+      "events_after_kill": 5,
+      "integrity_after_clean_restart": true,
+      "integrity_after_kill": true,
+      "killed_writer_exit": 91,
+      "note": "the killed process died inside its transaction; nothing partial may remain",
+      "ok": true,
+      "writer_exit": 0
+    },
+    "test_suite": {
+      "counts": {
+        "passed": 94
+      },
+      "exit_code": 0,
+      "failures": [],
+      "ok": true,
+      "seconds": 14,
+      "summary": "94 passed in 14.63s"
+    }
+  },
+  "device": "Anthropic cloud development container (Linux VM, 4 vCPU, 15 GB) -- NOT the owner's physical hardware",
+  "platform": {
+    "android": false,
+    "cpus": 4,
+    "cryptography": "50.0.1",
+    "fts5": true,
+    "git_commit": "24c317b8cd87a73b9b1e650c3c2caa49a2aaff0c",
+    "machine": "x86_64",
+    "omega_dirty": false,
+    "platform": "Linux-6.18.44-fc-v338-x86_64-with-glibc2.39",
+    "python": "3.13.18",
+    "release": "6.18.44-fc-v338",
+    "sqlite": "3.53.1",
+    "system": "Linux",
+    "termux": false,
+    "windows": false
+  },
+  "proof_id": "pf_a1f8ad0e5ffaf92de67127519d70b99edff4fc7e9abde02b9d98e057864d08e7",
+  "schema": "fw.omega.proof/1",
+  "signature": "rspIJXaHfnENo2V4KLZ4-aXTPupwh_y4LdARpvIlb8wxM5bpacM9_65hoRqd-KU4V6I54FvuLVTp1BkFqq87Dw",
+  "signer": {
+    "device_id": "dev_910c286cb552be2a2ff3c033d31e4f3a",
+    "sign_pub": "A5d_9GotNyBEF-opO_Rt6I95PdsUpipAxtddY2d3TJk"
+  },
+  "sources": {
+    "omega/__init__.py": "2c45f730cbdafcf52cbc31d16d572f5fef10e0cd37925c91d863b1aeab3b5747",
+    "omega/__main__.py": "69322a22250b9815981c49943387440668597490847bf6ec609a7d539d3f71ca",
+    "omega/agents.py": "f9b7092b7f354f7fa38870ef0499084a47eca23f7d1935424f145d278f65786f",
+    "omega/bench/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "omega/bench/memory_bench.py": "69e3851b0bc519fe0e00d07194c4faed8c80c13563701198ce595a245d864a23",
+    "omega/canonical.py": "466d07f76c0c7711be6763c1fdba45782276f7f0c6363674c225cf613050d0e1",
+    "omega/cli.py": "1057e073651456ac51976b71ba77b21cd4651dab36e7368a42ea3c74e00fb038",
+    "omega/commercial.py": "e355d546ccf46e5a0bcb5c6b64988105e9c63fdb6e91f7d98a233e461b1bca69",
+    "omega/demo_e2e.py": "8dda6d90bbc8601a6e5c131afce649663a97879150050d6081f74f44a25e8a4b",
+    "omega/diagnostics.py": "0336b99255e657207d012e5cfc81fed947252334e9219863ae02be7f1f8b3c45",
+    "omega/discovery.py": "a71e06ba0c225469700c3043bf4cc4fb8d7108a92b807e46b555fd4ef9b4e676",
+    "omega/events.py": "6424b1bde896fa4f5fa216477a44a2f9c9dafa16326c76a1a486345dfa191fb6",
+    "omega/evolution.py": "14991de225edd235e4d2b182de6b5ee7edef671f5bb6ad2ffcc06ab9e38cce22",
+    "omega/forge.py": "bcb4c295a5bc1b21f534efc7bc4bf355809e72f4f3cdf04b8bd5759373f50b5a",
+    "omega/identity.py": "0e9cd99b254bad118c665698fe668748509b04092f324fbe206d729cc831d086",
+    "omega/operator.py": "46146ca508b8b03039404da866b2d85b76c66998bce5dd5169ccfe89409faf23",
+    "omega/policy.py": "01ea8e89f77b7d559f1c19bc56423376b67152036414a84c4adee9d389b179f2",
+    "omega/proof.py": "1ffb838ec4e00156f8ce0e06aa8852b01c63bc236a98798ca378feac299b22af",
+    "omega/receipts.py": "763c12c6f18067e1923e417c23b30087e76c598d64150d948098611a50dd85ba",
+    "omega/reconcile.py": "24e2030c6d0c1b320a68c21c38a6d71818c395e629a786042639381e6fa396e3",
+    "omega/relationship.py": "82b320038088c71b2e6ee386a29e72cc1913072b7480b036540cf649a1e95c03",
+    "omega/showcase.py": "3d09d9ed720e28e60d359036d7f25db4c320517b1bf7e299077d5549cf8dab68",
+    "omega/store.py": "2e4e7b8dc15162b10d7b5389ebfd5cd263d82c3caaf6c48f7a553b9a4dd55b13",
+    "omega/sync.py": "60e5fd75f7883401ee44b5b7a897859942643bba4e23b56b455e3c67ed0416e4",
+    "omega/tasks.py": "c7bb703556a95d82846ded20280518b1c7d9daebcb8f1d23af2699a4c5201991",
+    "omega/tests/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "omega/tests/conftest.py": "ef904d7402b7d39860567781e49d0847419d68858e9133a9fa9380a20e607c32",
+    "omega/tests/test_bench.py": "6a109416169d00b2ce68c844ed867250a358d313a51e3f5263d76c5321d23235",
+    "omega/tests/test_cli.py": "77e5dde4af69797bcba326311010dce95d92d527e080c916c60529b168c1744f",
+    "omega/tests/test_commercial.py": "604d0edb448c4e3fd6dde8b2c94d807fbdde494e217852174ac313bbe6d2ebd0",
+    "omega/tests/test_e2e.py": "c6367a1c7fc01d34df01b0e65906d71382acd7ef3c98118259286fc93f1047dc",
+    "omega/tests/test_evolution_agents.py": "769876ed0d7309f8ef8713aa1425306a76128206b40c058aa2e4ddbb41bc8145",
+    "omega/tests/test_inventory.py": "0efd2675da70b9e6442d9a58af9a51c495968217f091407342bad9e4c2c2fc77",
+    "omega/tests/test_kernel.py": "f5b31cbe3673888fc7dc601123f7d543bd39a81c20d9736dfd7d263bf825d143",
+    "omega/tests/test_offline_forge.py": "10763586639c142671f5626fd62dca6e1172db7613a9a35f94823ee2b3c1fa68",
+    "omega/tests/test_proof.py": "57ca7519e4c95987e355bfaa64e41c11f81fcde67ffa369c622c465b9ebd5dbc",
+    "omega/tests/test_receipts.py": "147cddca400e3aceba8c7f208dd018718592a462b46d46885093e9e4a6f03858",
+    "omega/tests/test_relationship.py": "d7d9701fd03f1b1531ae27f15a8ca90aa7f6cf726b75573aba7d6f7e00f2e3f2",
+    "omega/tests/test_security_fixes.py": "0368f0a218b7686632cf9a2775e4ecbb1edf6e155a3343fd9d1c4f025c2846b2",
+    "omega/tests/test_sync.py": "fd9d87ad4cfbda2dc380d8a41e8ee98b3afd7ab1b210a8b6d76da0a570a5b441",
+    "omega/tests/test_tasks_recovery.py": "ba4048f4ea57c52910b7304055ede2fba787060e95bba70eaeeafc0f244a5f96"
+  },
+  "started_utc": "2026-11-10T03:30:34Z"
+}
