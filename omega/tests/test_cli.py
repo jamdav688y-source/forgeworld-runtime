@@ -7,9 +7,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent.parent
 
 
-def omega(home, *args, check=True):
-    r = subprocess.run([sys.executable, "-m", "omega", "--home", str(home), *args], cwd=ROOT,
-                       capture_output=True, text=True)
+PASS = "phone and pc test passphrase\n"
+
+
+def omega(home, *args, check=True, passphrase=None):
+    pre = ["--passphrase-stdin"] if passphrase is not None else []
+    r = subprocess.run([sys.executable, "-m", "omega", "--home", str(home), *pre, *args], cwd=ROOT,
+                       capture_output=True, text=True, input=passphrase)
     if check and r.returncode != 0:
         raise AssertionError(f"{args}: rc={r.returncode}\n{r.stdout}\n{r.stderr}")
     return r
@@ -23,6 +27,8 @@ def test_cli_pairing_capture_draft_and_bundle_handoff(tmp_path):
     ph, pc = tmp_path / "phone", tmp_path / "pc"
     omega(ph, "init", "--label", "phone", "--profile", "pocket")
     omega(pc, "init", "--label", "pc", "--profile", "forge")
+    for h in (ph, pc):
+        assert j(omega(h, "operator-init", "--name", "op", passphrase=PASS))["actor"] == "human:op"
     o_ph, o_pc = omega(ph, "offer").stdout.strip(), omega(pc, "offer").stdout.strip()
     shown = omega(ph, "pair", "--offer", o_pc, "--my-offer", o_ph, "--actor", "human:op", check=False)
     assert shown.returncode == 3
@@ -30,10 +36,10 @@ def test_cli_pairing_capture_draft_and_bundle_handoff(tmp_path):
     shown_pc = omega(pc, "pair", "--offer", o_ph, "--my-offer", o_pc, "--actor", "human:op", check=False)
     assert shown_pc.stdout.split("SAS: ")[1][:6] == sas          # both screens agree
     bad = omega(ph, "pair", "--offer", o_pc, "--my-offer", o_ph, "--sas", "000000" if sas != "000000" else "111111",
-                "--actor", "human:op", check=False)
+                "--actor", "human:op", check=False, passphrase=PASS)
     assert bad.returncode != 0 and "mismatch" in bad.stderr
-    omega(ph, "pair", "--offer", o_pc, "--my-offer", o_ph, "--sas", sas, "--actor", "human:op")
-    omega(pc, "pair", "--offer", o_ph, "--my-offer", o_pc, "--sas", sas, "--actor", "human:op")
+    omega(ph, "pair", "--offer", o_pc, "--my-offer", o_ph, "--sas", sas, passphrase=PASS)
+    omega(pc, "pair", "--offer", o_ph, "--my-offer", o_pc, "--sas", sas, passphrase=PASS)
 
     cid = j(omega(ph, "contact-add", "--name", "Dana Reyes", "--primary", "sms:+15550100", "--actor", "human:op"))["contact_id"]
     omega(ph, "message", "--contact", cid, "--direction", "OUT", "--text", "Hi Dana, what budget do you have in mind?",
@@ -58,7 +64,12 @@ def test_cli_pairing_capture_draft_and_bundle_handoff(tmp_path):
     assert omega(pc, "verify").returncode == 0
     t = j(omega(pc, "task-queue", "--action", "noop", "--actor", "human:op", "--external"))["task_id"]
     assert j(omega(pc, "task-run")) == [[t, "AWAITING_AUTHORIZATION"]]
-    omega(pc, "task-authorize", "--task", t, "--actor", "human:op")
+    wrong = omega(pc, "task-authorize", "--task", t, check=False, passphrase="guess\n")
+    assert wrong.returncode != 0 and "PASSPHRASE_WRONG" in wrong.stderr
+    imposter = omega(pc, "task-authorize", "--task", t, "--actor", "human:someone-else", check=False, passphrase=PASS)
+    assert imposter.returncode != 0
+    assert j(omega(pc, "task-run")) == [[t, "AWAITING_AUTHORIZATION"]]
+    omega(pc, "task-authorize", "--task", t, passphrase=PASS)
     assert j(omega(pc, "task-run")) == [[t, "SUCCEEDED"]]
     omega(pc, "backup", "--out", str(tmp_path / "pc-backup.db"))
     assert (tmp_path / "pc-backup.db").stat().st_size > 0

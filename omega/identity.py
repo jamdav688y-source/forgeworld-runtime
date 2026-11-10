@@ -22,6 +22,7 @@ import base64
 import os
 import secrets
 from pathlib import Path
+from typing import Optional
 
 from omega.canonical import canonical, digest, loads, sha256_hex
 
@@ -117,9 +118,21 @@ class DeviceIdentity:
     def kx_shared(self, peer_kx_pub: bytes) -> bytes:
         return self._kx.exchange(X25519PublicKey.from_public_bytes(peer_kx_pub))
 
-    def pairing_offer(self, label: str) -> str:
+    def secret_tag(self, domain: str, data: str) -> str:
+        """Keyed, device-secret tag (HMAC-SHA256). Used for identifiers that must
+        not be recomputable by anyone who only knows the input (e.g. a phone
+        number -> contact id)."""
+        import hashlib
+        import hmac
+        k = hashlib.sha256(b"fw-omega-secret-tag|" + domain.encode() + b"|" + _raw_priv(self._sign)).digest()
+        return hmac.new(k, data.encode("utf-8"), hashlib.sha256).hexdigest()
+
+    def pairing_offer(self, label: str, operator_pub: Optional[bytes] = None, operator_name: str = "") -> str:
+        if operator_pub is None:
+            raise PairingError("register an operator (omega operator-init) before pairing")
         offer = {"v": 1, "device_id": self.device_id, "label": label,
                  "sign_pub": b64e(self.sign_pub), "kx_pub": b64e(self.kx_pub),
+                 "operator_pub": b64e(operator_pub), "operator_name": operator_name,
                  "nonce": secrets.token_hex(16)}
         return "FWPAIR1:" + b64e(canonical(offer))
 
@@ -141,7 +154,7 @@ def parse_offer(text: str) -> dict:
         offer = loads(b64d(text[len("FWPAIR1:"):]))
     except Exception as exc:
         raise PairingError(f"malformed pairing offer: {exc}") from exc
-    for f in ("device_id", "label", "sign_pub", "kx_pub", "nonce"):
+    for f in ("device_id", "label", "sign_pub", "kx_pub", "nonce", "operator_pub"):
         if not isinstance(offer.get(f), str):
             raise PairingError(f"pairing offer missing {f}")
     if device_id_for(b64d(offer["sign_pub"])) != offer["device_id"]:
@@ -152,5 +165,6 @@ def parse_offer(text: str) -> dict:
 def short_auth_string(offer_a: dict, offer_b: dict) -> str:
     """Order-independent 6-digit SAS over both offers."""
     pair = sorted([offer_a, offer_b], key=lambda o: o["device_id"])
-    d = digest("pairing-sas", [[o["device_id"], o["sign_pub"], o["kx_pub"], o["nonce"]] for o in pair])
+    d = digest("pairing-sas", [[o["device_id"], o["sign_pub"], o["kx_pub"], o.get("operator_pub", ""), o["nonce"]]
+                               for o in pair])
     return f"{int(d[:12], 16) % 1_000_000:06d}"

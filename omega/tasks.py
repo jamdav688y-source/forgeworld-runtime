@@ -14,7 +14,9 @@ Rules (FW-SCS-001 rules 9 and 12):
     (the stricter of the two wins).
   * An external task runs only if THIS device holds a TASK_AUTHORIZED event
     for that exact task event, written locally (origin LOCAL) by a HUMAN
-    actor. An authorization imported from another device does not count:
+    actor AND carrying a valid operator attestation (omega/operator.py),
+    re-verified at execution time. An authorization imported from another
+    device does not count:
     events.validate() already requires authorized_device == writer device.
   * Unknown actions are refused, never guessed.
 """
@@ -61,7 +63,7 @@ class TaskQueue:
                 return e
         return None
 
-    def authorize(self, task_id: str, *, actor: str, note: str = ""):
+    def authorize(self, task_id: str, *, actor: str, note: str = "", operator=None):
         ev = self._task_event(task_id)
         if ev is None:
             raise KeyError(task_id)
@@ -69,7 +71,7 @@ class TaskQueue:
                                                     "authorized_device": self.node.device_id,
                                                     "note": note or "operator authorized"},
                                 actor=actor, privacy="PRIVATE", links=[f"task:{task_id}"],
-                                parents=[event_id_for(ev.header)])
+                                parents=[event_id_for(ev.header)], operator=operator)
 
     def _authorized_locally(self, task_ev) -> Optional[str]:
         teid = event_id_for(task_ev.header)
@@ -77,7 +79,8 @@ class TaskQueue:
             h = a.header
             if (a.payload and a.payload["task_event"] == teid and h["actor_kind"] == "HUMAN"
                     and h["device_id"] == self.node.device_id
-                    and self.node.origin_of(event_id_for(h)) == "LOCAL"):
+                    and self.node.origin_of(event_id_for(h)) == "LOCAL"
+                    and self.node.attestation_problem(a) is None):   # re-verified at execution time
                 return event_id_for(h)
         return None
 

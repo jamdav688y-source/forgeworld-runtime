@@ -23,7 +23,8 @@ def test_customer_statement_of_payment_is_never_settlement(phone):
     assert s["amounts_minor"] == {"invoiced": 500000, "claimed_paid": 500000, "verified_paid": 0, "outstanding": 500000}
     assert "PAYMENT_CLAIMED_NOT_VERIFIED" in s["warnings"]
     led.verify_payment("deal-1", reference="INV-001", amount_minor=500000, currency="USD",
-                       settlement_source="bank_statement", settlement_record=b"bank line 2026-11-04 +5000.00", actor=HUMAN)
+                       settlement_source="bank_statement", settlement_record=b"bank line 2026-11-04 +5000.00", actor=HUMAN,
+                       operator=phone.op)
     s = led.deal_state("deal-1")
     assert s["payment_confirmed"] and s["amounts_minor"]["outstanding"] == 0
     assert "PAYMENT_CLAIMED_NOT_VERIFIED" not in s["warnings"]
@@ -39,7 +40,7 @@ def test_only_humans_with_evidence_can_confirm(phone):
     assert e.value.code == "ACTOR_NOT_PERMITTED"
     with pytest.raises(StoreError) as e:
         led.verify_payment("d", reference="R-unknown", amount_minor=100, currency="USD",
-                           settlement_source="bank_statement", settlement_record=b"x", actor=HUMAN)
+                           settlement_source="bank_statement", settlement_record=b"x", actor=HUMAN, operator=phone.op)
     assert e.value.code == "TRANSITION_REFUSED"
     with pytest.raises(StoreError) as e:
         led.record("d", "VERBAL_AGREEMENT", "model thinks they agreed", actor="model:llm", source_ref="x")

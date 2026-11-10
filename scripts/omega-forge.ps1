@@ -11,6 +11,9 @@ if ($args.Count -gt 0 -and $args[0] -eq "setup") {
     if (-not (Test-Path (Join-Path $env:OMEGA_HOME "node.json"))) {
         & $Py -m omega --home $env:OMEGA_HOME init --label $label --profile forge
     }
+    if (-not (Test-Path (Join-Path $env:OMEGA_HOME "operator\operator.json"))) {
+        & $Py -m omega --home $env:OMEGA_HOME operator-init --name owner
+    }
     & $Py -m omega --home $env:OMEGA_HOME diag --probe-ollama
     exit $LASTEXITCODE
 }

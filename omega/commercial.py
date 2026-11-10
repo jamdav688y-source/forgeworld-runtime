@@ -62,7 +62,7 @@ class CommercialLedger:
 
     def verify_payment(self, deal_id: str, *, reference: str, amount_minor: int, currency: str,
                        settlement_source: str, settlement_record: bytes, actor: str,
-                       record_type: str = "application/pdf"):
+                       record_type: str = "application/pdf", operator=None):
         refs = {e.payload.get("reference") for e in self._events(deal_id)
                 if e.header["event_type"] == "COMMERCE_SIGNAL"
                 and e.payload["stage"] in ("INVOICE_ISSUED", "PAYMENT_ATTEMPTED", "PAYMENT_CLAIMED")}
@@ -73,12 +73,13 @@ class CommercialLedger:
                                  "currency": currency, "settlement_source": settlement_source},
                                 actor=actor, links=[deal_entity(deal_id)], privacy="PRIVATE", verification="VERIFIED",
                                 provenance=[{"kind": "source", "ref": f"settlement:{settlement_source}:{reference}"}],
-                                artifact_data=[(settlement_record, record_type)])
+                                artifact_data=[(settlement_record, record_type)], operator=operator)
 
     def deal_state(self, deal_id: str, today: Optional[str] = None) -> dict:
         evs = self._events(deal_id)
         sig = [e for e in evs if e.header["event_type"] == "COMMERCE_SIGNAL"]
-        ver = [e for e in evs if e.header["event_type"] == "PAYMENT_VERIFIED"]
+        ver = [e for e in evs if e.header["event_type"] == "PAYMENT_VERIFIED"
+               and self.node.attestation_problem(e) is None]
         stages = {e.payload["stage"] for e in sig}
 
         def total(stage):

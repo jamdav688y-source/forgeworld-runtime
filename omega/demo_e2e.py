@@ -38,6 +38,7 @@ from omega.store import Node
 from omega.tasks import Executor, TaskQueue
 
 HUMAN = "human:operator"
+DEMO_PASSPHRASE = "demo passphrase - never reuse"
 
 
 def _clock(start):
@@ -65,11 +66,16 @@ def run(workdir) -> dict:
     phone = Node.init(workdir / "phone", "pocket-phone", "pocket")
     pc = Node.init(workdir / "pc", "forge-pc", "forge")
     phone.clock, pc.clock = _clock(1793534400), _clock(1793620800)
-    oa = parse_offer(phone.identity.pairing_offer("pocket-phone"))
-    ob = parse_offer(pc.identity.pairing_offer("forge-pc"))
+    # each device registers its operator key (passphrase-protected); the demo
+    # passphrase stands in for the one a person types at the prompt
+    phone.create_operator("operator", DEMO_PASSPHRASE)
+    pc.create_operator("operator", DEMO_PASSPHRASE)
+    op_phone, op_pc = phone.unlock_operator(DEMO_PASSPHRASE), pc.unlock_operator(DEMO_PASSPHRASE)
+    oa = parse_offer(phone.pairing_offer())
+    ob = parse_offer(pc.pairing_offer())
     sas = short_auth_string(oa, ob)
-    phone.add_peer(ob, oa, sas, actor=HUMAN)
-    pc.add_peer(oa, ob, sas, actor=HUMAN)
+    phone.add_peer(ob, oa, sas, actor=HUMAN, operator=op_phone)
+    pc.add_peer(oa, ob, sas, actor=HUMAN, operator=op_pc)
     out = {"phone": phone.device_id, "pc": pc.device_id, "sas": sas}
 
     # ---- 2/3: phone alone, offline -------------------------------------
@@ -142,7 +148,20 @@ def run(workdir) -> dict:
                   external_effect=True, links=[f"contact:{cid}"])
     out["before_authorization"] = dict(q.run_once())[tid]
     out["outbox_before_authorization"] = len(outbox)
-    q.authorize(tid, actor=HUMAN, note="send the discovery follow-up")
+    # an agent that can run code but does not know the passphrase cannot authorize
+    from omega.store import StoreError
+    try:
+        q.authorize(tid, actor=HUMAN, note="agent pretending to be the operator")
+        out["forged_authorization"] = "ACCEPTED"
+    except StoreError as exc:
+        out["forged_authorization"] = exc.code
+    try:
+        pc.unlock_operator("guessed passphrase")
+        out["wrong_passphrase"] = "UNLOCKED"
+    except PermissionError as exc:
+        out["wrong_passphrase"] = getattr(exc, "code", "REFUSED")
+    out["after_forgery_attempts"] = dict(q.run_once())[tid]
+    q.authorize(tid, actor=HUMAN, note="send the discovery follow-up", operator=op_pc)
     out["after_authorization"] = dict(q.run_once())[tid]
     out["sent_reply"] = outbox[0]["text"] if outbox else None
     out["sent_reply_findings"] = sorted({f["code"] for f in RelationshipMemory(pc).check_draft(cid, out["sent_reply"] or "")

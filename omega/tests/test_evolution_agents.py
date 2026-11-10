@@ -49,7 +49,7 @@ def test_eligible_change_needs_a_human_to_promote(pc, repo):
     with pytest.raises(StoreError) as err:
         gate.decide(e, v["gate_event"], "PROMOTE", actor="model:planner")
     assert err.value.code == "ACTOR_NOT_PERMITTED"
-    d = gate.decide(e, v["gate_event"], "PROMOTE", actor=HUMAN)
+    d = gate.decide(e, v["gate_event"], "PROMOTE", actor=HUMAN, operator=pc.op)
     assert d.payload["rollback_point"] == e.rollback_point
 
 
@@ -60,9 +60,9 @@ def test_failing_regression_blocks_promotion(pc, repo):
     v = gate.evaluate(e, measured=95)
     assert v["verdict"] == "NOT_ELIGIBLE" and v["reasons"] == ["REGRESSION_FAILED"]
     with pytest.raises(StoreError) as err:
-        gate.decide(e, v["gate_event"], "PROMOTE", actor=HUMAN)
+        gate.decide(e, v["gate_event"], "PROMOTE", actor=HUMAN, operator=pc.op)
     assert err.value.code == "PROMOTION_REFUSED"
-    gate.decide(e, v["gate_event"], "REJECT", actor=HUMAN)
+    gate.decide(e, v["gate_event"], "REJECT", actor=HUMAN, operator=pc.op)
 
 
 def test_governance_change_and_weak_effect_are_not_eligible(pc, repo):

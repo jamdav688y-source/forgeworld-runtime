@@ -106,7 +106,7 @@ class PromotionGate:
         return {"experiment_id": xid, "verdict": verdict, "reasons": reasons, "gate_event": event_id_for(ev.header),
                 "regression": reg}
 
-    def decide(self, exp: Experiment, gate_event: str, decision: str, *, actor: str, note: str = ""):
+    def decide(self, exp: Experiment, gate_event: str, decision: str, *, actor: str, note: str = "", operator=None):
         gate = self.node.get(gate_event)
         if gate is None or gate.payload is None or gate.payload.get("experiment_id") != exp.experiment_id \
                 or gate.payload.get("phase") != "MEASURED":
@@ -118,4 +118,5 @@ class PromotionGate:
                                  "rollback_point": exp.rollback_point, "gate_event": gate_event,
                                  "note": note or "operator decision"},
                                 actor=actor, privacy="INTERNAL", links=[f"experiment:{exp.experiment_id}"],
-                                parents=[gate_event], verification="VERIFIED" if decision == "PROMOTE" else "UNVERIFIED")
+                                parents=[gate_event], verification="VERIFIED" if decision == "PROMOTE" else "UNVERIFIED",
+                                operator=operator)

@@ -76,8 +76,14 @@ STOP = set("a an the to of and or for in on at is are be you your i me my we our
            "could would will what which when where who how have has any some there please just".split())
 
 
-def contact_id_for(primary: str) -> str:
-    return "ct_" + digest("contact", primary.strip().lower())[:24]
+def contact_id_for(primary: str, identity=None) -> str:
+    """Keyed by the device secret when an identity is given (the normal path):
+    a peer that sees a header link cannot recompute it from a phone number.
+    The unkeyed form exists only for callers without a node."""
+    norm = primary.strip().lower()
+    if identity is not None:
+        return "ct_" + identity.secret_tag("contact-id", norm)[:24]
+    return "ct_" + digest("contact", norm)[:24]
 
 
 def entity(contact_id: str) -> str:
@@ -158,15 +164,24 @@ class RelationshipMemory:
     # ---------------------------------------------------------- recording
     def add_contact(self, display_name: str, *, primary: str, actor: str, aliases=(), channels=(),
                     boundaries=(), privacy: str = "PRIVATE", source: str = "operator:entry") -> str:
-        cid = contact_id_for(primary)
+        cid = self.find_contact(primary) or contact_id_for(primary, self.node.identity)
         key = f"contact|{cid}|display_name"
         self.node.append("CONTACT_ASSERTED",
                          {"contact_id": cid, "display_name": display_name, "aliases": sorted(set(aliases)),
+                          "primary": primary.strip().lower(),
                           "channels": [dict(c) for c in channels], "boundaries": list(boundaries)},
                          actor=actor, links=[entity(cid)], privacy=privacy,
                          provenance=[{"kind": "source", "ref": source}],
                          parents=reconcile.current_heads(self.node, key))
         return cid
+
+    def find_contact(self, primary: str) -> Optional[str]:
+        """An existing contact (created here or synced) with this primary channel."""
+        norm = primary.strip().lower()
+        for e in self.node.events("CONTACT_ASSERTED"):
+            if e.payload and e.payload.get("primary") == norm:
+                return e.payload["contact_id"]
+        return None
 
     def _message_events(self, cid: str) -> list:
         return [e for e in self.node.events("MESSAGE_RECORDED", entity(cid)) if e.payload is not None]
@@ -342,8 +357,15 @@ class RelationshipMemory:
         return "cx_" + digest("context", self.context(cid))
 
     # ------------------------------------------------------------- checks
-    def check_draft(self, cid: str, text: str, today: Optional[str] = None) -> list:
-        """Findings for a draft to `cid`. severity BLOCK means do not send."""
+    def check_draft(self, cid: str, text: str, today: Optional[str] = None,
+                    semantic_checker: Optional[Callable[[list, str], bool]] = None) -> list:
+        """Findings for a draft to `cid`. severity BLOCK means do not send.
+
+        semantic_checker(answered_pairs, question) -> bool is optional (e.g. a
+        local model, forge.OllamaClient.repeat_checker). Its hits are WARN
+        (POSSIBLE_REPEAT), never BLOCK: in the memory benchmark it raised recall
+        but had more false positives than the rules (BENCHMARK_REPORT.md). If it
+        fails, the check degrades to the rules alone."""
         ctx = self.context(cid)
         findings = []
         known = {a: f for a, f in ctx["facts"].items() if f["status"] == "RESOLVED"}
@@ -368,6 +390,20 @@ class RelationshipMemory:
             if pend:
                 findings.append({"code": "ALREADY_ASKED_PENDING", "severity": "WARN", "question": q,
                                  "evidence": [pend["asked_in"]]})
+                continue
+            if semantic_checker is not None and ctx["answered_questions"]:
+                pairs = []
+                for aq in ctx["answered_questions"]:
+                    ans = next((m["text"] for m in ctx["timeline"] if m["event_id"] == aq["answered_in"]), "")
+                    pairs.append({"q": aq["question"], "a": ans})
+                try:
+                    if semantic_checker(pairs, q):
+                        findings.append({"code": "POSSIBLE_REPEAT", "severity": "WARN", "question": q,
+                                         "checker": getattr(semantic_checker, "name", "semantic"),
+                                         "evidence": [a["answered_in"] for a in ctx["answered_questions"]]})
+                except Exception as exc:
+                    findings.append({"code": "SEMANTIC_CHECK_UNAVAILABLE", "severity": "INFO",
+                                     "detail": type(exc).__name__})
         # identity
         m = GREETING_RE.match(text)
         if m:

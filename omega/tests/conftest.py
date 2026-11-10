@@ -23,17 +23,30 @@ def fixed_clock(start=1793534400):  # 2026-11-01T00:00:00Z
     return clock
 
 
-def make_node(path, label, profile="pocket", **kw):
+TEST_PASSPHRASE = "correct horse battery staple"
+TEST_KDF = {"n": 2 ** 12, "r": 8, "p": 1}   # fast for tests only; production uses operator.KDF
+
+
+def make_node(path, label, profile="pocket", operator=True, **kw):
     n = Node.init(path, label, profile, **kw)
     n.clock = fixed_clock()
+    n.op = None
+    if operator:
+        clone = kw.get("clone_identity_from")
+        if clone is not None and (Path(clone).parent / "operator").exists():
+            import shutil
+            shutil.copytree(Path(clone).parent / "operator", Path(path) / "operator")
+        else:
+            n.create_operator("operator", TEST_PASSPHRASE, TEST_KDF)
+        n.op = n.unlock_operator(TEST_PASSPHRASE)
     return n
 
 
 def pair(a, b, max_privacy="PRIVATE"):
-    oa, ob = parse_offer(a.identity.pairing_offer(a.info["label"])), parse_offer(b.identity.pairing_offer(b.info["label"]))
+    oa, ob = parse_offer(a.pairing_offer()), parse_offer(b.pairing_offer())
     sas = short_auth_string(oa, ob)
-    a.add_peer(ob, oa, sas, actor=HUMAN, max_privacy=max_privacy)
-    b.add_peer(oa, ob, sas, actor=HUMAN, max_privacy=max_privacy)
+    a.add_peer(ob, oa, sas, actor=HUMAN, max_privacy=max_privacy, operator=a.op)
+    b.add_peer(oa, ob, sas, actor=HUMAN, max_privacy=max_privacy, operator=b.op)
 
 
 @pytest.fixture

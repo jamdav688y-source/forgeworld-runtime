@@ -84,6 +84,17 @@ class OllamaClient:
                 "options": {"temperature": 0, "seed": 0}}
         return self._req("/api/generate", body).get("response", "").strip()
 
+    def repeat_checker(self, model: str, contact: str = "the contact") -> Callable:
+        """Advisory semantic repeat check for RelationshipMemory.check_draft."""
+        from omega.bench.memory_bench import PROMPT
+
+        def check(pairs: list, question: str) -> bool:
+            qa = "\n".join(f'- Q: "{p["q"]}"  A: "{p["a"]}"' for p in pairs)
+            ans = self.generate(model, PROMPT.format(contact=contact, qa=qa, q=question)).strip()
+            return bool(ans) and ans.split()[0].strip(".,!").upper() == "YES"
+        check.name = f"ollama:{model}"
+        return check
+
     def drafter(self, model: str) -> Callable:
         """A generator for RelationshipMemory.compose(). It sees only the one
         contact's reconstructed context."""
@@ -193,6 +204,13 @@ class ModelRouter:
     def __init__(self, node):
         self.node = node
 
+    @staticmethod
+    def suites() -> set:
+        """Benchmark suites whose results the router accepts: the built-in
+        routing suite and the frozen memory benchmark case file."""
+        from omega.bench.memory_bench import load
+        return {SUITE_DIGEST, "mb_" + load()[1][:32]}
+
     def select(self, task_class: str, hardware_class: Optional[str] = None, max_latency_ms: int = 30000,
                available: Optional[list] = None) -> dict:
         hw = hardware_class or hardware_profile()["hardware_class"]
@@ -200,7 +218,7 @@ class ModelRouter:
         for e in self.node.events("BENCHMARK_RESULT"):
             p = e.payload
             if (p and p["task_class"] == task_class and p["hardware_class"] == hw
-                    and p["suite_digest"] == SUITE_DIGEST):
+                    and p["suite_digest"] in self.suites()):
                 latest[p["model"]] = (p, event_id_for(e.header))   # later evidence replaces earlier
         cands = []
         for model, (p, eid) in sorted(latest.items()):

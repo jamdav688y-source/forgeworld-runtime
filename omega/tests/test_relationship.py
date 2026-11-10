@@ -155,3 +155,21 @@ def test_every_template_question_classifies_to_its_own_attribute():
     from omega.relationship import QUESTION_TEMPLATES
     for attr, q in QUESTION_TEMPLATES.items():
         assert classify_question(q) == attr, (attr, q)
+
+
+def test_semantic_checker_is_advisory_and_degrades(mem):
+    rm, dana, _ = mem
+    seen = []
+
+    def checker(pairs, q):
+        seen.append((len(pairs), q))
+        return "spend" in q
+    checker.name = "fake-semantic"
+    f = rm.check_draft(dana, "Hi Dana, what kind of spend approval process do you have?", semantic_checker=checker)
+    assert [x for x in f if x["code"] == "POSSIBLE_REPEAT"][0]["severity"] == "WARN"
+    assert seen and seen[0][0] >= 1                        # it saw the answered pairs of THIS contact only
+
+    def broken(pairs, q):
+        raise ConnectionError("model down")
+    f2 = rm.check_draft(dana, "Hi Dana, what kind of spend approval process do you have?", semantic_checker=broken)
+    assert "SEMANTIC_CHECK_UNAVAILABLE" in codes(f2) and "POSSIBLE_REPEAT" not in codes(f2)

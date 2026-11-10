@@ -57,6 +57,11 @@ EVENT_TYPES = {
     "PROMOTION_DECISION":    (("HUMAN",), "evolution"),
 }
 
+# Consequential event types: accepted only with an operator attestation
+# (omega/operator.py) -- a passphrase-unlocked key, not just a name.
+ATTESTED_TYPES = ("TASK_AUTHORIZED", "DELETION_AUTHORIZED", "PAYMENT_VERIFIED", "PROMOTION_DECISION",
+                  "RETENTION_POLICY", "PEER_PAIRED", "ACCESS_REVOKED")
+
 # Model output is never evidence of verification: a non-human event may
 # only be written UNVERIFIED.
 NON_HUMAN_MAX_VERIFICATION = "UNVERIFIED"

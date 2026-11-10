@@ -23,6 +23,9 @@ def test_end_to_end_acceptance(tmp_path):
         assert r["same_context"]
         # bounded execution under human control
         assert r["before_authorization"] == "AWAITING_AUTHORIZATION" and r["outbox_before_authorization"] == 0
+        assert r["forged_authorization"] == "OPERATOR_ATTESTATION_REQUIRED"
+        assert r["wrong_passphrase"] == "PASSPHRASE_WRONG"
+        assert r["after_forgery_attempts"] == "AWAITING_AUTHORIZATION"
         assert r["after_authorization"] == "SUCCEEDED"
         assert r["pc_known_facts"] == ["boundary:call", "budget", "goal"]
         reply = r["sent_reply"]

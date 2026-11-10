@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS conflicts(conflict_id TEXT PRIMARY KEY, kind TEXT NOT
   detail TEXT NOT NULL, status TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS peers(device_id TEXT PRIMARY KEY, label TEXT NOT NULL, sign_pub TEXT NOT NULL,
   kx_pub TEXT NOT NULL, max_privacy TEXT NOT NULL, revoked INTEGER NOT NULL DEFAULT 0,
-  last_vector TEXT NOT NULL DEFAULT '{}');
+  last_vector TEXT NOT NULL DEFAULT '{}', operator_pub TEXT);
 CREATE TABLE IF NOT EXISTS seen_nonces(nonce TEXT PRIMARY KEY, peer TEXT NOT NULL, context TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS local_exec(task_id TEXT PRIMARY KEY, state TEXT NOT NULL, lease_until INTEGER,
   attempts INTEGER NOT NULL DEFAULT 0, detail TEXT NOT NULL DEFAULT '');
@@ -192,6 +192,9 @@ class Node:
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA synchronous=FULL")
         conn.executescript(SCHEMA_SQL)
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(peers)")}
+        if "operator_pub" not in cols:   # migration from the first omega schema
+            conn.execute("ALTER TABLE peers ADD COLUMN operator_pub TEXT")
         return conn
 
     def close(self):
@@ -229,12 +232,48 @@ class Node:
         return b64d(row[0]) if row else None
 
     def peer(self, device_id: str) -> Optional[dict]:
-        row = self.conn.execute("SELECT device_id,label,sign_pub,kx_pub,max_privacy,revoked,last_vector "
+        row = self.conn.execute("SELECT device_id,label,sign_pub,kx_pub,max_privacy,revoked,last_vector,operator_pub "
                                 "FROM peers WHERE device_id=?", (device_id,)).fetchone()
         if not row:
             return None
         return {"device_id": row[0], "label": row[1], "sign_pub": b64d(row[2]), "kx_pub": b64d(row[3]),
-                "max_privacy": row[4], "revoked": bool(row[5]), "last_vector": json.loads(row[6])}
+                "max_privacy": row[4], "revoked": bool(row[5]), "last_vector": json.loads(row[6]),
+                "operator_pub": b64d(row[7]) if row[7] else None}
+
+    # -------------------------------------------------------------- operator
+    def operator_public(self) -> Optional[dict]:
+        from omega import operator as op
+        return op.load_public(self.path / "operator")
+
+    def create_operator(self, name: str, passphrase: str, kdf: Optional[dict] = None):
+        from omega import operator as op
+        return op.create(self.path / "operator", name, passphrase, kdf)
+
+    def unlock_operator(self, passphrase: str):
+        from omega import operator as op
+        return op.unlock(self.path / "operator", passphrase)
+
+    def pairing_offer(self) -> str:
+        pub = self.operator_public()
+        return self.identity.pairing_offer(self.info["label"], pub["pub"] if pub else None,
+                                           pub["name"] if pub else "")
+
+    def operator_pub_for(self, device_id: str) -> Optional[bytes]:
+        if device_id == self.device_id:
+            pub = self.operator_public()
+            return pub["pub"] if pub else None
+        p = self.peer(device_id)
+        return p["operator_pub"] if p else None
+
+    def attestation_problem(self, ev) -> Optional[str]:
+        """None if `ev` is not a consequential type or carries a valid operator
+        attestation from the operator registered for its device."""
+        from omega import operator as op
+        h = ev.header
+        if h["event_type"] not in policy.ATTESTED_TYPES:
+            return None
+        return op.check(self.operator_pub_for(h["device_id"]), h["event_type"], h["device_id"], h["actor_id"],
+                        ev.payload)
 
     def peers(self) -> list:
         return [self.peer(r[0]) for r in self.conn.execute("SELECT device_id FROM peers ORDER BY device_id")]
@@ -339,11 +378,21 @@ class Node:
                privacy: str = "PRIVATE", provenance: Iterable[dict] = (), parents: Iterable[str] = (),
                artifacts: Iterable[str] = (), verification: str = "UNVERIFIED",
                supersedes: Optional[str] = None, corrects: Optional[str] = None,
-               artifact_data: Optional[list] = None, receipt: bool = True) -> Event:
+               artifact_data: Optional[list] = None, receipt: bool = True, operator=None) -> Event:
         """Create, sign and commit one local event (one transaction).
         artifact_data: optional [(bytes, media_type)] stored as original sources
         and added to header.artifacts."""
         kind = actor_kind_of(actor)
+        if event_type in policy.ATTESTED_TYPES and kind == "HUMAN":   # non-humans are refused by validate()
+            reg = self.operator_public()
+            if operator is None or reg is None or operator.operator_id != reg["operator_id"]:
+                raise StoreError("OPERATOR_ATTESTATION_REQUIRED",
+                                 f"{event_type} needs this device's unlocked operator key")
+            if actor != operator.actor:
+                raise StoreError("ACTOR_NOT_OPERATOR", f"{event_type} must be written as {operator.actor}")
+            payload = dict(payload)
+            payload.pop("_operator", None)
+            payload["_operator"] = operator.attest(event_type, self.device_id, actor, payload)
         parents = set(parents)
         if supersedes:
             parents.add(supersedes)
@@ -430,6 +479,14 @@ class Node:
     def _apply_effects(self, conn, ev: Event):
         et, p = ev.header["event_type"], ev.payload
         if p is None:
+            return
+        problem = self.attestation_problem(ev)
+        if problem is not None:
+            # history is kept (it is signed by the device), but an unattested
+            # consequential event has no effect here
+            conn.execute("INSERT INTO quarantine(peer, reason, envelope) VALUES(?,?,?)",
+                         (ev.header["device_id"], f"UNATTESTED_{et}:{problem}",
+                          json.dumps({"event_id": event_id_for(ev.header)})))
             return
         if et == "DELETION_AUTHORIZED":
             self._purge(conn, p["target_event"])
@@ -543,7 +600,7 @@ class Node:
 
     # --------------------------------------------------------------- peers
     def add_peer(self, offer: dict, my_offer: dict, sas_entered: str, *, actor: str,
-                 max_privacy: str = "PRIVATE") -> Event:
+                 max_privacy: str = "PRIVATE", operator=None) -> Event:
         """Record a human-confirmed pairing. sas_entered must equal the SAS the
         operator saw on BOTH devices."""
         from omega.identity import short_auth_string, PairingError
@@ -555,17 +612,22 @@ class Node:
             raise PairingError("short authentication string mismatch: pairing refused")
         if actor_kind_of(actor) != "HUMAN":
             raise PairingError("pairing requires a human")
+        reg = self.operator_public()
+        if operator is None or reg is None or operator.operator_id != reg["operator_id"] or actor != operator.actor:
+            raise PairingError("pairing requires this device's unlocked operator key")
+        if b64e(reg["pub"]) != my_offer.get("operator_pub"):
+            raise PairingError("my_offer does not carry this device's operator key")
         with self.tx() as conn:
-            conn.execute("INSERT OR REPLACE INTO peers(device_id,label,sign_pub,kx_pub,max_privacy,revoked) "
-                         "VALUES(?,?,?,?,?,0)", (offer["device_id"], offer["label"], offer["sign_pub"],
-                                                  offer["kx_pub"], max_privacy))
+            conn.execute("INSERT OR REPLACE INTO peers(device_id,label,sign_pub,kx_pub,max_privacy,revoked,operator_pub) "
+                         "VALUES(?,?,?,?,?,0,?)", (offer["device_id"], offer["label"], offer["sign_pub"],
+                                                    offer["kx_pub"], max_privacy, offer["operator_pub"]))
         return self.append("PEER_PAIRED", {"peer_device_id": offer["device_id"], "label": offer["label"],
                                            "max_privacy": max_privacy},
-                           actor=actor, privacy=policy.DEVICE_LOCAL)
+                           actor=actor, privacy=policy.DEVICE_LOCAL, operator=operator)
 
-    def revoke_peer(self, device_id: str, *, actor: str, reason: str = "operator revoked") -> Event:
+    def revoke_peer(self, device_id: str, *, actor: str, reason: str = "operator revoked", operator=None) -> Event:
         return self.append("ACCESS_REVOKED", {"peer_device_id": device_id, "reason": reason},
-                           actor=actor, privacy=policy.DEVICE_LOCAL)
+                           actor=actor, privacy=policy.DEVICE_LOCAL, operator=operator)
 
     def set_peer_vector(self, device_id: str, vector: dict):
         with self.tx() as conn:
@@ -580,16 +642,16 @@ class Node:
             return True
 
     # ----------------------------------------------------------- deletion
-    def authorize_deletion(self, target_event: str, reason: str, *, actor: str) -> Event:
+    def authorize_deletion(self, target_event: str, reason: str, *, actor: str, operator=None) -> Event:
         return self.append("DELETION_AUTHORIZED", {"target_event": target_event, "reason": reason},
-                           actor=actor, privacy="INTERNAL")
+                           actor=actor, privacy="INTERNAL", operator=operator)
 
     def apply_retention(self, now: Optional[float] = None) -> list:
         """Purge payloads older than human-authorized RETENTION_POLICY limits.
         Deterministic: every node holding the same policy purges the same set."""
         now = time.time() if now is None else now
         purged = []
-        policies = [e for e in self.events("RETENTION_POLICY") if e.payload]
+        policies = [e for e in self.events("RETENTION_POLICY") if e.payload and self.attestation_problem(e) is None]
         with self.tx() as conn:
             before = self.state_digest()
             for pol in policies:

@@ -31,7 +31,7 @@ def test_external_task_needs_local_human_authorization(phone):
     assert out[t_ext] == "AWAITING_AUTHORIZATION" and out[t_lie] == "AWAITING_AUTHORIZATION"
     assert out[t_int] == "SUCCEEDED" and out[t_unknown] == "REFUSED_UNKNOWN_ACTION"
     assert calls == [("reindex", {})]
-    q.authorize(t_ext, actor=HUMAN)
+    q.authorize(t_ext, actor=HUMAN, operator=phone.op)
     out = dict(q.run_once())
     assert out[t_ext] == "SUCCEEDED" and calls[-1][0] == "send"
     assert q.run_once() == [(t_lie, "AWAITING_AUTHORIZATION")]  # nothing re-runs
@@ -52,7 +52,7 @@ def test_sync_never_executes_and_remote_authorization_does_not_count(paired):
     calls_pc, calls_phone = [], []
     qp, qc = make_queue(phone, calls_phone), make_queue(pc, calls_pc)
     t = qp.queue("send_message", {"to": "dana"}, actor=HUMAN, external_effect=True)
-    qp.authorize(t, actor=HUMAN)   # authorized on the PHONE
+    qp.authorize(t, actor=HUMAN, operator=phone.op)   # authorized on the PHONE
     run_pipe_sync(phone, pc)
     assert calls_pc == [] and calls_phone == []          # sync itself ran nothing
     assert dict(qc.run_once())[t] == "AWAITING_AUTHORIZATION"  # phone's authorization is not the PC's
@@ -65,7 +65,7 @@ def test_internal_task_interrupted_is_requeued_external_needs_review(phone):
     q = make_queue(phone, calls)
     ti = q.queue("reindex", {}, actor=HUMAN, external_effect=False)
     te = q.queue("send_message", {}, actor=HUMAN, external_effect=True)
-    q.authorize(te, actor=HUMAN)
+    q.authorize(te, actor=HUMAN, operator=phone.op)
     with phone.tx() as conn:   # simulate a crash while both were RUNNING with expired leases
         q._set_state(conn, ti, "RUNNING", lease=1, bump=True)
         q._set_state(conn, te, "RUNNING", lease=1, bump=True)

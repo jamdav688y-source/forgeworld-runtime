@@ -1,0 +1,79 @@
+{
+  "schema": "fw.omega.memory-bench/1",
+  "description": "Repeated-question detection. One conversation in which ten questions were asked and answered. Each candidate is a question someone might send next; label REPEAT if it asks for information the contact already gave, NEW otherwise. Written by the same author as the rules (see BENCHMARK_REPORT.md: not an independent test set).",
+  "contact": "Dana Reyes",
+  "answered": [
+    {"q": "What budget do you have in mind?", "a": "Around $5,000 for phase one."},
+    {"q": "When do you need this finished?", "a": "By the end of March."},
+    {"q": "Which company are you with?", "a": "I'm with Northwind Logistics."},
+    {"q": "Where are you based?", "a": "We're in Leeds."},
+    {"q": "What are you hoping to achieve with this project?", "a": "Cut onboarding time in half."},
+    {"q": "What's the best email to reach you?", "a": "dana@northwind.example"},
+    {"q": "How many people are on your team?", "a": "Twelve."},
+    {"q": "What software are you using today?", "a": "Mostly spreadsheets."},
+    {"q": "Who signs off on purchases like this?", "a": "Our COO, Priya."},
+    {"q": "When are you free for a call?", "a": "Tuesdays after 2pm."}
+  ],
+  "cases": [
+    {"id": "b-exact", "kind": "exact", "label": "REPEAT", "q": "What budget do you have in mind?"},
+    {"id": "b-p1", "kind": "paraphrase", "label": "REPEAT", "q": "How much were you planning to spend on this?"},
+    {"id": "b-p2", "kind": "paraphrase", "label": "REPEAT", "q": "What's the investment you're comfortable with?"},
+    {"id": "b-p3", "kind": "paraphrase", "label": "REPEAT", "q": "Roughly what price range works for you?"},
+    {"id": "b-n1", "kind": "near_miss", "label": "NEW", "q": "Has the budget been approved by finance yet?"},
+    {"id": "b-n2", "kind": "new", "label": "NEW", "q": "Would you prefer to pay monthly or upfront?"},
+
+    {"id": "t-exact", "kind": "exact", "label": "REPEAT", "q": "When do you need this finished?"},
+    {"id": "t-p1", "kind": "paraphrase", "label": "REPEAT", "q": "What's your target date for going live?"},
+    {"id": "t-p2", "kind": "paraphrase", "label": "REPEAT", "q": "How soon do you want this wrapped up?"},
+    {"id": "t-p3", "kind": "paraphrase", "label": "REPEAT", "q": "Is there a deadline we should plan around?"},
+    {"id": "t-n1", "kind": "near_miss", "label": "NEW", "q": "When would you like to schedule the kickoff meeting?"},
+    {"id": "t-n2", "kind": "new", "label": "NEW", "q": "Do you have a project manager on your side?"},
+
+    {"id": "c-exact", "kind": "exact", "label": "REPEAT", "q": "Which company are you with?"},
+    {"id": "c-p1", "kind": "paraphrase", "label": "REPEAT", "q": "Who's your employer?"},
+    {"id": "c-p2", "kind": "paraphrase", "label": "REPEAT", "q": "What organisation do you represent?"},
+    {"id": "c-n1", "kind": "near_miss", "label": "NEW", "q": "How long has your company been operating?"},
+
+    {"id": "l-exact", "kind": "exact", "label": "REPEAT", "q": "Where are you based?"},
+    {"id": "l-p1", "kind": "paraphrase", "label": "REPEAT", "q": "Which city do you work from?"},
+    {"id": "l-p2", "kind": "paraphrase", "label": "REPEAT", "q": "What part of the country are you in?"},
+    {"id": "l-n1", "kind": "near_miss", "label": "NEW", "q": "Do you ever travel to London for work?"},
+
+    {"id": "g-exact", "kind": "exact", "label": "REPEAT", "q": "What are you hoping to achieve with this project?"},
+    {"id": "g-p1", "kind": "paraphrase", "label": "REPEAT", "q": "What outcome would make this a success for you?"},
+    {"id": "g-p2", "kind": "paraphrase", "label": "REPEAT", "q": "What problem are you trying to solve here?"},
+    {"id": "g-n1", "kind": "near_miss", "label": "NEW", "q": "What have you already tried to speed up onboarding?"},
+
+    {"id": "e-exact", "kind": "exact", "label": "REPEAT", "q": "What's the best email to reach you?"},
+    {"id": "e-p1", "kind": "paraphrase", "label": "REPEAT", "q": "Can you share an address I can write to by email?"},
+    {"id": "e-n1", "kind": "near_miss", "label": "NEW", "q": "Should I copy anyone else on the email?"},
+
+    {"id": "s-exact", "kind": "exact", "label": "REPEAT", "q": "How many people are on your team?"},
+    {"id": "s-p1", "kind": "paraphrase", "label": "REPEAT", "q": "How big is the team that would use this?"},
+    {"id": "s-p2", "kind": "paraphrase", "label": "REPEAT", "q": "What's the headcount on that team?"},
+    {"id": "s-n1", "kind": "near_miss", "label": "NEW", "q": "Is the team remote or in the office?"},
+
+    {"id": "w-exact", "kind": "exact", "label": "REPEAT", "q": "What software are you using today?"},
+    {"id": "w-p1", "kind": "paraphrase", "label": "REPEAT", "q": "What tools does your team currently rely on?"},
+    {"id": "w-p2", "kind": "paraphrase", "label": "REPEAT", "q": "How are you handling this at the moment?"},
+    {"id": "w-n1", "kind": "near_miss", "label": "NEW", "q": "Would you be open to switching tools?"},
+
+    {"id": "d-exact", "kind": "exact", "label": "REPEAT", "q": "Who signs off on purchases like this?"},
+    {"id": "d-p1", "kind": "paraphrase", "label": "REPEAT", "q": "Who makes the final decision on this?"},
+    {"id": "d-p2", "kind": "paraphrase", "label": "REPEAT", "q": "Whose approval do we need to move forward?"},
+    {"id": "d-n1", "kind": "near_miss", "label": "NEW", "q": "Would Priya like to join the next call?"},
+
+    {"id": "a-exact", "kind": "exact", "label": "REPEAT", "q": "When are you free for a call?"},
+    {"id": "a-p1", "kind": "paraphrase", "label": "REPEAT", "q": "What times work for a quick chat?"},
+    {"id": "a-p2", "kind": "paraphrase", "label": "REPEAT", "q": "Which day suits you for a meeting?"},
+    {"id": "a-n1", "kind": "near_miss", "label": "NEW", "q": "Do you prefer video or a phone call?"},
+
+    {"id": "x-1", "kind": "new", "label": "NEW", "q": "What's your role at Northwind?"},
+    {"id": "x-2", "kind": "new", "label": "NEW", "q": "What's a good phone number for you?"},
+    {"id": "x-3", "kind": "new", "label": "NEW", "q": "Do you have any accessibility requirements we should know about?"},
+    {"id": "x-4", "kind": "new", "label": "NEW", "q": "Which languages does your team work in?"},
+    {"id": "x-5", "kind": "new", "label": "NEW", "q": "Have you worked with a consultant before?"},
+    {"id": "x-6", "kind": "new", "label": "NEW", "q": "What does your current onboarding process look like step by step?"},
+    {"id": "x-7", "kind": "new", "label": "NEW", "q": "Are there any security reviews a new vendor has to pass?"}
+  ]
+}

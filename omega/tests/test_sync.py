@@ -13,24 +13,26 @@ from omega.tests.conftest import HUMAN, make_node, pair, run_pipe_sync
 
 # ---------------------------------------------------------------- pairing / auth
 def test_pairing_requires_matching_short_authentication_string(phone, pc):
-    oa = parse_offer(phone.identity.pairing_offer("p"))
-    ob = parse_offer(pc.identity.pairing_offer("c"))
+    oa = parse_offer(phone.pairing_offer())
+    ob = parse_offer(pc.pairing_offer())
     good = short_auth_string(oa, ob)
     assert good == short_auth_string(ob, oa)  # both screens show the same digits
     bad = f"{(int(good) + 1) % 1000000:06d}"
     with pytest.raises(PairingError):
-        phone.add_peer(ob, oa, bad, actor=HUMAN)
+        phone.add_peer(ob, oa, bad, actor=HUMAN, operator=phone.op)
     with pytest.raises(PairingError):
-        phone.add_peer(ob, oa, good, actor="model:assistant")
-    phone.add_peer(ob, oa, good, actor=HUMAN)
+        phone.add_peer(ob, oa, good, actor="model:assistant", operator=phone.op)
+    with pytest.raises(PairingError):
+        phone.add_peer(ob, oa, good, actor=HUMAN)          # no unlocked operator key
+    phone.add_peer(ob, oa, good, actor=HUMAN, operator=phone.op)
     assert phone.peer(pc.device_id)["max_privacy"] == "PRIVATE"
 
 
 def test_man_in_the_middle_offer_changes_the_sas(phone, pc, tmp_path):
     mallory = make_node(tmp_path / "m", "mallory")
-    oa = parse_offer(phone.identity.pairing_offer("p"))
-    ob = parse_offer(pc.identity.pairing_offer("c"))
-    om = parse_offer(mallory.identity.pairing_offer("c"))
+    oa = parse_offer(phone.pairing_offer())
+    ob = parse_offer(pc.pairing_offer())
+    om = parse_offer(mallory.pairing_offer())
     assert short_auth_string(oa, om) != short_auth_string(oa, ob)
 
 
@@ -109,7 +111,7 @@ def test_replayed_or_tampered_encrypted_frame_is_rejected(paired):
 
 def test_revoked_peer_cannot_sync(paired):
     phone, pc = paired
-    pc.revoke_peer(phone.device_id, actor=HUMAN)
+    pc.revoke_peer(phone.device_id, actor=HUMAN, operator=pc.op)
     ri, rr = run_pipe_sync(phone, pc)
     assert isinstance(rr, sync.SyncError) and rr.code == "PEER_REVOKED"
 
@@ -240,7 +242,7 @@ def test_deletion_propagates_through_sync(paired):
     ev = phone.append("NOTE_RECORDED", {"text": "erase me later"}, actor=HUMAN)
     run_pipe_sync(phone, pc)
     assert pc.get(ev.event_id).payload is not None
-    phone.authorize_deletion(ev.event_id, "subject asked for erasure", actor=HUMAN)
+    phone.authorize_deletion(ev.event_id, "subject asked for erasure", actor=HUMAN, operator=phone.op)
     run_pipe_sync(phone, pc)
     assert pc.payload_state(ev.event_id) == "PURGED"
     assert pc.state_digest() == phone.state_digest()

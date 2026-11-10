@@ -2,6 +2,12 @@
 
 Node home: --home, else $OMEGA_HOME, else ~/.forgeworld-omega.
 Every write names its actor explicitly (--actor human:<you>). Output is JSON.
+
+Consequential commands (pair, revoke, task-authorize, delete, verify-payment,
+retention) unlock the device's operator key: the passphrase is read with
+getpass from the terminal. --passphrase-stdin reads it from stdin instead, for
+scripted proofs; avoid it in daily use, because anything that can write to
+stdin can then authorize.
 """
 from __future__ import annotations
 
@@ -28,17 +34,20 @@ def _out(obj):
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="omega", description="ForgeWorld Omega node")
     ap.add_argument("--home")
+    ap.add_argument("--passphrase-stdin", action="store_true",
+                    help="read the operator passphrase from stdin (scripted runs only)")
     sp = ap.add_subparsers(dest="cmd", required=True)
 
     p = sp.add_parser("init"); p.add_argument("--label", required=True)
     p.add_argument("--profile", choices=["pocket", "forge"], default="pocket")
     sp.add_parser("offer")
+    p = sp.add_parser("operator-init"); p.add_argument("--name", required=True)
     sp.add_parser("sas")
     p = sp.add_parser("pair"); p.add_argument("--offer", required=True)
     p.add_argument("--sas", help="omit to display the SAS; then re-run with the digits both screens show")
-    p.add_argument("--actor", required=True); p.add_argument("--max-privacy", default="PRIVATE")
+    p.add_argument("--actor"); p.add_argument("--max-privacy", default="PRIVATE")
     p.add_argument("--my-offer", required=True, help="the offer this device printed (from `omega offer`)")
-    p = sp.add_parser("revoke"); p.add_argument("--peer", required=True); p.add_argument("--actor", required=True)
+    p = sp.add_parser("revoke"); p.add_argument("--peer", required=True); p.add_argument("--actor")
 
     p = sp.add_parser("contact-add"); p.add_argument("--name", required=True); p.add_argument("--primary", required=True)
     p.add_argument("--alias", action="append", default=[]); p.add_argument("--actor", required=True)
@@ -63,12 +72,12 @@ def main(argv=None):
     p = sp.add_parser("verify-payment"); p.add_argument("--deal", required=True); p.add_argument("--reference", required=True)
     p.add_argument("--amount-minor", type=int, required=True); p.add_argument("--currency", required=True)
     p.add_argument("--settlement-source", choices=["bank_statement", "processor_record"], required=True)
-    p.add_argument("--record", required=True, help="path of the settlement record"); p.add_argument("--actor", required=True)
+    p.add_argument("--record", required=True, help="path of the settlement record"); p.add_argument("--actor")
     p = sp.add_parser("deal-state"); p.add_argument("--deal", required=True)
 
     p = sp.add_parser("task-queue"); p.add_argument("--action", required=True); p.add_argument("--args", default="{}")
     p.add_argument("--external", action="store_true"); p.add_argument("--actor", required=True)
-    p = sp.add_parser("task-authorize"); p.add_argument("--task", required=True); p.add_argument("--actor", required=True)
+    p = sp.add_parser("task-authorize"); p.add_argument("--task", required=True); p.add_argument("--actor")
     sp.add_parser("task-list"); sp.add_parser("task-run"); sp.add_parser("task-recover")
 
     p = sp.add_parser("serve"); p.add_argument("--host", default="127.0.0.1"); p.add_argument("--port", type=int, default=47470)
@@ -85,9 +94,9 @@ def main(argv=None):
     p = sp.add_parser("resolve"); p.add_argument("--key", required=True); p.add_argument("--value", required=True)
     p.add_argument("--actor", required=True)
     p = sp.add_parser("delete"); p.add_argument("--event", required=True); p.add_argument("--reason", required=True)
-    p.add_argument("--actor", required=True)
+    p.add_argument("--actor")
     p = sp.add_parser("retention"); p.add_argument("--event-type", required=True); p.add_argument("--days", type=int, required=True)
-    p.add_argument("--actor", required=True)
+    p.add_argument("--actor")
     sp.add_parser("apply-retention")
     p = sp.add_parser("diag"); p.add_argument("--out"); p.add_argument("--probe-ollama", action="store_true")
     sp.add_parser("verify")
@@ -114,6 +123,22 @@ def main(argv=None):
         n.close()
 
 
+def _passphrase(a, prompt="Operator passphrase: ") -> str:
+    if a.passphrase_stdin:
+        return sys.stdin.readline().rstrip("\n")
+    import getpass
+    return getpass.getpass(prompt)
+
+
+def _operator(a, n):
+    """Unlock the operator key for one consequential command."""
+    sess = n.unlock_operator(_passphrase(a))
+    if getattr(a, "actor", None) and a.actor != sess.actor:
+        raise PermissionError(f"--actor {a.actor} is not this device's operator ({sess.actor})")
+    a.actor = sess.actor
+    return sess
+
+
 def _dispatch(a, n):
     from omega import reconcile, receipts, sync
     from omega.events import event_id_for
@@ -123,8 +148,14 @@ def _dispatch(a, n):
     from omega.tasks import TaskQueue
     rm = RelationshipMemory(n)
     c = a.cmd
+    if c == "operator-init":
+        p1 = _passphrase(a, "New operator passphrase (10+ chars): ")
+        if not a.passphrase_stdin and p1 != _passphrase(a, "Repeat passphrase: "):
+            raise SystemExit("passphrases differ")
+        s = n.create_operator(a.name, p1)
+        return _out({"operator_id": s.operator_id, "actor": s.actor})
     if c == "offer":
-        return print(n.identity.pairing_offer(n.info["label"]))
+        return print(n.pairing_offer())
     if c == "sas":
         raise SystemExit("run `pair --offer <theirs> --my-offer <yours> --sas <digits>`; it prints the SAS it computed")
     if c == "pair":
@@ -133,10 +164,12 @@ def _dispatch(a, n):
             print(f"SAS: {short_auth_string(other, mine)}  -- confirm the other device shows the same digits, "
                   "then re-run with --sas <digits>")
             raise SystemExit(3)
-        ev = n.add_peer(other, mine, a.sas, actor=a.actor, max_privacy=a.max_privacy)
+        op = _operator(a, n)
+        ev = n.add_peer(other, mine, a.sas, actor=a.actor, max_privacy=a.max_privacy, operator=op)
         return _out({"paired": other["device_id"], "label": other["label"], "event": event_id_for(ev.header)})
     if c == "revoke":
-        return _out({"event": event_id_for(n.revoke_peer(a.peer, actor=a.actor).header)})
+        op = _operator(a, n)
+        return _out({"event": event_id_for(n.revoke_peer(a.peer, actor=a.actor, operator=op).header)})
     if c == "contact-add":
         return _out({"contact_id": rm.add_contact(a.name, primary=a.primary, aliases=a.alias, actor=a.actor)})
     if c == "message":
@@ -169,7 +202,8 @@ def _dispatch(a, n):
                                         due=a.due, document=doc)
         return _out({"event": event_id_for(ev.header)})
     if c == "verify-payment":
-        ev = CommercialLedger(n).verify_payment(a.deal, reference=a.reference, amount_minor=a.amount_minor,
+        op = _operator(a, n)
+        ev = CommercialLedger(n).verify_payment(a.deal, operator=op, reference=a.reference, amount_minor=a.amount_minor,
                                                 currency=a.currency, settlement_source=a.settlement_source,
                                                 settlement_record=Path(a.record).read_bytes(), actor=a.actor)
         return _out({"event": event_id_for(ev.header)})
@@ -179,7 +213,8 @@ def _dispatch(a, n):
     if c == "task-queue":
         return _out({"task_id": q.queue(a.action, json.loads(a.args), actor=a.actor, external_effect=a.external)})
     if c == "task-authorize":
-        return _out({"event": event_id_for(q.authorize(a.task, actor=a.actor).header)})
+        op = _operator(a, n)
+        return _out({"event": event_id_for(q.authorize(a.task, actor=a.actor, operator=op).header)})
     if c == "task-list":
         return _out(q.tasks())
     if c == "task-run":
@@ -207,9 +242,11 @@ def _dispatch(a, n):
     if c == "resolve":
         return _out({"event": event_id_for(reconcile.resolve_conflict(n, a.key, a.value, actor=a.actor).header)})
     if c == "delete":
-        return _out({"event": event_id_for(n.authorize_deletion(a.event, a.reason, actor=a.actor).header)})
+        op = _operator(a, n)
+        return _out({"event": event_id_for(n.authorize_deletion(a.event, a.reason, actor=a.actor, operator=op).header)})
     if c == "retention":
-        ev = n.append("RETENTION_POLICY", {"event_type": a.event_type, "max_age_days": a.days}, actor=a.actor,
+        op = _operator(a, n)
+        ev = n.append("RETENTION_POLICY", {"event_type": a.event_type, "max_age_days": a.days}, actor=a.actor, operator=op,
                       privacy="INTERNAL")
         return _out({"event": event_id_for(ev.header)})
     if c == "apply-retention":

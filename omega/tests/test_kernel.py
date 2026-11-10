@@ -105,7 +105,7 @@ def test_authorized_deletion_purges_payload_keeps_verifiable_header(phone):
                           artifact_data=[(b"scan-bytes", "image/png")])
     sha = secret.header["artifacts"][0]
     assert phone.search("4111")
-    phone.authorize_deletion(secret.event_id, "contains a card number", actor=HUMAN)
+    phone.authorize_deletion(secret.event_id, "contains a card number", actor=HUMAN, operator=phone.op)
     assert phone.get(secret.event_id).payload is None
     assert phone.payload_state(secret.event_id) == "PURGED"
     assert phone.search("4111") == []
@@ -116,7 +116,7 @@ def test_authorized_deletion_purges_payload_keeps_verifiable_header(phone):
 def test_retention_policy_purges_deterministically(phone):
     old = phone.append("NOTE_RECORDED", {"text": "old note"}, actor=HUMAN)
     phone.append("RETENTION_POLICY", {"event_type": "NOTE_RECORDED", "max_age_days": 30}, actor=HUMAN,
-                 privacy="INTERNAL")
+                 privacy="INTERNAL", operator=phone.op)
     import calendar, time
     now = calendar.timegm(time.strptime("2027-01-15T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"))
     purged = phone.apply_retention(now)

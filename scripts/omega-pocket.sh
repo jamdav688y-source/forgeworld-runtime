@@ -10,6 +10,7 @@ if [ "${1:-}" = "setup" ]; then
   python -c "import sqlite3; sqlite3.connect(':memory:').execute('create virtual table t using fts5(x)')" \
     && echo "FTS5 available" || echo "FTS5 missing: search falls back to LIKE"
   [ -f "$OMEGA_HOME/node.json" ] || python -m omega --home "$OMEGA_HOME" init --label "${2:-pocket-phone}" --profile pocket
+  [ -f "$OMEGA_HOME/operator/operator.json" ] || python -m omega --home "$OMEGA_HOME" operator-init --name "${3:-owner}"
   exit 0
 fi
 cd "$HERE"
