@@ -173,3 +173,12 @@ def test_semantic_checker_is_advisory_and_degrades(mem):
         raise ConnectionError("model down")
     f2 = rm.check_draft(dana, "Hi Dana, what kind of spend approval process do you have?", semantic_checker=broken)
     assert "SEMANTIC_CHECK_UNAVAILABLE" in codes(f2) and "POSSIBLE_REPEAT" not in codes(f2)
+
+
+def test_greeting_without_a_name_is_not_mistaken_identity(mem):
+    """Found by the physical-proof dry run: 'Hi, what's your budget?' was read
+    as a greeting to someone named "what's"."""
+    rm, dana, _ = mem
+    assert "MISTAKEN_IDENTITY" not in codes(rm.check_draft(dana, "Hi, what's your timeline?"))
+    assert "MISTAKEN_IDENTITY" not in codes(rm.check_draft(dana, "hello, quick question"))
+    assert "MISTAKEN_IDENTITY" in codes(rm.check_draft(dana, "hi Samuel, quick question"))

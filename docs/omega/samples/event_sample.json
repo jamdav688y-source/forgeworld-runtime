@@ -6,16 +6,16 @@
       "1d174d0c3fb5b5f62a81ce363b94603b17a66d00869a70284e79f5d4e16ae827"
     ],
     "corrects": null,
-    "device_id": "dev_3b72199dec726b704cf3257d147b06e7",
+    "device_id": "dev_e550fd507b118521cc9ec3798ff90c4d",
     "event_type": "MESSAGE_RECORDED",
     "links": [
-      "contact:ct_58991babe437973bed8af233"
+      "contact:ct_6515659974a0ba6f3b6732bc"
     ],
     "parents": [
-      "ev_7f2785bf252fe035efa46fab9aebf8710b2224a1b5b771279cfe87227a53acbf"
+      "ev_f21bfed4187467ec616b5252fbf6e9ed303579facb6da8c6967848c26d3cc097"
     ],
-    "payload_hash": "6ad358a2e211c90489f783773a53d47ccb974f83cc4bd76269333dca646c56b2",
-    "prev": "ev_7f2785bf252fe035efa46fab9aebf8710b2224a1b5b771279cfe87227a53acbf",
+    "payload_hash": "5fc9c96acbd2914609a302fbedbfb89fbb2b6aeedc8a2c1f2a1dd0634f92f30e",
+    "prev": "ev_f21bfed4187467ec616b5252fbf6e9ed303579facb6da8c6967848c26d3cc097",
     "privacy": "PRIVATE",
     "provenance": [
       {
@@ -32,13 +32,13 @@
   },
   "payload": {
     "channel": "sms",
-    "contact_id": "ct_58991babe437973bed8af233",
-    "conversation_id": "sms:ct_58991babe437973bed8af233",
+    "contact_id": "ct_6515659974a0ba6f3b6732bc",
+    "conversation_id": "sms:ct_6515659974a0ba6f3b6732bc",
     "direction": "IN",
-    "message_key": "mk_a37dd7069317cc0e4b427fe183b1d073",
+    "message_key": "mk_74b3938c219e639b01374de8a13957ca",
     "novelty": "NOVEL",
     "sent_at": "2026-11-01T10:42:00Z",
     "text": "Around $5,000 for phase one. Text is best, please don't call me."
   },
-  "signature": "_8C5evahSubVoCXXfyxqdjvveIe54av1MqJ3NRBDYgNBb395H7vSZKx06hN3wa6iI6WNin39FECSmvQuyDRkBQ"
+  "signature": "T_YL_HcMfHB10jX7ve02R3ZDewoWSDxEE2IgOZDqMspvMEvLJGDe10DTgHY9l0vgocpZyqhdeyHe3MGF0iDcCw"
 }

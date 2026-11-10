@@ -13,14 +13,15 @@ conflicts · deterministic reconciliation · no silent destructive merge · **no
 ## 1. Pairing (once, human-confirmed)
 
 1. Each device prints an offer (`omega offer`): `FWPAIR1:` + base64url(canonical
-   `{device_id, label, sign_pub (Ed25519), kx_pub (X25519), nonce}`). `device_id` must equal
-   `sha256(sign_pub)[:32]`.
+   `{device_id, label, sign_pub (Ed25519), kx_pub (X25519), operator_pub, operator_name, nonce}`).
+   `device_id` must equal `sha256(sign_pub)[:32]`. An operator must be registered first.
 2. The operator carries each offer to the other device.
-3. Both compute a 6-digit **SAS** = `sha256(domain "pairing-sas", both offers sorted by
-   device_id) mod 10^6`. The operator checks the two screens show the same digits and types them.
+3. Both compute a 6-digit **SAS** = `sha256(domain "pairing-sas", [device_id, sign_pub, kx_pub,
+   operator_pub, nonce] of both offers sorted by device_id) mod 10^6`. The operator checks the two screens show the same digits and types them.
    A substituted key changes the SAS (`test_man_in_the_middle_offer_changes_the_sas`).
 4. Each device records the peer with a **privacy clearance** (`max_privacy`, default `PRIVATE`)
-   and a `DEVICE_LOCAL` `PEER_PAIRED` event. Pairing requires a `human:` actor.
+   and a `DEVICE_LOCAL` `PEER_PAIRED` event. Pairing requires the unlocked operator key. The peer's
+   operator public key is stored, so that the peer's consequential events can be verified.
 
 ## 2. Live session handshake
 

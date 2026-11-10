@@ -52,6 +52,15 @@ because the header binds the payload only by its hash.
   `CONFLICT_RESOLVED`, `PAYMENT_VERIFIED`, `PEER_PAIRED`, `ACCESS_REVOKED`, `PROJECT_ASSERTED`,
   `COMMITMENT_STATUS`.
 * Scope `governance` is human-only, whatever the event type.
+* **Operator attestation** (`omega/operator.py`): `TASK_AUTHORIZED`, `DELETION_AUTHORIZED`,
+  `PAYMENT_VERIFIED`, `PROMOTION_DECISION`, `RETENTION_POLICY`, `PEER_PAIRED` and `ACCESS_REVOKED`
+  (`policy.ATTESTED_TYPES`) carry `payload._operator = {operator_id, sig}`, where `sig` is
+  Ed25519 by the device's passphrase-unlocked operator key over
+  `H("operator-attestation", {event_type, device_id, actor_id, payload without _operator})`. The
+  actor must be `human:<operator name>`. `append()` refuses these types without the unlocked key.
+  Effects (purge, revocation, retention, payment confirmation, task execution) apply only if the
+  attestation verifies against the operator registered for the writing device. An unattested one
+  is kept as history and quarantined `UNATTESTED_*`.
 * `TASK_AUTHORIZED.authorized_device` must equal the writer's `device_id` (authorization is local).
 * `MESSAGE_RECORDED` must cite a `source`; `WRITTEN_AGREEMENT` and `PAYMENT_VERIFIED` must carry
   an artifact; `DELIVERABLE_ACCEPTED` must cite a customer-originated source.

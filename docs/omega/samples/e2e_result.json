@@ -1,7 +1,8 @@
 {
   "after_authorization": "SUCCEEDED",
+  "after_forgery_attempts": "AWAITING_AUTHORIZATION",
   "before_authorization": "AWAITING_AUTHORIZATION",
-  "captured_message": "ev_5c2f3ac63df893cc476ef2ec98639af5f9a0662bb4898082adc617054ff37e2c",
+  "captured_message": "ev_7aac13090114ecd88852a904091ad3685a62a146680fe4992eedf641f5cbadfb",
   "extracted_facts": [
     [
       "boundary:call",
@@ -13,13 +14,14 @@
     ]
   ],
   "final_integrity": true,
+  "forged_authorization": "OPERATOR_ATTESTATION_REQUIRED",
   "naive_draft_blocked": [
     "BOUNDARY_CONFLICT",
     "REPEATED_QUESTION"
   ],
   "outbox_before_authorization": 0,
-  "pc": "dev_3db32fb4adbb325fdaf815d52207dd40",
-  "pc_context_digest": "cx_8854da2721b418065ab9cdd99becd3b9aa779ac896a109d572be340c83c90f92",
+  "pc": "dev_f1a8d94ea22403752a1ff9b02714da85",
+  "pc_context_digest": "cx_dfb45c20e417d7dc1ba7b40a3477fd4ad2074b378f4ebdb952605433e447de95",
   "pc_imported": 10,
   "pc_integrity": true,
   "pc_known_facts": [
@@ -39,8 +41,8 @@
     "SYNC_SESSION",
     "TASK_HELD_FOR_AUTHORIZATION"
   ],
-  "phone": "dev_3b72199dec726b704cf3257d147b06e7",
-  "phone_context_digest": "cx_8854da2721b418065ab9cdd99becd3b9aa779ac896a109d572be340c83c90f92",
+  "phone": "dev_e550fd507b118521cc9ec3798ff90c4d",
+  "phone_context_digest": "cx_dfb45c20e417d7dc1ba7b40a3477fd4ad2074b378f4ebdb952605433e447de95",
   "phone_draft": "Hi Dana,\n\nThank you for getting back to me.\nNoted on your budget: $5,000.\nWhat would a successful outcome look like for you?\n\nBest regards,\nJ.",
   "phone_draft_next_question": "goal",
   "phone_offline_integrity": true,
@@ -49,11 +51,12 @@
     "SYNC_SESSION"
   ],
   "same_context": true,
-  "sas": "218645",
+  "sas": "793775",
   "sent_reply": "Hi Dana,\n\nThank you for getting back to me.\nNoted on your goal: Cutting our customer onboarding time in half.\nWhat timeline are you working towards?\n\nBest regards,\nJ.",
   "sent_reply_findings": [],
   "state_digests_equal": true,
   "sync_back_complete": true,
   "sync_complete": true,
-  "vectors_equal": true
+  "vectors_equal": true,
+  "wrong_passphrase": "PASSPHRASE_WRONG"
 }

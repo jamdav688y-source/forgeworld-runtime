@@ -65,8 +65,9 @@ INTENT_PLANS = {
 MONEY_RE = re.compile(r"(?:[$€£]\s?\d[\d,]*(?:\.\d+)?\s?[kKmM]?\b|\b\d[\d,]*(?:\.\d+)?\s?(?:[kK]\b|usd\b|USD\b|dollars\b|eur\b|EUR\b|gbp\b|GBP\b))")
 EMAIL_RE = re.compile(r"\b[\w.+-]+@[\w-]+(?:\.[\w-]+)+\b")
 PHONE_RE = re.compile(r"(?<!\w)\+?\d[\d\s().-]{7,}\d\b")
-GREETING_RE = re.compile(r"^\s*(?:hi|hello|hey|dear|good (?:morning|afternoon|evening))[\s,]+([A-Z][A-Za-z'\-]+)",
-                         re.IGNORECASE)
+# greeting word is case-insensitive; the NAME must be capitalised, so
+# "Hi, what's your budget?" is not read as a greeting to someone called "what's"
+GREETING_RE = re.compile(r"^\s*(?i:hi|hello|hey|dear|good (?:morning|afternoon|evening))[\s,]+([A-Z][A-Za-z'\-]+)")
 BOUNDARY_RE = re.compile(r"\b(?:please\s+)?(?:don'?t|do not|never)\s+(call|phone|text|sms|email|message|contact)\s+me\b"
                          r"([^.?!\n]*)", re.IGNORECASE)
 BOUNDARY_TERMS = {"call": [r"\bcall\b", r"\bphone\b", r"\bring you\b"], "phone": [r"\bcall\b", r"\bphone\b"],

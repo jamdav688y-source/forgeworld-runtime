@@ -1,9 +1,12 @@
 # Capability Status Matrix and Acceptance Evidence
 
+> Directive 2 update: see [PROOF_REPORT.md](PROOF_REPORT.md) for the current table (operator
+> attestation, real-Ollama benchmarks, proof harness). Physical-device status is unchanged: not run.
+
 Run: 2026-11-10, Linux container, Python 3.13.18. Reproduce with:
 
 ```bash
-python -m pytest -q omega/tests                                    # 75 passed
+python -m pytest -q omega/tests                                    # 94 passed (directive 2)
 python -m unittest discover -s cognition/tests -t .                # 388 passed (unchanged)
 python -m pytest -q evidence_envelope/tests capabilities/tests forgeworld-mobile-research/tests
                                                                    # 91 + 13 (2 skipped) + 13 passed (unchanged)
@@ -28,7 +31,7 @@ Status values follow Stage A: **VERIFIED** = executed by tests in this repositor
 | 9 | Cross-contact privacy isolation | `test_cross_contact_privacy_isolation`, `test_privacy_clearance_withholds_payloads_and_backfills_later` | VERIFIED |
 | 10 | Commercial payment-state accuracy | `test_customer_statement_of_payment_is_never_settlement`, `test_only_humans_with_evidence_can_confirm`, `test_milestone_prerequisites` | VERIFIED |
 | 11 | Replay protection | `test_replayed_hello_nonce_is_refused`, `test_replayed_or_tampered_encrypted_frame_is_rejected`, `test_offline_bundle_round_trip_replay_and_tamper`, `test_authenticated_discovery_beacon` | VERIFIED |
-| 12 | Unauthorized command refusal | `test_external_task_needs_local_human_authorization`, `test_model_cannot_authorize`, `test_sync_never_executes_and_remote_authorization_does_not_count`, `test_governance_and_verification_are_human_only` | VERIFIED |
+| 12 | Unauthorized command refusal | `test_security_fixes.py` (operator attestation, forged rows), `test_external_task_needs_local_human_authorization`, `test_model_cannot_authorize`, `test_sync_never_executes_and_remote_authorization_does_not_count`, `test_governance_and_verification_are_human_only` | VERIFIED |
 | 13 | Recovery after process termination | `test_recovery_after_process_killed_mid_transaction`, `test_recovery_after_kill_during_import`, `test_internal_task_interrupted_is_requeued_external_needs_review`, `test_restore_from_backup_then_resync_recovers_own_events` | VERIFIED |
 | 14 | Deterministic evidence receipts | `test_receipts_are_deterministic_for_the_same_device_and_inputs`, `test_tampered_receipt_is_detected`, `test_tampered_event_is_detected` | VERIFIED |
 | 15 | Regression after capability updates | `test_real_regression_suite_gates_a_capability_update` (runs real pytest suites through the gate), `test_failing_regression_blocks_promotion`, `test_governance_change_and_weak_effect_are_not_eligible` | VERIFIED |
@@ -63,5 +66,5 @@ open question, and repeats nothing), and receipts on both devices.
 | F Relationship memory | VERIFIED | rule-based extraction and classification |
 | G Commercial continuity | VERIFIED | |
 | H Reasoning / evolution | PARTIAL | gate, rollback point and human decision verified; specialists are deterministic checkers |
-| I Testing | VERIFIED | 75 omega tests + unchanged legacy suites |
+| I Testing | VERIFIED | 94 omega tests + unchanged legacy suites |
 | J Iteration | VERIFIED | ITERATION_LOG.md |

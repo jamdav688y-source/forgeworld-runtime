@@ -59,3 +59,51 @@ smallest change, the focused tests, the regression run, and keep / revert.
 Stopped because the Stage I acceptance criteria pass on this host, and the next highest-value
 deficiency (execution on a real phone and a real Windows PC with Ollama) is outside what this
 environment can reach. More iterations here would not change that evidence.
+
+---
+
+# Directive 2 iterations
+
+## Iteration 5 — human authorization was a string (critical)
+
+* **Deficiency (demonstrated on `ce00f3a`).** An agent calling `TaskQueue.authorize(t, actor="human:operator")`
+  made an external task run (`SUCCEEDED`). No secret was involved.
+* **Hypothesis.** Requiring an attestation by a passphrase-encrypted operator key on consequential
+  event types, re-verified wherever the effect is applied, makes forged authorizations ineffective,
+  including rows written straight into SQLite with the device key.
+* **Change.** `omega/operator.py`, `policy.ATTESTED_TYPES`, store/tasks/commercial/evolution wiring,
+  the operator key in pairing offers and the SAS, a peers-table migration, a CLI passphrase prompt.
+* **Tests.** `test_security_fixes.py` (10). Mutation check: removing execution-time re-verification
+  fails 2 tests; removing effect verification fails 1. While writing it, I found my own forged row
+  lacked the task link, so the test would have passed vacuously; fixed before relying on it.
+* **Regression.** All suites green. **Keep.**
+
+## Iteration 6 — contact ids recomputable from phone numbers
+
+* `contact_id = H(phone number)`, visible in headers shared with peers → HMAC with a device
+  secret. Demonstrated on the old commit (`True`), fixed (`test_contact_ids…`). **Keep.**
+
+## Iteration 7 — measure repeat detection against a baseline, with real models
+
+* Benchmark frozen first (sha `d9429aee…`), then scored. Baseline F1 0.49, rules 0.68,
+  `qwen2.5:1.5b` 0.84 with 8 false alarms (rules: 2). **Decision:** the model is advisory (WARN),
+  never blocking. The rules' 14 misses are listed and deliberately **not** fixed against this same
+  set, which would overfit it (BENCHMARK_REPORT.md).
+
+## Iteration 8 — the routing suite misranked real models
+
+* The built-in 3-case suite chose `llama3.2:1b` for extraction, the worst repeat detector
+  (F1 0.17). Memory-benchmark results now feed the router (`repeat_detection` → `qwen2.5:1.5b`).
+  **Keep.** Growing the built-in suite remains open.
+
+## Iteration 9 — false MISTAKEN_IDENTITY on "Hi, what's your budget?"
+
+* Found by dry-running the LAN protocol over loopback: the case-insensitive greeting regex read
+  "what's" as a name. The name must now be capitalised. Test added; benchmark scores unchanged
+  (pinned by `test_bench.py`). **Keep.**
+
+## Stop condition (directive 2)
+
+Stopped because the next step that adds evidence is running the protocol on the owner's physical
+devices, which this session cannot reach. More container-side iteration would not change the
+success condition.
