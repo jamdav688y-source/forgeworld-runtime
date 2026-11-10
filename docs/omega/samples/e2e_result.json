@@ -1,0 +1,59 @@
+{
+  "after_authorization": "SUCCEEDED",
+  "before_authorization": "AWAITING_AUTHORIZATION",
+  "captured_message": "ev_5c2f3ac63df893cc476ef2ec98639af5f9a0662bb4898082adc617054ff37e2c",
+  "extracted_facts": [
+    [
+      "boundary:call",
+      "please don't call me"
+    ],
+    [
+      "budget",
+      "$5,000"
+    ]
+  ],
+  "final_integrity": true,
+  "naive_draft_blocked": [
+    "BOUNDARY_CONFLICT",
+    "REPEATED_QUESTION"
+  ],
+  "outbox_before_authorization": 0,
+  "pc": "dev_3db32fb4adbb325fdaf815d52207dd40",
+  "pc_context_digest": "cx_8854da2721b418065ab9cdd99becd3b9aa779ac896a109d572be340c83c90f92",
+  "pc_imported": 10,
+  "pc_integrity": true,
+  "pc_known_facts": [
+    "boundary:call",
+    "budget",
+    "goal"
+  ],
+  "pc_provenance_chain": {
+    "fact_rests_on_message": true,
+    "fact_value": "$5,000",
+    "message_signed_by_phone": true,
+    "message_source": "sms:thread-77/msg-2",
+    "raw_artifact_matches": true
+  },
+  "pc_receipt_types": [
+    "EVENT_APPENDED",
+    "SYNC_SESSION",
+    "TASK_HELD_FOR_AUTHORIZATION"
+  ],
+  "phone": "dev_3b72199dec726b704cf3257d147b06e7",
+  "phone_context_digest": "cx_8854da2721b418065ab9cdd99becd3b9aa779ac896a109d572be340c83c90f92",
+  "phone_draft": "Hi Dana,\n\nThank you for getting back to me.\nNoted on your budget: $5,000.\nWhat would a successful outcome look like for you?\n\nBest regards,\nJ.",
+  "phone_draft_next_question": "goal",
+  "phone_offline_integrity": true,
+  "phone_receipt_types": [
+    "EVENT_APPENDED",
+    "SYNC_SESSION"
+  ],
+  "same_context": true,
+  "sas": "218645",
+  "sent_reply": "Hi Dana,\n\nThank you for getting back to me.\nNoted on your goal: Cutting our customer onboarding time in half.\nWhat timeline are you working towards?\n\nBest regards,\nJ.",
+  "sent_reply_findings": [],
+  "state_digests_equal": true,
+  "sync_back_complete": true,
+  "sync_complete": true,
+  "vectors_equal": true
+}

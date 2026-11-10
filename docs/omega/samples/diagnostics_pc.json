@@ -1,0 +1,58 @@
+{
+  "capabilities": {
+    "cryptography": true,
+    "fts5": true,
+    "ollama": "NOT_PROBED"
+  },
+  "events_by_type": {
+    "CONTACT_ASSERTED": 1,
+    "DRAFT_PRODUCED": 2,
+    "FACT_ASSERTED": 3,
+    "MESSAGE_RECORDED": 4,
+    "PEER_PAIRED": 2,
+    "TASK_AUTHORIZED": 1,
+    "TASK_QUEUED": 1,
+    "TASK_RESULT": 1
+  },
+  "integrity": {
+    "ok": true,
+    "problems": []
+  },
+  "local_tasks": {
+    "DONE": 1
+  },
+  "node": {
+    "device_id": "dev_3db32fb4adbb325fdaf815d52207dd40",
+    "label": "forge-pc",
+    "profile": "forge"
+  },
+  "open_conflicts": [],
+  "package_version": "1.0.0",
+  "payload_states": {
+    "PRESENT": 14,
+    "WITHHELD": 1
+  },
+  "peers": [
+    {
+      "device_id": "dev_3b72199dec726b704cf3257d147b06e7",
+      "label": "pocket-phone",
+      "last_known_vector": {
+        "dev_3b72199dec726b704cf3257d147b06e7": 10,
+        "dev_3db32fb4adbb325fdaf815d52207dd40": 5
+      },
+      "max_privacy": "PRIVATE",
+      "revoked": false
+    }
+  ],
+  "quarantine": {},
+  "receipts": {
+    "count": 8,
+    "head": "rc_28b01d7587cefffd4c4a78d1e6516f6431696fa8e99be2587e0fa8a615c22905"
+  },
+  "schema": "fw.omega.diagnostics/1",
+  "state_digest": "st_597655d83e9eee2db6c47ad907431d31f1ec6656d7d8bcb6b452c83b2797a254",
+  "vector": {
+    "dev_3b72199dec726b704cf3257d147b06e7": 10,
+    "dev_3db32fb4adbb325fdaf815d52207dd40": 5
+  }
+}

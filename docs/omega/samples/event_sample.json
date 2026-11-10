@@ -1,0 +1,44 @@
+{
+  "header": {
+    "actor_id": "tool:sms-import",
+    "actor_kind": "TOOL",
+    "artifacts": [
+      "1d174d0c3fb5b5f62a81ce363b94603b17a66d00869a70284e79f5d4e16ae827"
+    ],
+    "corrects": null,
+    "device_id": "dev_3b72199dec726b704cf3257d147b06e7",
+    "event_type": "MESSAGE_RECORDED",
+    "links": [
+      "contact:ct_58991babe437973bed8af233"
+    ],
+    "parents": [
+      "ev_7f2785bf252fe035efa46fab9aebf8710b2224a1b5b771279cfe87227a53acbf"
+    ],
+    "payload_hash": "6ad358a2e211c90489f783773a53d47ccb974f83cc4bd76269333dca646c56b2",
+    "prev": "ev_7f2785bf252fe035efa46fab9aebf8710b2224a1b5b771279cfe87227a53acbf",
+    "privacy": "PRIVATE",
+    "provenance": [
+      {
+        "kind": "source",
+        "ref": "sms:thread-77/msg-2"
+      }
+    ],
+    "schema": "fw.omega.event/1",
+    "scope": "relationship",
+    "seq": 4,
+    "supersedes": null,
+    "ts": "2026-11-01T12:00:03Z",
+    "verification": "UNVERIFIED"
+  },
+  "payload": {
+    "channel": "sms",
+    "contact_id": "ct_58991babe437973bed8af233",
+    "conversation_id": "sms:ct_58991babe437973bed8af233",
+    "direction": "IN",
+    "message_key": "mk_a37dd7069317cc0e4b427fe183b1d073",
+    "novelty": "NOVEL",
+    "sent_at": "2026-11-01T10:42:00Z",
+    "text": "Around $5,000 for phase one. Text is best, please don't call me."
+  },
+  "signature": "_8C5evahSubVoCXXfyxqdjvveIe54av1MqJ3NRBDYgNBb395H7vSZKx06hN3wa6iI6WNin39FECSmvQuyDRkBQ"
+}
