@@ -32,6 +32,7 @@ cloud container. Nothing has been run yet on a real Android phone or Windows PC.
 | Source-backed test report | [TEST_REPORT.md](TEST_REPORT.md) |
 | Benchmarks (memory, routing; real Ollama) | [BENCHMARK_REPORT.md](BENCHMARK_REPORT.md) · `omega/bench/` · [benchmarks/](benchmarks/) |
 | Signed proof files | [proofs/](proofs/) |
+| **Directive 3: deployment + first physical experiment** | [DEPLOYMENT_AND_EXPERIMENT.md](DEPLOYMENT_AND_EXPERIMENT.md) · `scripts/android-verify.sh` · `scripts/windows-verify.ps1` · `omega/experiment.py` |
 | Demonstration script, video, case study | `python -m omega.showcase` · [YOUTUBE_PACKAGE.md](YOUTUBE_PACKAGE.md) · [CASE_STUDY.md](CASE_STUDY.md) |
 
 ## Module map

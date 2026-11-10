@@ -24,7 +24,7 @@ the owner's passphrase-locked key, so an AI assistant can prepare work but canno
 |---|---|---|---|
 | "Never send the same text twice" | 10 | 0 | <1 ms |
 | ForgeWorld rules (blocking) | 17 | 2 | 2 ms |
-| Rules + local Qwen 2.5 1.5B (warnings) | 29 | 9 | ≈350 ms |
+| Rules + local Qwen 2.5 1.5B (warnings) | 29 | 9–11 (varies across model-server restarts) | ≈350 ms |
 
 **What is proven, and what isn't.** Proven by reproducible tests: offline operation, signed
 provenance, authenticated and resumable sync, duplicate and replay rejection, refusal of

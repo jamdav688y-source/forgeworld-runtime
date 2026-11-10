@@ -71,9 +71,10 @@ tries. Refused. Approvals need my operator key, which is locked by a passphrase 
 Replaying an old sync file? Refused. And here's a real weakness: I reword the budget question, and
 the rule-based checker misses it. On the benchmark, the rules catch only a third of reworded
 repeats. So I added a small local model, Qwen 2.5 at 1.5 billion parameters, running on my own
-machine. It catches 18 of 21 reworded repeats. But it also raises 8 false alarms where the rules
+machine. It catches about 17 or 18 of 21 reworded repeats, depending on the run. But it also
+raises 8 to 10 false alarms where the rules
 raise 2. Its typical mistake is treating "same topic" as "same question". So it doesn't get to
-block anything: it only warns, and the rules keep the veto. And the biggest model I tried,
+block anything: it only warns, and the rules keep the veto. And the largest download I tried,
 Llama 3.2 1B, was the worst of the lot, which is why this system picks models by measured
 results, not size.
 

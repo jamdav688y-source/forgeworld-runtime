@@ -394,7 +394,7 @@
    "evidence": [
     "omega/tests/test_bench.py"
    ],
-   "note": "real model verified in the cloud container only; 8 false alarms on 19 new questions"
+   "note": "real model verified in the cloud container only; qwen2.5:1.5b F1 0.79-0.84 and 8-10 false alarms across two Ollama server sessions (not reproducible across restarts)"
   },
   {
    "id": "omega_proof_harness",
@@ -420,6 +420,21 @@
    ],
    "evidence": [],
    "note": "no route from this session to the owner's devices; protocol ready"
+  },
+  {
+   "id": "omega_physical_experiment",
+   "name": "Recorded, signed phone<->PC experiment runner (14 steps)",
+   "status": "PARTIAL",
+   "paths": [
+    "omega/experiment.py",
+    "scripts/android-verify.sh",
+    "scripts/windows-verify.ps1",
+    "docs/omega/DEPLOYMENT_AND_EXPERIMENT.md"
+   ],
+   "evidence": [
+    "omega/tests/test_experiment.py"
+   ],
+   "note": "full flow verified over loopback on Linux; its verdict is all_ok=false by design until real Android + Windows records exist; windows-verify.ps1 never executed"
   }
  ]
 }

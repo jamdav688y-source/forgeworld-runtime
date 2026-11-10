@@ -30,27 +30,42 @@ not read `relationship.py`) is improvement #1 in PROOF_REPORT.md.
 | `omega_rules` (shipped, deterministic) | 0.68 | 0.90 | 0.55 | 0.68 | 1.00 | 0.33 | 2/10 | 0/9 | 2 |
 | `llm:qwen2.5:0.5b` | 0.58 | 0.67 | 0.65 | 0.66 | 0.90 | 0.52 | 6/10 | 4/9 | 197 |
 | `llm:llama3.2:1b` | 0.42 | 0.75 | 0.10 | 0.17 | 0.30 | 0.00 | 1/10 | 0/9 | 329 |
-| `llm:qwen2.5:1.5b` | 0.78 | 0.78 | 0.90 | 0.84 | 1.00 | 0.86 | 6/10 | 2/9 | 347 |
-| `rules_or_llm:qwen2.5:1.5b` | 0.78 | 0.76 | 0.94 | 0.84 | 1.00 | 0.91 | 7/10 | 2/9 | 347 |
+| `llm:qwen2.5:1.5b` — server session 1 | 0.78 | 0.78 | 0.90 | 0.84 | 1.00 | 0.86 | 6/10 | 2/9 | 347 |
+| `llm:qwen2.5:1.5b` — server session 2 | 0.72 | 0.73 | 0.87 | 0.79 | 1.00 | 0.81 | 5/10 | 5/9 | 348 |
+| `rules_or_llm:qwen2.5:1.5b` — session 1 | 0.78 | 0.76 | 0.94 | 0.84 | 1.00 | 0.91 | 7/10 | 2/9 | 347 |
+| `rules_or_llm:qwen2.5:1.5b` — session 2 | 0.74 | 0.73 | 0.94 | 0.82 | 1.00 | 0.90 | 6/10 | 5/9 | 348 |
 
 Models: `qwen2.5:0.5b` (397 MB, digest `a8b0c515…`), `llama3.2:1b` (1.32 GB, `baf6a787…`),
-`qwen2.5:1.5b` (986 MB, `65ec0654…`). Temperature 0, seed 0. Repeated runs gave identical
-predictions.
+`qwen2.5:1.5b` (986 MB, `65ec0654…`). Temperature 0, seed 0.
+
+**Reproducibility (corrected in directive 3).** The deterministic systems (baseline, rules) and
+`qwen2.5:0.5b` and `llama3.2:1b` reproduced exactly when re-run. **`qwen2.5:1.5b` did not:**
+within one Ollama server session its predictions are identical run to run (3 runs in session 1,
+6 in session 2). Across a server restart, 5 of 50 cases flipped (`a-p1`, `s-n1`, `x-1`, `x-3`,
+`x-4`), and F1 moved from 0.836 to 0.794. An earlier version of this report said repeated runs
+gave identical predictions; that was true only within one session. Report this model as a
+**range: F1 0.79–0.84, 8–10 false alarms**. Session-2 raw results:
+[`benchmarks/memory_benchmark_rerun_session2.json`](benchmarks/memory_benchmark_rerun_session2.json).
+The likely cause is non-deterministic CPU kernel scheduling at model load; it was not
+investigated further.
 
 ### What the numbers say
 
 * **Against the deterministic baseline:** the shipped rules raise F1 from 0.49 to 0.68 at 2 ms,
-  with no model. The best local model, `qwen2.5:1.5b`, reaches 0.84 at ~350 ms per question.
-* **Recall versus false alarms:** `qwen2.5:1.5b` catches 18 of 21 paraphrases where the rules
-  catch 7, but it raises 8 false alarms (questions that were actually new) against the rules' 2.
+  with no model. The best local model, `qwen2.5:1.5b`, reaches 0.79–0.84 (across two server
+  sessions) at ~350 ms per question.
+* **Recall versus false alarms:** `qwen2.5:1.5b` catches 17–18 of 21 paraphrases where the rules
+  catch 7, but it raises 8–10 false alarms (questions that were actually new) against the rules' 2.
   Its typical error: it treats "same topic" as "same question" ("Has the budget been approved by
   finance yet?", "Should I copy anyone else on the email?").
-* **Size does not predict quality:** `llama3.2:1b` is the largest file and the worst detector
+* **Download size does not predict quality:** `llama3.2:1b` is the largest file (1.32 GB, though
+  fewer parameters than `qwen2.5:1.5b`) and the worst detector
   (F1 0.17: it almost always answers NO).
 * **Resulting policy (implemented):** the rules stay the only BLOCK, because false blocks stop
   legitimate questions. The model is an optional advisor whose hits are `POSSIBLE_REPEAT` WARN
   (`check_draft(..., semantic_checker=OllamaClient(...).repeat_checker(model))`). Rule BLOCKs plus
-  model WARNs together flag 29 of 31 repeats; the cost is up to 9 warnings on 19 new questions.
+  model WARNs together flag 29 of 31 repeats in both sessions; the cost is 9–11 warnings on
+  19 new questions.
 
 ### Rule misses (for the next iteration, not fixed here, so the frozen result stays honest)
 

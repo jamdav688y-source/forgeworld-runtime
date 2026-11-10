@@ -107,3 +107,29 @@ environment can reach. More iterations here would not change that evidence.
 Stopped because the next step that adds evidence is running the protocol on the owner's physical
 devices, which this session cannot reach. More container-side iteration would not change the
 success condition.
+
+---
+
+# Directive 3 (continuation and deployment)
+
+## Iteration 10 — a published reproducibility claim was false
+
+* **Observation.** A fresh-clone re-validation re-ran the memory benchmark. Every deterministic
+  system, `qwen2.5:0.5b` and `llama3.2:1b` reproduced exactly; **`qwen2.5:1.5b` did not**
+  (F1 0.836 → 0.794; 5 of 50 cases flipped). Six further runs in the new Ollama server session
+  agreed with each other.
+* **Conclusion.** The model is deterministic within a server session, not across restarts.
+  BENCHMARK_REPORT had said "repeated runs gave identical predictions".
+* **Correction.** All documents now report a range (F1 0.79–0.84, 8–10 false alarms), and the
+  session-2 raw results are committed. The advisory-only policy is unaffected: in both sessions
+  the model has more recall and more false alarms than the rules.
+
+## Iteration 11 — deployment scripts and the experiment runner
+
+* `scripts/android-verify.sh`, `scripts/windows-verify.ps1`: isolated folder, commit check,
+  private venv, read-only inspection of existing installs, signed proof.
+* The Android script's dry run on Linux exposed a mislabel: the proof said "(owner's phone)"
+  off Termux. Now it says so only when Termux is detected.
+* `omega/experiment.py` records the 14-step physical experiment as signed evidence. It passes over
+  loopback (`test_experiment.py`), and its verdict is designed to stay `all_ok=false` unless the
+  records come from Android **and** Windows.

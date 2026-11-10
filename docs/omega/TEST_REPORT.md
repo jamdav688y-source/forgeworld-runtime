@@ -48,7 +48,8 @@ Every row names the command, the observed result, and the code or artifact that 
 ## 5. Real model measurements (items 10, 11)
 
 See BENCHMARK_REPORT.md. Headline, on 50 frozen cases (sha256 `d9429aee…`): exact-match baseline
-F1 0.49 → shipped rules 0.68 (2 ms) → `qwen2.5:1.5b` 0.84 (≈350 ms, 8 false alarms vs 2).
+F1 0.49 → shipped rules 0.68 (2 ms) → `qwen2.5:1.5b` 0.79–0.84 (≈350 ms, 8–10 false alarms vs 2; the
+model's predictions changed on 5 cases across an Ollama server restart, see BENCHMARK_REPORT).
 `llama3.2:1b`: 0.17. Measured in the container on CPU, not on the owner's hardware.
 
 ## 6. Not tested (and why)
