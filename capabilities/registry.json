@@ -34,6 +34,23 @@
       "cost": {"dollar": 0.0, "latency": 0.1, "tokens": 0.0, "attention": 0.3, "complexity": 0.2}
     },
     {
+      "id": "local_video_renderer",
+      "kind": "tool",
+      "provider": "forgeworld",
+      "check": {
+        "type": "command",
+        "value": "ffmpeg",
+        "verify": {
+          "args": ["-version"],
+          "timeout_seconds": 8,
+          "expect_identity": "ffmpeg version \\d+\\.\\d+",
+          "min_version": "4.0"
+        }
+      },
+      "tags": ["local_video_render", "offline_media_processing", "mp4_export", "timeline_assembly", "audio_mix", "caption_sidecars", "provenance_receipts"],
+      "cost": {"dollar": 0.0, "latency": 0.5, "tokens": 0.0, "attention": 0.3, "complexity": 0.5}
+    },
+    {
       "id": "python",
       "kind": "tool",
       "provider": "local",
