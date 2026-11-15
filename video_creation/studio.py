@@ -338,6 +338,13 @@ def make_handler(studio: Studio):
                         info = json.loads((studio.inbox / f"{audio_id}.json").read_text(encoding="utf-8"))
                         selected.append(studio.inbox / info["stored_name"])
                     project = create_quickstart_project(project_dir, project_id, selected, duration_ms, width, height, "contain")
+                    motion = data.get("still_motion", "push_in")
+                    if motion not in {"static", "push_in", "pull_out", "pan_left", "pan_right"}:
+                        raise ProjectError("unsupported still-image motion preset")
+                    for scene in project["scenes"]:
+                        asset = next(a for a in project["assets"] if a["asset_id"] == scene["asset_id"])
+                        if asset["kind"] == "image":
+                            scene["motion"] = motion
                     title = str(data.get("title", "")).strip()[:180]
                     caption = str(data.get("caption", "")).strip()[:500]
                     if title:

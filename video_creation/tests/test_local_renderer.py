@@ -125,6 +125,15 @@ class LocalRendererTests(unittest.TestCase):
         result = render_project(project, self.temp, output)
         self.assertTrue(Path(result["output_path"]).is_file())
 
+    def test_renders_deterministic_still_camera_moves(self):
+        for motion in ("push_in", "pull_out", "pan_left", "pan_right"):
+            project = json.loads(json.dumps(self.project))
+            project["scenes"][0]["motion"] = motion
+            output = self.temp / f"{motion}.mp4"
+            result = render_project(project, self.temp, output, mode="preview")
+            self.assertEqual(result["status"], "RENDERED", motion)
+            self.assertTrue(output.is_file(), motion)
+
     def test_refuses_to_overwrite_without_explicit_flag(self):
         output = self.temp / "sample.mp4"
         render_project(self.project, self.temp, output)

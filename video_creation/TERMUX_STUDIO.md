@@ -24,7 +24,7 @@ python -m video_creation.studio
 
 Open `http://127.0.0.1:8765` in Chrome on the same phone if Termux did not open it automatically. Keep the Termux session running. Chrome can add the page to the home screen, giving it a standalone app-like launcher. The local server binds only to loopback; it is not a public web service.
 
-In Studio, choose media with Android's file picker, select scene order and format, enter a title/caption, create the project, render a preview, and then render the final MP4. The export and receipt are kept in `~/.forgeworld-video/exports`. Studio serves the video for in-page playback and download. To copy exports to shared storage after running `termux-setup-storage`:
+Studio opens with a 10-second vertical “The Vernal Difference” draft preset. Select the source artwork or clips with Android's file picker, adjust scene order, camera move, title, captions, optional audio, and project description, then render a preview and final MP4. Still images can use a deterministic push-in, pull-out, or horizontal pan; this moves the camera framing over the supplied image, but does not animate a creature's body or synthesize particles. The export and receipt are kept in `~/.forgeworld-video/exports`. Studio serves the video for in-page playback and download. To copy exports to shared storage after running `termux-setup-storage`:
 
 ```sh
 mkdir -p ~/storage/shared/Movies/ForgeWorld
@@ -33,7 +33,7 @@ cp ~/.forgeworld-video/exports/*-final.mp4 ~/storage/shared/Movies/ForgeWorld/
 
 ## YouTube connection
 
-YouTube upload is optional and separate from rendering. To enable it, create a Google Cloud project, enable YouTube Data API v3, create an OAuth client of type Desktop app, and select its downloaded JSON file in Studio. Connect the account through Google's consent page. The app requests only the upload scope and read-only channel scope so it can show which authorized channel will receive the video. The OAuth refresh token and client configuration are stored under `~/.forgeworld-video/private` with owner-only filesystem permissions.
+YouTube upload is optional and separate from rendering. To enable it, create a Google Cloud project, enable YouTube Data API v3, configure the OAuth consent screen and add your Google account as a test user when the app is in testing, create an OAuth client of type Desktop app, and select its downloaded JSON file in Studio. Connect the account through Google's consent page. The app requests only the upload scope and read-only channel scope so it can show which authorized channel will receive the video. The OAuth refresh token and client configuration are stored under `~/.forgeworld-video/private` with owner-only filesystem permissions.
 
 Before an upload, the user chooses and confirms title, description, private/unlisted/public visibility, made-for-kids audience designation, and realistic altered/synthetic-content disclosure. The Studio sends an official resumable `videos.insert` upload and keeps an audit receipt. It never uploads as a side effect of rendering. API quota and Google's project verification or account policies can still apply; this removes paid video-generation credits, not YouTube's API controls.
 

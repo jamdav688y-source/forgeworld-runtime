@@ -55,7 +55,7 @@ def doctor() -> dict:
     if filters.returncode or encoders.returncode or buildconf.returncode:
         raise RenderError("CAPABILITY_PROBE_FAILED", "FFmpeg filter or encoder discovery failed")
     filter_text, encoder_text = filters.stdout + filters.stderr, encoders.stdout + encoders.stderr
-    missing = [name for name in ("scale", "crop", "pad", "fps", "concat", "drawtext") if name not in filter_text]
+    missing = [name for name in ("scale", "crop", "pad", "fps", "concat", "drawtext", "zoompan") if name not in filter_text]
     missing += [name for name in ("libx264", "aac") if name not in encoder_text]
     font = _find_font()
     if font is None:
@@ -70,6 +70,7 @@ def doctor() -> dict:
         "required_features": {"scale": "scale" in filter_text, "crop": "crop" in filter_text,
                               "pad": "pad" in filter_text, "fps": "fps" in filter_text,
                               "concat": "concat" in filter_text, "drawtext": "drawtext" in filter_text,
+                              "zoompan": "zoompan" in filter_text,
                               "libx264": "libx264" in encoder_text, "aac": "aac" in encoder_text,
                               "font": font is not None},
         "font": font,
@@ -197,8 +198,22 @@ def _build_command(project: dict, plan: dict, files: dict[str, Path], work: Path
     filters = []
     for i, (scene, planned) in enumerate(zip(project["scenes"], plan["scenes"])):
         width, height = profile["width"], profile["height"]
+        asset_kind = next(a["kind"] for a in project["assets"] if a["asset_id"] == scene["asset_id"])
+        motion = scene.get("motion", "static")
+        camera = ""
+        if asset_kind == "image" and motion != "static":
+            last_frame = max(1, planned["frame_count"] - 1)
+            if motion == "push_in":
+                expression = f"z=1+0.05*on/{last_frame}"
+            elif motion == "pull_out":
+                expression = f"z=1.05-0.05*on/{last_frame}"
+            elif motion == "pan_left":
+                expression = f"z=1.06:x=(iw-iw/zoom)*(1-on/{last_frame}):y=ih/2-ih/zoom/2"
+            else:  # pan_right
+                expression = f"z=1.06:x=(iw-iw/zoom)*on/{last_frame}:y=ih/2-ih/zoom/2"
+            camera = f",zoompan={expression}:d=1:s={width}x{height}:fps={fps}"
         base = (f"[{i}:v]trim=duration={planned['duration_seconds']},setpts=PTS-STARTPTS,"
-                f"{_fit_filters(width, height, planned['fit'])},fps={fps},format=yuv420p")
+                f"{_fit_filters(width, height, planned['fit'])}{camera},fps={fps},format=yuv420p")
         label_text = planned["label"].replace("_", " ")
         overlay = planned["overlay_text"].strip()
         text = label_text + ("\n" + overlay if overlay else "")

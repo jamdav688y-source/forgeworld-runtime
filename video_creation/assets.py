@@ -94,7 +94,8 @@ def create_quickstart_project(project_dir: Path, project_id: str, media_paths: l
                 scenes.append({"scene_id": f"scene-{len(scenes) + 1:03d}", "production_scene_id": None,
                                "asset_id": asset_id, "duration_ms": duration_ms, "source_in_ms": 0,
                                "fit": fit, "label": "USER_AUTHORED", "source_refs": [], "citations": [],
-                               "disclosures": [], "overlay_text": "", "captions": []})
+                               "disclosures": [], "overlay_text": "", "captions": [],
+                               "motion": "push_in" if kind == "image" else "static"})
             else:
                 audio = {"asset_id": asset_id, "gain": 0.7, "fade_out_ms": min(500, duration_ms * len(scenes))}
         if not scenes:

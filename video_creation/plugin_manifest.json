@@ -11,6 +11,7 @@
   "capabilities": [
     {"id": "media_import", "method": "POST", "path": "/api/assets", "network": "local_only"},
     {"id": "project_create", "method": "POST", "path": "/api/projects", "network": "local_only"},
+    {"id": "still_image_camera_motion", "method": "project_field", "path": "scenes[].motion", "presets": ["static", "push_in", "pull_out", "pan_left", "pan_right"], "network": "local_only"},
     {"id": "preview_render", "method": "POST", "path": "/api/projects/{project_id}/render", "network": "local_only", "requires": ["mode=preview"]},
     {"id": "final_export", "method": "POST", "path": "/api/projects/{project_id}/render", "network": "local_only", "requires": ["mode=final"]},
     {"id": "youtube_oauth_connect", "method": "POST", "path": "/api/youtube/connect", "network": "google_oauth"},

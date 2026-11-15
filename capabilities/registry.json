@@ -47,7 +47,7 @@
           "min_version": "4.0"
         }
       },
-      "tags": ["local_video_render", "offline_media_processing", "mp4_export", "timeline_assembly", "audio_mix", "caption_sidecars", "provenance_receipts"],
+      "tags": ["local_video_render", "offline_media_processing", "mp4_export", "timeline_assembly", "audio_mix", "caption_sidecars", "still_image_camera_motion", "provenance_receipts"],
       "cost": {"dollar": 0.0, "latency": 0.5, "tokens": 0.0, "attention": 0.3, "complexity": 0.5}
     },
     {

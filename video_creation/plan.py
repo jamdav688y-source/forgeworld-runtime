@@ -23,6 +23,7 @@ def compile_render_plan(project: dict, preview: bool = False) -> dict:
             "scene_id": scene["scene_id"],
             "production_scene_id": scene["production_scene_id"],
             "asset_id": scene["asset_id"],
+            "motion": scene.get("motion", "static"),
             "frame_start": frame_cursor,
             "frame_count": frames,
             "duration_num": duration.numerator,

@@ -27,7 +27,7 @@ python -m video_creation.cli render path/to/project.json --output path/to/output
 python -m video_creation.cli inspect path/to/output.mp4
 ```
 
-The `quickstart` command copies each explicitly selected image or video into the project asset folder, pins it with SHA-256, creates one scene per file, and writes `project.json`. Add one audio path with another `--media` option to create the optional audio track. You can then edit the JSON project to change titles, timings, captions, or audio settings.
+The `quickstart` command copies each explicitly selected image or video into the project asset folder, pins it with SHA-256, creates one scene per file, and writes `project.json`. Still images default to a deterministic five-percent push-in; choose `static`, `push_in`, `pull_out`, `pan_left`, or `pan_right` through the project `motion` field. Video clips default to static framing. Add one audio path with another `--media` option to create the optional audio track. You can then edit the JSON project to change titles, timings, captions, motion, or audio settings.
 
 Project asset paths are relative to the project's `asset_root`. The validator rejects missing, changed, or escaping inputs. Scene labels remain visible in the output, timed captions are written to an SRT sidecar, and optional audio is mixed into the MP4.
 

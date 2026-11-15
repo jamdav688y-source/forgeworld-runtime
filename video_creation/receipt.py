@@ -38,7 +38,7 @@ def write_receipt(project: dict, plan: dict, output_path: Path, output_sha256: s
         "captions_sidecar": ({"path": str(output_path.with_suffix(".srt")), "sha256": sha256_file(captions_path)} if captions_path else None),
         "scene_lineage": [{"scene_id": scene["scene_id"], "production_scene_id": scene["production_scene_id"],
                            "label": scene["label"], "source_refs": scene["source_refs"], "citations": scene["citations"],
-                           "disclosures": scene["disclosures"]} for scene in project["scenes"]],
+                           "disclosures": scene["disclosures"], "motion": scene.get("motion", "static")} for scene in project["scenes"]],
         "render": {"mode": mode, "elapsed_seconds": round(elapsed_seconds, 3), "toolchain": tool_info},
         "validation": {"ffprobe_passed": True, "project_hash_passed": True, "asset_hashes_passed": True},
         "publication_authorized": False,

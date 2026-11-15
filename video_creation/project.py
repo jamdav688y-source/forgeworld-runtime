@@ -91,7 +91,8 @@ def validate_project(project: dict) -> dict:
     for scene in scenes:
         if not isinstance(scene, dict):
             raise ProjectError("each scene must be an object")
-        _keys(scene, {"scene_id", "production_scene_id", "asset_id", "duration_ms", "source_in_ms", "fit", "label", "source_refs", "citations", "disclosures", "overlay_text", "captions"}, "scene")
+        scene_keys = {"scene_id", "production_scene_id", "asset_id", "duration_ms", "source_in_ms", "fit", "label", "source_refs", "citations", "disclosures", "overlay_text", "captions"}
+        _keys(scene, scene_keys | ({"motion"} if "motion" in scene else set()), "scene")
         sid = scene["scene_id"]
         if not isinstance(sid, str) or not _ID.fullmatch(sid) or sid in scene_ids:
             raise ProjectError("scene_id is malformed or duplicated")
@@ -112,6 +113,10 @@ def validate_project(project: dict) -> dict:
         total_ms += duration
         if scene["fit"] not in {"contain", "cover"}:
             raise ProjectError(f"scene {sid} fit must be contain or cover")
+        if scene.get("motion", "static") not in {"static", "push_in", "pull_out", "pan_left", "pan_right"}:
+            raise ProjectError(f"scene {sid} has an unsupported still-image motion preset")
+        if asset["kind"] != "image" and scene.get("motion", "static") != "static":
+            raise ProjectError(f"scene {sid} camera motion presets apply only to still images")
         if scene["label"] not in {"QUOTED_SOURCE", "INTERPRETATION", "HYPOTHESIS", "DRAMATIZATION", "USER_AUTHORED"}:
             raise ProjectError(f"scene {sid} has an invalid epistemic label")
         for key in ("source_refs", "citations"):
