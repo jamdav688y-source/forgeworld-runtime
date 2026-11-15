@@ -51,6 +51,22 @@
       "cost": {"dollar": 0.0, "latency": 0.5, "tokens": 0.0, "attention": 0.3, "complexity": 0.5}
     },
     {
+      "id": "forgeworld_video_studio",
+      "kind": "tool",
+      "provider": "forgeworld",
+      "check": {"type": "manual"},
+      "tags": ["termux_local_app", "phone_video_workflow", "media_import", "project_authoring", "preview_render", "final_export", "local_download", "youtube_upload_consent_gate"],
+      "cost": {"dollar": 0.0, "latency": 0.4, "tokens": 0.0, "attention": 0.2, "complexity": 0.5}
+    },
+    {
+      "id": "youtube_data_api_upload",
+      "kind": "service",
+      "provider": "google",
+      "check": {"type": "manual"},
+      "tags": ["youtube_oauth", "resumable_video_upload", "privacy_metadata", "audience_designation", "altered_synthetic_disclosure", "explicit_upload_authorization"],
+      "cost": {"dollar": 0.0, "latency": 0.8, "tokens": 0.0, "attention": 0.3, "complexity": 0.6}
+    },
+    {
       "id": "python",
       "kind": "tool",
       "provider": "local",

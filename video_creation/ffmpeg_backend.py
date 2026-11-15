@@ -57,6 +57,9 @@ def doctor() -> dict:
     filter_text, encoder_text = filters.stdout + filters.stderr, encoders.stdout + encoders.stderr
     missing = [name for name in ("scale", "crop", "pad", "fps", "concat", "drawtext") if name not in filter_text]
     missing += [name for name in ("libx264", "aac") if name not in encoder_text]
+    font = _find_font()
+    if font is None:
+        missing.append("font")
     return {
         "ffmpeg": ffmpeg,
         "ffprobe": ffprobe,
@@ -67,7 +70,9 @@ def doctor() -> dict:
         "required_features": {"scale": "scale" in filter_text, "crop": "crop" in filter_text,
                               "pad": "pad" in filter_text, "fps": "fps" in filter_text,
                               "concat": "concat" in filter_text, "drawtext": "drawtext" in filter_text,
-                              "libx264": "libx264" in encoder_text, "aac": "aac" in encoder_text},
+                              "libx264": "libx264" in encoder_text, "aac": "aac" in encoder_text,
+                              "font": font is not None},
+        "font": font,
         "missing_features": missing,
     }
 
@@ -104,12 +109,18 @@ def _fit_filters(width: int, height: int, fit: str) -> str:
 
 
 def _find_font() -> str | None:
-    candidates = [
+    prefix = os.environ.get("PREFIX", "")
+    candidates = [Path(os.environ["FW_VIDEO_FONT"])] if os.environ.get("FW_VIDEO_FONT") else []
+    if prefix:
+        candidates.extend([Path(prefix) / "share/fonts/TTF/DejaVuSans.ttf",
+                           Path(prefix) / "share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                           Path(prefix) / "share/fonts/TTF/LiberationSans-Regular.ttf"])
+    candidates.extend([
         Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
         Path("/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf"),
         Path("C:/Windows/Fonts/arial.ttf"),
         Path("/System/Library/Fonts/Supplemental/Arial.ttf"),
-    ]
+    ])
     return str(next((path for path in candidates if path.is_file()), "")) or None
 
 

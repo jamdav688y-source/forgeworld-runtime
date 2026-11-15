@@ -1,0 +1,26 @@
+{
+  "schema_version": "forgeworld.local_plugin.v1",
+  "id": "forgeworld_video_studio",
+  "name": "ForgeWorld Video Studio",
+  "version": "0.1.0",
+  "runtime": "python-module",
+  "entrypoint": "python -m video_creation.studio",
+  "bind_address": "127.0.0.1",
+  "default_port": 8765,
+  "web_app": "http://127.0.0.1:8765/",
+  "capabilities": [
+    {"id": "media_import", "method": "POST", "path": "/api/assets", "network": "local_only"},
+    {"id": "project_create", "method": "POST", "path": "/api/projects", "network": "local_only"},
+    {"id": "preview_render", "method": "POST", "path": "/api/projects/{project_id}/render", "network": "local_only", "requires": ["mode=preview"]},
+    {"id": "final_export", "method": "POST", "path": "/api/projects/{project_id}/render", "network": "local_only", "requires": ["mode=final"]},
+    {"id": "youtube_oauth_connect", "method": "POST", "path": "/api/youtube/connect", "network": "google_oauth"},
+    {"id": "youtube_video_upload", "method": "POST", "path": "/api/youtube/upload", "network": "youtube_data_api", "requires": ["final_mp4", "explicit_user_confirmation", "confirmed_visibility", "audience_designation", "altered_synthetic_disclosure"]}
+  ],
+  "constraints": {
+    "rendering_uses_paid_generation": false,
+    "render_authorizes_publication": false,
+    "upload_is_automatic": false,
+    "media_storage": "local_user_workspace",
+    "credentials_storage": "local_owner_only_files"
+  }
+}

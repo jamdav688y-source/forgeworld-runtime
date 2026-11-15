@@ -1,12 +1,18 @@
 # ForgeWorld Local Video Renderer
 
-This first renderer creates downloadable MP4 files from a versioned JSON project and explicitly selected local media. It runs FFmpeg on the user's machine. It does not call a paid generation service, upload to YouTube, or publish anything.
+The local renderer creates downloadable MP4 files from a versioned JSON project and explicitly selected local media. The Termux Video Studio adds a touch-friendly local web app, project/asset management, preview and final export, and an optional official YouTube upload path. Rendering and uploading are distinct actions, and upload requires explicit confirmation.
 
 ## Local requirements
 
-Install FFmpeg and ffprobe with the `scale`, `crop`, `pad`, `fps`, `concat`, and `drawtext` filters, plus `libx264` and `aac` encoders. Install a TrueType font at one of the locations probed by `ffmpeg_backend.py` or add a configured font path in a later host integration.
+Install FFmpeg and ffprobe with the `scale`, `crop`, `pad`, `fps`, `concat`, and `drawtext` filters, plus `libx264` and `aac` encoders. Install a TrueType font at one of the locations probed by `ffmpeg_backend.py` or set `FW_VIDEO_FONT` to its path.
 
 The initial implementation uses the system's installed binaries. It does not redistribute them. Audit the exact FFmpeg build configuration and enabled component licenses before bundling FFmpeg in an installer.
+
+## Phone-first Termux Studio
+
+Follow [TERMUX_STUDIO.md](TERMUX_STUDIO.md) to install Termux packages, run the local web app, add it to the phone home screen, create and render a project, and configure official YouTube OAuth uploads. The app binds to `127.0.0.1`; do not expose it to a public network. Project assets and OAuth tokens stay in the Termux workspace. YouTube upload uses Google's resumable `videos.insert` flow and never runs as a side effect of rendering.
+
+The current app is a local PWA-style interface over the Python module. It is not a compiled Android APK and cannot be reached by ChatGPT's cloud runtime as a localhost plugin. ForgeWorld can call it locally through the capability manifest and HTTP interface.
 
 ## Commands
 
