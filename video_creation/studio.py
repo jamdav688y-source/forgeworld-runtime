@@ -18,6 +18,7 @@ from pathlib import Path
 
 from .assets import create_quickstart_project, infer_kind
 from .ffmpeg_backend import RenderError, doctor, probe, render_project
+from .instructions import compile_instructions
 from .project import ProjectError, validate_project, write_project
 from .youtube import OAuthFlow, YouTubeError, save_desktop_credentials, upload_video
 
@@ -50,10 +51,10 @@ class Studio:
                 path = self.inbox / row["stored_name"]
                 if path.is_file():
                     records.append({"asset_id": row["asset_id"], "name": row["name"], "kind": row["kind"],
-                                   "bytes": path.stat().st_size})
+                                   "bytes": path.stat().st_size, "added_at": row.get("added_at", path.stat().st_mtime)})
             except (OSError, KeyError, json.JSONDecodeError):
                 continue
-        return sorted(records, key=lambda row: row["name"].lower())
+        return sorted(records, key=lambda row: row["added_at"], reverse=True)
 
     def project_path(self, project_id: str) -> Path:
         if not PROJECT_ID.fullmatch(project_id):
@@ -304,9 +305,50 @@ def make_handler(studio: Studio):
                     except Exception:
                         destination.unlink(missing_ok=True)
                         raise
-                    info = {"asset_id": asset_id, "stored_name": stored_name, "name": original, "kind": kind}
+                    info = {"asset_id": asset_id, "stored_name": stored_name, "name": original, "kind": kind, "added_at": time.time()}
                     (studio.inbox / f"{asset_id}.json").write_text(json.dumps(info), encoding="utf-8")
                     _json(self, 201, {"asset": {"asset_id": asset_id, "name": original, "kind": kind, "bytes": length}})
+                elif route == "/api/instructions":
+                    data = self._json_body()
+                    plan = compile_instructions(data.get("instructions", ""), studio.asset_records())
+                    if not plan["visual_assets"]:
+                        raise ProjectError("Add the source artwork or clips once in Source media. After that, instructions can drive the project and render.")
+                    visual_paths = []
+                    for record in plan["visual_assets"]:
+                        info = json.loads((studio.inbox / f"{record['asset_id']}.json").read_text(encoding="utf-8"))
+                        visual_paths.append(studio.inbox / info["stored_name"])
+                    selected = list(visual_paths)
+                    if plan["audio_asset"]:
+                        info = json.loads((studio.inbox / f"{plan['audio_asset']['asset_id']}.json").read_text(encoding="utf-8"))
+                        selected.append(studio.inbox / info["stored_name"])
+                    stamp = time.strftime("%Y%m%d-%H%M%S", time.localtime())
+                    project_id = f"{plan['project_id_base'][:32]}-{stamp}"
+                    project_dir = studio.project_path(project_id)
+                    width, height = (720, 1280) if plan["format"] == "vertical" else ((1280, 720) if plan["format"] == "landscape" else (720, 720))
+                    project = create_quickstart_project(project_dir, project_id, selected,
+                                                        plan["duration_seconds"] * 1000, width, height, "contain")
+                    for scene in project["scenes"]:
+                        asset = next(a for a in project["assets"] if a["asset_id"] == scene["asset_id"])
+                        if asset["kind"] == "image":
+                            scene["motion"] = plan["motion"]
+                    project["scenes"][0]["overlay_text"] = plan["title"]
+                    if plan["caption"]:
+                        project["scenes"][0]["captions"] = [{"start_ms": 0,
+                            "end_ms": min(project["scenes"][0]["duration_ms"], 5000), "text": plan["caption"]}]
+                    project["revision"] = 2
+                    write_project(project_dir / "project.json", project, overwrite=True)
+                    (project_dir / "creative-brief.txt").write_text(plan["brief"] + "\n", encoding="utf-8")
+                    (project_dir / "instruction-plan.json").write_text(json.dumps({k: v for k, v in plan.items()
+                        if k not in {"visual_assets", "audio_asset"}}, indent=2), encoding="utf-8")
+                    metadata = {"title": plan["title"], "description": plan["description"], "tags": plan["tags"],
+                                "privacy_status": "private", "audience": "not_made_for_kids",
+                                "altered_content": False, "category_id": "22"}
+                    (project_dir / "youtube-metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+                    job_id = studio.start_job("preview_render", lambda progress: render_project(project, project_dir,
+                        studio.exports / f"{project_id}-preview.mp4", "preview", overwrite=True))
+                    _json(self, 202, {"status": "CREATED", "project_id": project_id, "job_id": job_id,
+                                      "title": plan["title"], "assumptions": plan["assumptions"],
+                                      "limitations": plan["limitations"]})
                 elif route == "/api/projects":
                     data = self._json_body()
                     asset_ids = data.get("asset_ids")

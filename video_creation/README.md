@@ -12,6 +12,8 @@ The initial implementation uses the system's installed binaries. It does not red
 
 Follow [TERMUX_STUDIO.md](TERMUX_STUDIO.md) to install Termux packages, run the local web app, add it to the phone home screen, create and render a project, and configure official YouTube OAuth uploads. The app binds to `127.0.0.1`; do not expose it to a public network. Project assets and OAuth tokens stay in the Termux workspace. YouTube upload uses Google's resumable `videos.insert` flow and never runs as a side effect of rendering.
 
+The primary Studio flow is instruction-led: a local deterministic compiler extracts supported controls (duration, orientation, title, caption, tags, optional audio request, source selection, and still-image camera move), creates a versioned project, and starts a preview. It reuses the newest imported image or clip by default. The user's full creative brief and the compiler's assumptions/limitations are saved with the project. This is a transparent rule-based compiler, not an offline generative model; unrecognized style directions do not change image pixels.
+
 The current app is a local PWA-style interface over the Python module. It is not a compiled Android APK and cannot be reached by ChatGPT's cloud runtime as a localhost plugin. ForgeWorld can call it locally through the capability manifest and HTTP interface.
 
 ## Commands

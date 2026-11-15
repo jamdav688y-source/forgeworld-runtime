@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import json
 import shutil
+import subprocess
 import tempfile
 import threading
+import time
 import unittest
 import urllib.error
 import urllib.request
@@ -77,6 +79,32 @@ class StudioTests(unittest.TestCase):
         with urllib.request.urlopen(req) as response:
             self.assertEqual(response.status, 206)
             self.assertEqual(response.read(), b"3456")
+
+    @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "local FFmpeg tools are required")
+    def test_instruction_submission_creates_project_and_preview(self):
+        source = self.temp / "source.png"
+        subprocess.run([shutil.which("ffmpeg"), "-hide_banner", "-loglevel", "error", "-f", "lavfi",
+                        "-i", "color=c=purple:s=64x64", "-frames:v", "1", str(source)], check=True, capture_output=True)
+        status, body = self.request("/api/assets?filename=source.png", "POST", source.read_bytes(), "application/octet-stream")
+        self.assertEqual(status, 201)
+        status, body = self.request("/api/instructions", "POST", {"instructions":
+            "Create exactly 1 second of vertical video.\nTitle: Local instruction test\nCamera: slow push-in\nCaption: Local test."})
+        self.assertEqual(status, 202, body.decode())
+        response = json.loads(body)
+        project_path = self.temp / "projects" / response["project_id"] / "project.json"
+        project = json.loads(project_path.read_text())
+        self.assertEqual(project["scenes"][0]["overlay_text"], "Local instruction test")
+        self.assertEqual(project["scenes"][0]["motion"], "push_in")
+        self.assertEqual(project["scenes"][0]["captions"][0]["text"], "Local test.")
+        job_id = response["job_id"]
+        for _ in range(120):
+            _, job_body = self.request(f"/api/jobs/{job_id}")
+            job = json.loads(job_body)
+            if job["status"] in {"DONE", "ERROR"}:
+                break
+            time.sleep(0.1)
+        self.assertEqual(job["status"], "DONE", job)
+        self.assertEqual(job["result"]["status"], "RENDERED")
 
 
 class YouTubeLocalTests(unittest.TestCase):
